@@ -12,7 +12,6 @@ setup(
 
     py_modules=['grpcbigbuffer'],
     install_requires=[
-        'google',
         'protobuf',
         'grpcio',
     ],
