@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 from grpcbigbuffer import __version__
 
@@ -10,9 +10,9 @@ setup(
     author='Josemi Avellana',
     author_email='josemi.bnf@gmail.com',
 
-    packages=find_packages(),
+    py_modules=['grpcbigbuffer'],
     install_requires=[
-        'grpcio',
         'protobuf',
+        'grpcio',
     ],
 )
