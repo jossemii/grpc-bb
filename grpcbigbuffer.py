@@ -386,6 +386,7 @@ def serialize_to_buffer(
 def client_grpc(
         method,
         input = None, 
+        output_field = None,
         timeout = None, 
         indices_parser: dict = None, 
         partitions_parser: dict = None, 
@@ -415,7 +416,7 @@ def client_grpc(
             signal = signal,
             indices = indices_parser,
             partitions_model = partitions_parser,
-            partitions_message_mode = partitions_message_mode_parser
+            partitions_message_mode = partitions_message_mode_parser if partitions_message_mode_parser != {} else {1:[output_field]}
         ): yield b
     finally:
         try:
