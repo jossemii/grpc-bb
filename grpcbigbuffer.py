@@ -54,7 +54,7 @@ def parse_from_buffer(
         request_iterator, 
         signal = Signal(exist=False), 
         message_field = None,
-        indices: dict = None, # indice: method
+        indices: dict = {}, # indice: method
         partitions_model: dict = {},
         partitions_message_mode: dict = {},
         cache_dir: str = os.path.abspath(os.curdir) + '/__hycache__/grpcbigbuffer' + str(randint(1,999)) + '/',
@@ -269,7 +269,7 @@ def serialize_to_buffer(
         message_iterator,
         signal = Signal(exist=False),
         cache_dir: str = os.path.abspath(os.curdir) + '/__hycache__/grpcbigbuffer' + str(randint(1,999)) + '/', 
-        indices: dict = None, 
+        indices: dict = {}, 
         partitions_model: dict = {1: [buffer_pb2.Buffer.Head.Partition]},
         mem_manager = lambda len: None
     ) -> Generator[buffer_pb2.Buffer, None, None]:  # method: indice
@@ -373,12 +373,12 @@ def serialize_to_buffer(
             try:
                     head = buffer_pb2.Buffer.Head(
                         index = indices[type(message)],
-                        partitions = partitions_model[indices[type(message)]]
+                        partitions = partitions_model[indices[type(message)]] if indices[type(message)] in partitions_model else None
                     )
             except:  # if not indices or the method not appear on it.
                     head = buffer_pb2.Buffer.Head(
                         index = 1,
-                        partitions = partitions_model[1]
+                        partitions = partitions_model[indices[type(message)]] if 1 in partitions_model else None
                     )
             for b in send_message(
                 signal=signal,
@@ -393,11 +393,11 @@ def client_grpc(
         input = None, 
         output_field = None,
         timeout = None, 
-        indices_parser: dict = None, 
-        partitions_parser: dict = None, 
+        indices_parser: dict = {}, 
+        partitions_parser: dict = {}, 
         partitions_message_mode_parser: dict = {}, 
-        indices_serializer: dict = None, 
-        partitions_serializer: dict = None, 
+        indices_serializer: dict = {}, 
+        partitions_serializer: dict = {}, 
         mem_manager = lambda len: None,
         yield_remote_partition_dir_on_serializer: bool = False,
     ): # indice: method
@@ -429,7 +429,6 @@ def client_grpc(
             shutil.rmtree(cache_dir)
             gc.collect()
         except: pass
-
 
 """
     Serialize Object to plain bytes serialization.
