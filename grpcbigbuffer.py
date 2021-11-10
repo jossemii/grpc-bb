@@ -55,7 +55,7 @@ def parse_from_buffer(
         signal = Signal(exist=False), 
         indices: dict = None, # indice: method
         partitions_model: dict = {},
-        partitions_message_mode: dict = {1:[None]},
+        partitions_message_mode: dict = {},
         cache_dir: str = os.path.abspath(os.curdir) + '/__hycache__/grpcbigbuffer' + str(randint(1,999)) + '/',
         mem_manager = lambda len: None,
         yield_remote_partition_dir: bool = False,
@@ -225,7 +225,7 @@ def parse_from_buffer(
                     ): yield b
                 else:
                     for b in iterate_partition(
-                        message_field_or_route = partitions_message_mode[buffer.head.index][0] if partitions_message_mode[buffer.head.index][0] else '',
+                        message_field_or_route = partitions_message_mode[buffer.head.index][0] if len(partitions_message_mode) >= buffer.head.index and partitions_message_mode[buffer.head.index][0] else '',
                         signal = signal,
                         request_iterator = itertools.chain(buffer, request_iterator),
                         filename = cache_dir + 'p1',
@@ -252,7 +252,7 @@ def parse_from_buffer(
                 ): yield b
             else:
                 for b in iterate_partition(
-                    message_field_or_route = list(indices.values())[0] if partitions_message_mode[1][0] else '',
+                    message_field_or_route = list(indices.values())[0] if len(partitions_message_mode) < 1 or len(partitions_message_mode) >= 1 and list(partitions_message_mode.values())[0][0] else '',
                     signal = signal,
                     request_iterator = itertools.chain(buffer, request_iterator),
                     filename = cache_dir + 'p1',
@@ -389,7 +389,7 @@ def client_grpc(
         timeout = None, 
         indices_parser: dict = None, 
         partitions_parser: dict = None, 
-        partitions_message_mode_parser: dict = {1: [None]}, 
+        partitions_message_mode_parser: dict = {}, 
         indices_serializer: dict = None, 
         partitions_serializer: dict = None, 
         mem_manager = lambda len: None,
