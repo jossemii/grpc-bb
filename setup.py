@@ -10,9 +10,8 @@ setup(
     author='Josemi Avellana',
     author_email='josemi.bnf@gmail.com',
 
-    py_modules=['grpcbigbuffer'],
+    py_modules=['grpcbigbuffer', 'buffer_pb2'],
     install_requires=[
-        'google-cloud',
         'protobuf',
         'grpcio',
     ],
