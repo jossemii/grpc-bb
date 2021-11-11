@@ -62,6 +62,7 @@ def parse_from_buffer(
         yield_remote_partition_dir: bool = False,
     ): 
     if indices == {} and message_field: indices = {1: message_field}
+    os.mkdir(cache_dir)
 
     def parser_iterator(request_iterator, signal: Signal) -> Generator[bytes, None, None]:
         while True:
@@ -187,82 +188,88 @@ def parse_from_buffer(
         ): yield b
 
 
-    while True:
-        buffer = next(request_iterator)
-        # The order of conditions is important.
-        if buffer.HasField('head'):
-            try:
-                # If not match
-                if len(buffer.head.partitions)==0 and len(buffer.head.partitions) > 1 and \
-                    buffer.head.index in partitions_model and partitions_model[buffer.head.index] and \
-                    buffer.head.partitions != partitions_model[buffer.head.index] \
-                    or len(buffer.head.partitions)==0 and len(buffer.head.partitions) > 1 and \
-                        not (buffer.head.index in partitions_model and partitions_model[buffer.head.index]) \
-                    or not (len(buffer.head.partitions)==0 and len(buffer.head.partitions) > 1) and \
-                        buffer.head.index in partitions_model and partitions_model[buffer.head.index]:
-                    for b in conversor(
-                        iterator = iterate_partitions(
-                            partitions = [None for i in buffer.head.partitions] if len(buffer.head.partitions)==0 else [None],
+    try: 
+        while True:
+            buffer = next(request_iterator)
+            # The order of conditions is important.
+            if buffer.HasField('head'):
+                try:
+                    # If not match
+                    if len(buffer.head.partitions)==0 and len(buffer.head.partitions) > 1 and \
+                        buffer.head.index in partitions_model and partitions_model[buffer.head.index] and \
+                        buffer.head.partitions != partitions_model[buffer.head.index] \
+                        or len(buffer.head.partitions)==0 and len(buffer.head.partitions) > 1 and \
+                            not (buffer.head.index in partitions_model and partitions_model[buffer.head.index]) \
+                        or not (len(buffer.head.partitions)==0 and len(buffer.head.partitions) > 1) and \
+                            buffer.head.index in partitions_model and partitions_model[buffer.head.index]:
+                        for b in conversor(
+                            iterator = iterate_partitions(
+                                partitions = [None for i in buffer.head.partitions] if len(buffer.head.partitions)==0 else [None],
+                                signal = signal,
+                                request_iterator = itertools.chain([buffer], request_iterator),
+                                cache_dir = cache_dir + 'remote/'
+                            ),
+                            indices = indices,
+                            cache_dir = cache_dir,
+                            local_partitions_model = partitions_model[buffer.head.index] if buffer.head.index in partitions_model else [None],
+                            remote_partitions_model = buffer.head.partitions,
+                            mem_manager = mem_manager,
+                            yield_remote_partition_dir = yield_remote_partition_dir,
+                            pf_object = indices[buffer.head.index] if buffer.head.index in indices else None,
+                            partitions_message_mode = partitions_message_mode,
+                        ): yield b
+
+                    elif buffer.head.index in partitions_model and partitions_model[buffer.head.index] and len(partitions_model[buffer.head.index]) > 1:
+                        yield indices[buffer.head.index]()
+                        for b in iterate_partitions(
+                            partitions = partitions_message_mode[buffer.head.index] if buffer.head.index in partitions_message_mode else [None for p in partitions_model[buffer.head.index]],
                             signal = signal,
                             request_iterator = itertools.chain([buffer], request_iterator),
-                            cache_dir = cache_dir + 'remote/'
+                            cache_dir = cache_dir,
+                        ): yield b
+                    else:
+                        for b in iterate_partition(
+                            message_field_or_route = partitions_message_mode[buffer.head.index][0] \
+                                if buffer.head.index in partitions_message_mode and len(partitions_message_mode[buffer.head.index]) > 0 else indices[buffer.head.index],
+                            signal = signal,
+                            request_iterator = itertools.chain([buffer], request_iterator),
+                            filename = cache_dir + 'p1',
+                        ): yield b
+                except: pass
+
+            elif indices and len(indices) == 1: # Does not've more than one index and more than one partition too.
+                if partitions_message_mode and 1 in partitions_message_mode and len(partitions_message_mode[1]) > 1:
+                    yield list(indices.values())[0]
+                    for b in conversor(
+                        iterator = iterate_partition(
+                            message_field_or_route = '',
+                            signal = signal,
+                            request_iterator = itertools.chain([buffer], request_iterator),
+                            filename = cache_dir + 'remote/p1',
                         ),
                         indices = indices,
-                        cache_dir = cache_dir,
-                        local_partitions_model = partitions_model[buffer.head.index] if buffer.head.index in partitions_model else [None],
-                        remote_partitions_model = buffer.head.partitions,
+                        remote_partitions_model = [None],
+                        local_partitions_model = list(partitions_model.values())[0] if list(partitions_model.values()) > 0 else [None],
                         mem_manager = mem_manager,
                         yield_remote_partition_dir = yield_remote_partition_dir,
-                        pf_object = indices[buffer.head.index] if buffer.head.index in indices else None,
-                        partitions_message_mode = partitions_message_mode,
-                    ): yield b
-
-                elif buffer.head.index in partitions_model and partitions_model[buffer.head.index] and len(partitions_model[buffer.head.index]) > 1:
-                    yield indices[buffer.head.index]()
-                    for b in iterate_partitions(
-                        partitions = partitions_message_mode[buffer.head.index] if buffer.head.index in partitions_message_mode else [None for p in partitions_model[buffer.head.index]],
-                        signal = signal,
-                        request_iterator = itertools.chain([buffer], request_iterator),
+                        pf_object = list(indices.values())[0],
                         cache_dir = cache_dir,
+                        partitions_message_mode = partitions_message_mode,
                     ): yield b
                 else:
                     for b in iterate_partition(
-                        message_field_or_route = partitions_message_mode[buffer.head.index][0] \
-                            if buffer.head.index in partitions_message_mode and len(partitions_message_mode[buffer.head.index]) > 0 else indices[buffer.head.index],
+                        message_field_or_route = list(partitions_message_mode.values())[0][0] if len(partitions_message_mode) == 1 and len(list(partitions_message_mode.values())[0]) > 0 else list(indices.values())[0],
                         signal = signal,
                         request_iterator = itertools.chain([buffer], request_iterator),
                         filename = cache_dir + 'p1',
                     ): yield b
-            except: pass
-
-        elif indices and len(indices) == 1: # Does not've more than one index and more than one partition too.
-            if partitions_message_mode and 1 in partitions_message_mode and len(partitions_message_mode[1]) > 1:
-                yield list(indices.values())[0]
-                for b in conversor(
-                    iterator = iterate_partition(
-                        message_field_or_route = '',
-                        signal = signal,
-                        request_iterator = itertools.chain([buffer], request_iterator),
-                        filename = cache_dir + 'remote/p1',
-                    ),
-                    indices = indices,
-                    remote_partitions_model = [None],
-                    local_partitions_model = list(partitions_model.values())[0] if list(partitions_model.values()) > 0 else [None],
-                    mem_manager = mem_manager,
-                    yield_remote_partition_dir = yield_remote_partition_dir,
-                    pf_object = list(indices.values())[0],
-                    cache_dir = cache_dir,
-                    partitions_message_mode = partitions_message_mode,
-                ): yield b
             else:
-                for b in iterate_partition(
-                    message_field_or_route = list(partitions_message_mode.values())[0][0] if len(partitions_message_mode) == 1 and len(list(partitions_message_mode.values())[0]) > 0 else list(indices.values())[0],
-                    signal = signal,
-                    request_iterator = itertools.chain([buffer], request_iterator),
-                    filename = cache_dir + 'p1',
-                ): yield b
-        else:
-            raise Exception('Failed parsing. Comunication error.')
+                raise Exception('Failed parsing. Comunication error.')
+    except StopIteration:
+        try:
+            shutil.rmtree(cache_dir)
+        except: pass
+        return
 
 def serialize_to_buffer(
         message_iterator,
@@ -273,6 +280,10 @@ def serialize_to_buffer(
         mem_manager = lambda len: None
     ) -> Generator[buffer_pb2.Buffer, None, None]:  # method: indice
     
+    os.mkdir(cache_dir)
+    if indices: indices = {e[1]:e[0] for e in indices.items()}
+    if not hasattr(message_iterator, '__iter__') or type(message_iterator) is tuple: message_iterator=[message_iterator]
+
     def send_file(filename: str, signal: Signal) -> Generator[buffer_pb2.Buffer, None, None]:
         for b in get_file_chunks(
                 filename=filename, 
@@ -335,8 +346,6 @@ def serialize_to_buffer(
                 )
             finally: signal.wait()
 
-    if indices: indices = {e[1]:e[0] for e in indices.items()}
-    if not hasattr(message_iterator, '__iter__') or type(message_iterator) is tuple: message_iterator=[message_iterator]
     for message in message_iterator:
         if type(message) is tuple:  # If is partitioned
             try:
@@ -386,6 +395,10 @@ def serialize_to_buffer(
                 mem_manager=mem_manager,
                 cache_dir = cache_dir,
             ): yield b
+    try:
+        shutil.rmtree(cache_dir)
+    except: pass
+    return
 
 def client_grpc(
         method,
@@ -401,33 +414,24 @@ def client_grpc(
         yield_remote_partition_dir_on_serializer: bool = False,
     ): # indice: method
     signal = Signal()
-    cache_dir = os.path.abspath(os.curdir) + '/__hycache__/grpcbigbuffer' + str(randint(1,999)) + '/'
-    os.mkdir(cache_dir)
-    try:
-        for b in parse_from_buffer(
-            request_iterator = method(
-                                serialize_to_buffer(
-                                    message_iterator = input if input else '',
-                                    signal = signal,
-                                    cache_dir = cache_dir,
-                                    indices = indices_serializer,
-                                    partitions_model = partitions_serializer,
-                                    mem_manager = mem_manager,
-                                ),
-                                timeout = timeout
+    for b in parse_from_buffer(
+        request_iterator = method(
+                            serialize_to_buffer(
+                                message_iterator = input if input else '',
+                                signal = signal,
+                                indices = indices_serializer,
+                                partitions_model = partitions_serializer,
+                                mem_manager = mem_manager,
                             ),
-            signal = signal,
-            indices = indices_parser,
-            message_field = output_field,
-            partitions_model = partitions_parser,
-            partitions_message_mode = partitions_message_mode_parser if partitions_message_mode_parser != {} else {1:[output_field]},
-            yield_remote_partition_dir = yield_remote_partition_dir_on_serializer,
-        ): yield b
-    finally:
-        try:
-            shutil.rmtree(cache_dir)
-            gc.collect()
-        except: pass
+                            timeout = timeout
+                        ),
+        signal = signal,
+        indices = indices_parser,
+        message_field = output_field,
+        partitions_model = partitions_parser,
+        partitions_message_mode = partitions_message_mode_parser if partitions_message_mode_parser != {} else {1:[output_field]},
+        yield_remote_partition_dir = yield_remote_partition_dir_on_serializer,
+    ): yield b
 
 """
     Serialize Object to plain bytes serialization.
