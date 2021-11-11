@@ -61,7 +61,7 @@ def parse_from_buffer(
         mem_manager = lambda len: None,
         yield_remote_partition_dir: bool = False,
     ): 
-    if not indices and message_field: indices = {1: message_field}
+    if indices == {} and message_field: indices = {1: message_field}
 
     def parser_iterator(request_iterator, signal: Signal) -> Generator[bytes, None, None]:
         while True:
@@ -193,16 +193,16 @@ def parse_from_buffer(
         if buffer.HasField('head'):
             try:
                 # If not match
-                if buffer.head.HasField('partitions') and len(buffer.head.partitions) > 1 and \
+                if len(buffer.head.partitions)==0 and len(buffer.head.partitions) > 1 and \
                     buffer.head.index in partitions_model and partitions_model[buffer.head.index] and \
                     buffer.head.partitions != partitions_model[buffer.head.index] \
-                    or buffer.head.HasField('partitions') and len(buffer.head.partitions) > 1 and \
+                    or len(buffer.head.partitions)==0 and len(buffer.head.partitions) > 1 and \
                         not (buffer.head.index in partitions_model and partitions_model[buffer.head.index]) \
-                    or not (buffer.head.HasField('partitions') and len(buffer.head.partitions) > 1) and \
+                    or not (len(buffer.head.partitions)==0 and len(buffer.head.partitions) > 1) and \
                         buffer.head.index in partitions_model and partitions_model[buffer.head.index]:
                     for b in conversor(
                         iterator = iterate_partitions(
-                            partitions = [None for i in buffer.head.partitions] if buffer.head.HasField('partitions') else [None],
+                            partitions = [None for i in buffer.head.partitions] if len(buffer.head.partitions)==0 else [None],
                             signal = signal,
                             request_iterator = itertools.chain([buffer], request_iterator),
                             cache_dir = cache_dir + 'remote/'
