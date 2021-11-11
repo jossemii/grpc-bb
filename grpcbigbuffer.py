@@ -65,7 +65,6 @@ def parse_from_buffer(
 
     def parser_iterator(request_iterator, signal: Signal) -> Generator[bytes, None, None]:
         while True:
-            signal.wait()     # TODO: check
             buffer = next(request_iterator)
             if buffer.HasField('chunk'):
                 yield buffer.chunk
@@ -205,7 +204,7 @@ def parse_from_buffer(
                         iterator = iterate_partitions(
                             partitions = [None for i in buffer.head.partitions] if buffer.head.HasField('partitions') else [None],
                             signal = signal,
-                            request_iterator = itertools.chain(buffer, request_iterator),
+                            request_iterator = itertools.chain([buffer], request_iterator),
                             cache_dir = cache_dir + 'remote/'
                         ),
                         indices = indices,
@@ -223,7 +222,7 @@ def parse_from_buffer(
                     for b in iterate_partitions(
                         partitions = partitions_message_mode[buffer.head.index] if buffer.head.index in partitions_message_mode else [None for p in partitions_model[buffer.head.index]],
                         signal = signal,
-                        request_iterator = itertools.chain(buffer, request_iterator),
+                        request_iterator = itertools.chain([buffer], request_iterator),
                         cache_dir = cache_dir,
                     ): yield b
                 else:
@@ -231,7 +230,7 @@ def parse_from_buffer(
                         message_field_or_route = partitions_message_mode[buffer.head.index][0] \
                             if buffer.head.index in partitions_message_mode and len(partitions_message_mode[buffer.head.index]) > 0 else indices[buffer.head.index],
                         signal = signal,
-                        request_iterator = itertools.chain(buffer, request_iterator),
+                        request_iterator = itertools.chain([buffer], request_iterator),
                         filename = cache_dir + 'p1',
                     ): yield b
             except: pass
@@ -243,7 +242,7 @@ def parse_from_buffer(
                     iterator = iterate_partition(
                         message_field_or_route = '',
                         signal = signal,
-                        request_iterator = itertools.chain(buffer, request_iterator),
+                        request_iterator = itertools.chain([buffer], request_iterator),
                         filename = cache_dir + 'remote/p1',
                     ),
                     indices = indices,
@@ -259,7 +258,7 @@ def parse_from_buffer(
                 for b in iterate_partition(
                     message_field_or_route = list(partitions_message_mode.values())[0][0] if len(partitions_message_mode) == 1 and len(list(partitions_message_mode.values())[0]) > 0 else list(indices.values())[0],
                     signal = signal,
-                    request_iterator = itertools.chain(buffer, request_iterator),
+                    request_iterator = itertools.chain([buffer], request_iterator),
                     filename = cache_dir + 'p1',
                 ): yield b
         else:
@@ -290,7 +289,7 @@ def serialize_to_buffer(
     def send_message(
             signal: Signal, 
             message: object, 
-            head: buffer_pb2.Buffer.Head = buffer_pb2.Buffer.Head(index=1), 
+            head: buffer_pb2.Buffer.Head = None, 
             mem_manager = lambda len: None,
             cache_dir: str= None, 
         ) -> Generator[buffer_pb2.Buffer, None, None]:
@@ -378,7 +377,7 @@ def serialize_to_buffer(
             except:  # if not indices or the method not appear on it.
                     head = buffer_pb2.Buffer.Head(
                         index = 1,
-                        partitions = partitions_model[indices[type(message)]] if 1 in partitions_model else None
+                        partitions = partitions_model[1] if 1 in partitions_model else None
                     )
             for b in send_message(
                 signal=signal,
