@@ -204,7 +204,7 @@ def parse_from_buffer(
                             buffer.head.index in partitions_model and partitions_model[buffer.head.index]:
                         for b in conversor(
                             iterator = iterate_partitions(
-                                partitions = [None for i in buffer.head.partitions] if len(buffer.head.partitions)==0 else [None],
+                                partitions = [None for i in buffer.head.partitions] if len(buffer.head.partitions)>0 else [None],
                                 signal = signal,
                                 request_iterator = itertools.chain([buffer], request_iterator),
                                 cache_dir = cache_dir + 'remote/'
