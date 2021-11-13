@@ -110,7 +110,7 @@ def parse_from_buffer(
                 signal=signal,
             )
 
-        elif message_field_or_route:
+        elif message_field_or_route or type(message_field_or_route) is str:
             yield save_to_file(
                 request_iterator = request_iterator,
                 filename = filename,
