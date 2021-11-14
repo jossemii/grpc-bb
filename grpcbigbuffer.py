@@ -141,6 +141,7 @@ def parse_from_buffer(
             cache_dir: str = None,
             partitions_message_mode: list = [],
         ):
+        yield pf_object
         try:
             os.mkdir(cache_dir+'remote/')
         except FileExistsError: pass
@@ -182,7 +183,6 @@ def parse_from_buffer(
 
                 # 4. yield local partitions.
                 if local_partitions_model == []: local_partitions_model.append(buffer_pb2.Buffer.Head.Partition())
-                yield pf_object
                 for i, partition in enumerate(local_partitions_model):
                     def recursive(partition, aux_object):
                         if len(partition.index) == 0: 
