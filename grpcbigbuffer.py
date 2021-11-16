@@ -503,6 +503,10 @@ def client_grpc(
             cache_dir = cache_dir+'parser/',
         ): yield b
     except Exception as e: print(e)
+    finally:
+        try:
+            shutil.rmtree(cache_dir)
+        except: pass
 
 """
     Serialize Object to plain bytes serialization.
