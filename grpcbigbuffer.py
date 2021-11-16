@@ -67,7 +67,7 @@ def parse_from_buffer(
         indices: Union[protobuf.pyext.cpp_message.GeneratedProtocolMessageType, dict] = {}, # indice: method      message_field = None,
         partitions_model: Union[list, dict] = [buffer_pb2.Buffer.Head.Partition()],
         partitions_message_mode: Union[bool, list, dict] = False,  # Write on disk by default.
-        cache_dir: str = os.path.abspath(os.curdir) + '/__hycache__/grpcbigbuffer' + str(randint(1, MAX_DIR)) + '/',
+        cache_dir: str = os.path.abspath(os.curdir) + '/__cache__/grpcbigbuffer' + str(randint(1, MAX_DIR)) + '/',
         mem_manager = lambda len: MemManager(len=len),
         yield_remote_partition_dir: bool = False,
     ): 
@@ -332,7 +332,7 @@ def parse_from_buffer(
 def serialize_to_buffer(
         message_iterator, # Message or tuples (with head on the first item.)
         signal = Signal(exist=False),
-        cache_dir: str = os.path.abspath(os.curdir) + '/__hycache__/grpcbigbuffer' + str(randint(1, MAX_DIR)) + '/', 
+        cache_dir: str = os.path.abspath(os.curdir) + '/__cache__/grpcbigbuffer' + str(randint(1, MAX_DIR)) + '/', 
         indices: Union[protobuf.pyext.cpp_message.GeneratedProtocolMessageType, dict] = {},
         partitions_model: Union[list, dict] = [buffer_pb2.Buffer.Head.Partition()],
         mem_manager = lambda len: MemManager(len=len)
@@ -478,7 +478,7 @@ def client_grpc(
         indices_serializer: Union[protobuf.pyext.cpp_message.GeneratedProtocolMessageType, dict] = {},
         partitions_serializer: Union[list, dict] = [buffer_pb2.Buffer.Head.Partition()],
         mem_manager = lambda len: MemManager(len=len),
-        cache_dir: str = os.path.abspath(os.curdir) + '/__hycache__/grpcbigbuffer' + str(randint(1, MAX_DIR)) + '/', 
+        cache_dir: str = os.path.abspath(os.curdir) + '/__cache__/grpcbigbuffer' + str(randint(1, MAX_DIR)) + '/', 
         yield_remote_partition_dir_on_serializer: bool = False,
     ): # indice: method
     try:
