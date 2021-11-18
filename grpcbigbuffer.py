@@ -11,14 +11,30 @@ from random import randint
 from typing import Generator, Union
 from threading import Condition
 
+
+class CacheDir(type):
+    # Using singleton pattern
+    _instances = {}
+    cache_dir = os.path.abspath(os.curdir) + '/__cache__/'
+
+    def __call__(cls):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(CacheDir, cls).__call__()
+        return cls._instances[cls]
+
+def modify_cache_dir(cache_dir: str):
+    CacheDir.cache_dir = cache_dir
+
+def generate_random_dir(dir: str) -> str:
+    return dir + str(randint(1, MAX_DIR)) + '/'
+
 def create_cache_dir() -> str: 
-    cache_dir = os.path.abspath(os.curdir) + '__cache__/'
-    # TODO change the default for all calls.
+    cache_dir = CacheDir.cache_dir
     try:
         os.mkdir(cache_dir)
     except FileExistsError: pass
     while True:
-        random_dir = 'grpcbigbuffer' + str(randint(1, MAX_DIR)) + '/'
+        random_dir = generate_random_dir(dir='grpcbigbuffer')
         try:
             os.mkdir(cache_dir+random_dir)
             return cache_dir+random_dir
@@ -118,7 +134,7 @@ def parse_from_buffer(
                     yield buffer
                 if buffer.HasField('signal') and buffer.signal:
                     signal.change()
-                if buffer.HasField('separator') and buffer.separator: 
+                if buffer.HasField('separator') and buffer.separator:
                     break
 
         def parse_message(message_field, request_iterator, signal):
