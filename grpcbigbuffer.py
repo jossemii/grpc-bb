@@ -115,7 +115,7 @@ def parse_from_buffer(
                 else:
                     partitions_model.update({i: [buffer_pb2.Buffer.Head.Partition()]})
 
-            if type(partitions_message_mode) is bool: 
+            if type(partitions_message_mode) is bool:
                 partitions_message_mode = {i: [partitions_message_mode for m in l] for i, l in partitions_model.items()} # The same mode for all index and partitions.
             if type(partitions_message_mode) is list: partitions_message_mode = {1: partitions_message_mode} # Only've one index.
             for i, l in partitions_message_mode.items():  # If an index in the partitions message mode have a boolean, it applies for all partitions of this index.
@@ -287,8 +287,9 @@ def parse_from_buffer(
                 if buffer.HasField('head'):
                     try:
                         if buffer.head.index not in indices: raise Exception('Parse from buffer error: buffer head index is not correct ' + str(buffer.head.index) + str(indices.keys()))
-                        if not (buffer.head.partitions == [] and len(partitions_model[buffer.head.index])==1 or \
-                                buffer.head.partitions == partitions_model[buffer.head.index]):  # If not match
+                        if not ((len(buffer.head.partitions)==0 and len(partitions_model[buffer.head.index])==1) or \
+                                (len(buffer.head.partitions) == len(partitions_model[buffer.head.index]) and
+                                 list(buffer.head.partitions) == partitions_model[buffer.head.index])):  # If not match
                             for b in conversor(
                                 iterator = iterate_partitions(
                                     partitions = [None for i in buffer.head.partitions] if len(buffer.head.partitions)>0 else [None],
