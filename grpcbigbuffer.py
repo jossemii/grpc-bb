@@ -226,14 +226,12 @@ def parse_from_buffer(
             try:
                 os.mkdir(cache_dir+'remote/')
             except FileExistsError: pass
-            try:
-                dirs = []
-                # 1. Save the remote partitions on cache.
-                for d in iterator: 
-                    # 2. yield remote partitions directory.
-                    if yield_remote_partition_dir: yield d
-                    dirs.append(d)
-            except Exception as e: print(e)
+            dirs = []
+            # 1. Save the remote partitions on cache.
+            for d in iterator: 
+                # 2. yield remote partitions directory.
+                if yield_remote_partition_dir: yield d
+                dirs.append(d)
             if not pf_object or len(remote_partitions_model)>0 and len(dirs) != len(remote_partitions_model): return None
             # 3. Parse to the local partitions from the remote partitions using mem_manager.
             try:
@@ -512,6 +510,8 @@ def client_grpc(
     try:
         if not cache_dir: cache_dir = create_cache_dir()
         signal = Signal()
+        os.mkdir(cache_dir+'serializer/')
+        os.mkdir(cache_dir+'parser/')
         for b in parse_from_buffer(
             request_iterator = method(
                                 serialize_to_buffer(
