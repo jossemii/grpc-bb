@@ -323,7 +323,7 @@ def parse_from_buffer(
                                 request_iterator = itertools.chain([buffer], request_iterator),
                                 filename = cache_dir + 'p1',
                             ): yield b
-                    except: pass
+                    except: pass  # TODO
 
                 elif 1 in indices: # Does not've more than one index and more than one partition too.
                     if len(partitions_model[1]) > 1:
