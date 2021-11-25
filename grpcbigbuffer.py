@@ -151,7 +151,7 @@ def parse_from_buffer(
             message.ParseFromString(
                 all_buffer
             )
-            return message
+            return message if len(all_buffer)>0 else None
 
         def save_to_file(filename: str, request_iterator, signal) -> str:
             save_chunks_to_file(
@@ -166,14 +166,14 @@ def parse_from_buffer(
         
         def iterate_partition(message_field_or_route, signal: Signal, request_iterator, filename: str):
             if message_field_or_route and type(message_field_or_route) is not str:
-                yield parse_message(
+                return parse_message(
                     message_field = message_field_or_route,
                     request_iterator = request_iterator,
                     signal=signal,
                 )
 
             else:
-                yield save_to_file(
+                return save_to_file(
                     request_iterator = request_iterator,
                     filename = filename,
                     signal = signal
@@ -181,12 +181,14 @@ def parse_from_buffer(
         
         def iterate_partitions(signal: Signal, request_iterator, cache_dir: str, partitions: list = [None]):
             for i, partition in enumerate(partitions):
-                for b in iterate_partition(
+                b = iterate_partition(
                         message_field_or_route = partition, 
                         signal = signal,
                         request_iterator = request_iterator,
                         filename = cache_dir + 'p'+str(i+1),
-                    ): yield b
+                    )
+                if b: yield b
+                else: continue
 
         def get_subclass(partition, object_cls):
             return get_subclass(
@@ -316,22 +318,26 @@ def parse_from_buffer(
                         ): yield b
 
                     else:
-                        for b in iterate_partition(
+                        b = iterate_partition(
                             message_field_or_route = indices[buffer.head.index] if partitions_message_mode[buffer.head.index][0] else None,
                             signal = signal,
                             request_iterator = itertools.chain([buffer], request_iterator),
                             filename = cache_dir + 'p1',
-                        ): yield b
+                        )
+                        if b: yield b
+                        else: continue
 
                 elif 1 in indices: # Does not've more than one index and more than one partition too.
                     if len(partitions_model[1]) > 1:
-                        for b in conversor(
-                            iterator = iterate_partition(
+                        input_msg = iterate_partition(
                                 message_field_or_route = None,
                                 signal = signal,
                                 request_iterator = itertools.chain([buffer], request_iterator),
                                 filename = cache_dir + 'remote/p1',
-                            ),
+                            )
+                        if not input_msg: continue
+                        for b in conversor(
+                            iterator = [input_msg],
                             remote_partitions_model = [buffer_pb2.Buffer.Head.Partition()],
                             local_partitions_model = partitions_model[1],
                             mem_manager = mem_manager,
@@ -341,12 +347,14 @@ def parse_from_buffer(
                             partitions_message_mode = partitions_message_mode[1],
                         ): yield b
                     else:
-                        for b in iterate_partition(
+                        b = iterate_partition(
                             message_field_or_route = indices[1] if partitions_message_mode[1][0] else None,
                             signal = signal,
                             request_iterator = itertools.chain([buffer], request_iterator),
                             filename = cache_dir + 'p1',
-                        ): yield b
+                        )
+                        if b: yield b
+                        else: continue
                 else:
                     raise Exception('Parse from buffer error: index are not correct ' + str(indices))
         except StopIteration:
