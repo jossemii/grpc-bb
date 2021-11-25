@@ -132,10 +132,11 @@ def parse_from_buffer(
 
         def parser_iterator(request_iterator, signal: Signal) -> Generator[buffer_pb2.Buffer, None, None]:
             for buffer in request_iterator:
-                if buffer.HasField('chunk'):
-                    yield buffer
                 if buffer.HasField('signal') and buffer.signal:
                     signal.change()
+                if buffer.HasField('chunk'):
+                    yield buffer
+                else: break
                 if buffer.HasField('separator') and buffer.separator:
                     break
 
