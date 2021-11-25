@@ -548,6 +548,12 @@ def client_grpc(
         except: pass
 
 """
+    Get a (partitions_model, p1, p2, ...) tuple and return the protobuff buffer.
+"""
+def partitions_to_buffer(partitions: tuple) -> str:
+    pass
+
+"""
     Serialize Object to plain bytes serialization.
 """
 def serialize_to_plain(object: object) -> bytes:
