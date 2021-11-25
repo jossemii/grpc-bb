@@ -136,7 +136,7 @@ def parse_from_buffer(
                     signal.change()
                 if buffer.HasField('chunk'):
                     yield buffer
-                else: break
+                elif not buffer.HasField('head'): break
                 if buffer.HasField('separator') and buffer.separator:
                     break
 
