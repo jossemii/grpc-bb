@@ -285,45 +285,43 @@ def parse_from_buffer(
                 buffer = next(request_iterator)
                 # The order of conditions is important.
                 if buffer.HasField('head'):
-                    try:
-                        if buffer.head.index not in indices: raise Exception('Parse from buffer error: buffer head index is not correct ' + str(buffer.head.index) + str(indices.keys()))
-                        if not ((len(buffer.head.partitions)==0 and len(partitions_model[buffer.head.index])==1) or \
-                                (len(buffer.head.partitions) == len(partitions_model[buffer.head.index]) and
-                                 list(buffer.head.partitions) == partitions_model[buffer.head.index])):  # If not match
-                            for b in conversor(
-                                iterator = iterate_partitions(
-                                    partitions = [None for i in buffer.head.partitions] if len(buffer.head.partitions)>0 else [None],
-                                    signal = signal,
-                                    request_iterator = itertools.chain([buffer], request_iterator),
-                                    cache_dir = cache_dir + 'remote/'
-                                ),
-                                cache_dir = cache_dir,
-                                local_partitions_model = partitions_model[buffer.head.index],
-                                remote_partitions_model = buffer.head.partitions,
-                                mem_manager = mem_manager,
-                                yield_remote_partition_dir = yield_remote_partition_dir,
-                                pf_object = indices[buffer.head.index],
-                                partitions_message_mode = partitions_message_mode[buffer.head.index],
-                            ): yield b
-
-                        elif len(partitions_model[buffer.head.index]) > 1:
-                            yield indices[buffer.head.index]
-                            for b in iterate_partitions(
-                                partitions = [get_subclass(object_cls = indices[buffer.head.index], partition = partition) \
-                                    if partitions_message_mode[buffer.head.index][part_i] else None for part_i, partition in enumerate(partitions_model[buffer.head.index])], # TODO performance
+                    if buffer.head.index not in indices: raise Exception('Parse from buffer error: buffer head index is not correct ' + str(buffer.head.index) + str(indices.keys()))
+                    if not ((len(buffer.head.partitions)==0 and len(partitions_model[buffer.head.index])==1) or \
+                            (len(buffer.head.partitions) == len(partitions_model[buffer.head.index]) and
+                                list(buffer.head.partitions) == partitions_model[buffer.head.index])):  # If not match
+                        for b in conversor(
+                            iterator = iterate_partitions(
+                                partitions = [None for i in buffer.head.partitions] if len(buffer.head.partitions)>0 else [None],
                                 signal = signal,
                                 request_iterator = itertools.chain([buffer], request_iterator),
-                                cache_dir = cache_dir,
-                            ): yield b
+                                cache_dir = cache_dir + 'remote/'
+                            ),
+                            cache_dir = cache_dir,
+                            local_partitions_model = partitions_model[buffer.head.index],
+                            remote_partitions_model = buffer.head.partitions,
+                            mem_manager = mem_manager,
+                            yield_remote_partition_dir = yield_remote_partition_dir,
+                            pf_object = indices[buffer.head.index],
+                            partitions_message_mode = partitions_message_mode[buffer.head.index],
+                        ): yield b
 
-                        else:
-                            for b in iterate_partition(
-                                message_field_or_route = indices[buffer.head.index] if partitions_message_mode[buffer.head.index][0] else None,
-                                signal = signal,
-                                request_iterator = itertools.chain([buffer], request_iterator),
-                                filename = cache_dir + 'p1',
-                            ): yield b
-                    except: pass  # TODO
+                    elif len(partitions_model[buffer.head.index]) > 1:
+                        yield indices[buffer.head.index]
+                        for b in iterate_partitions(
+                            partitions = [get_subclass(object_cls = indices[buffer.head.index], partition = partition) \
+                                if partitions_message_mode[buffer.head.index][part_i] else None for part_i, partition in enumerate(partitions_model[buffer.head.index])], # TODO performance
+                            signal = signal,
+                            request_iterator = itertools.chain([buffer], request_iterator),
+                            cache_dir = cache_dir,
+                        ): yield b
+
+                    else:
+                        for b in iterate_partition(
+                            message_field_or_route = indices[buffer.head.index] if partitions_message_mode[buffer.head.index][0] else None,
+                            signal = signal,
+                            request_iterator = itertools.chain([buffer], request_iterator),
+                            filename = cache_dir + 'p1',
+                        ): yield b
 
                 elif 1 in indices: # Does not've more than one index and more than one partition too.
                     if len(partitions_model[1]) > 1:
