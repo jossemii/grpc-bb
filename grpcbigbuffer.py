@@ -93,7 +93,12 @@ def save_chunks_to_file(buffer_iterator, filename, signal):
 
 def get_subclass(partition, object_cls):
     return get_subclass(
-        object_cls = eval(object_cls.DESCRIPTOR.fields_by_number[list(partition.index.keys())[0]].message_type.full_name), 
+        object_cls = type(
+                            getattr(
+                                object_cls(),
+                                object_cls.DESCRIPTOR.fields_by_number[list(partition.index.keys())[0]].name
+                            )
+                        ), 
         partition = list(partition.index.values())[0]
         ) if len(partition.index) == 1 else object_cls
 
