@@ -11,16 +11,15 @@ from random import randint
 from typing import Generator, Union
 from threading import Condition
 
-
+class MemManager(object):
+    def __init__(self, len):
+        pass
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_value, trace):
+        pass
+    
 class Enviroment(type):
-    class MemManager(object):
-        def __init__(self, len):
-            pass
-        def __enter__(self):
-            return self
-        def __exit__(self, exc_type, exc_value, trace):
-            pass
-
     # Using singleton pattern
     _instances = {}
     cache_dir = os.path.abspath(os.curdir) + '/__cache__/'
