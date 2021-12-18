@@ -185,6 +185,28 @@ def combine_partitions(
         )
     return obj
 
+def message_to_bytes(message) -> bytes:
+    if type(type(message)) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
+        return message.SerializeToString()
+    elif type(message) is str:
+        return bytes(message, 'utf-8')
+    else:
+        try:
+            return bytes(message)
+        except TypeError: raise('gRPCbb error -> Serialize message error: some primitive type message not suported for contain partition '+ str(type(message)))
+
+def bytes_to_message(buffer: bytes, message_field: object):
+    message = message_field()
+    if message_field is str:
+        message = buffer.decode('utf-8')
+    elif type(message_field) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
+        message.ParseFromString(
+                buffer
+            )
+    else:
+        raise Exception('gRPCbb error -> Parse message error: some primitive type message not suported for contain partition '+ str(message_field))
+
+
 def parse_from_buffer(
         request_iterator, 
         signal = Signal(exist=False), 
@@ -242,16 +264,10 @@ def parse_from_buffer(
                 signal=signal,
             ):
                 all_buffer += b.chunk
-            message = message_field()
-            if message_field is str:
-                message = all_buffer.decode('utf-8')
-            elif type(message_field) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
-                message.ParseFromString(
-                        all_buffer
-                    )
-            else:
-                raise Exception('gRPCbb error -> Parse message error: some primitive type message not suported for contain partition '+ str(message_field))
-            if len(all_buffer)>0: return message
+            if len(all_buffer)>0: return bytes_to_message(
+                buffer = all_buffer,
+                message_field = message_field
+            )
             else: raise EmptyBufferException()
 
         def save_to_file(filename: str, request_iterator, signal) -> str:
@@ -490,15 +506,7 @@ def serialize_to_buffer(
                 cache_dir: str= None, 
             ) -> Generator[buffer_pb2.Buffer, None, None]:
 
-            if type(type(message)) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
-                message_bytes = message.SerializeToString()
-            elif type(message) is str:
-                message_bytes = bytes(message, 'utf-8')
-            else:
-                try:
-                    message_bytes = bytes(message)
-                except TypeError: raise('gRPCbb error -> Serialize message error: some primitive type message not suported for contain partition '+ str(type(message)))
-                
+            message_bytes = message_to_bytes(message = message)
             if len(message_bytes) < CHUNK_SIZE:
                 signal.wait()
                 try:
