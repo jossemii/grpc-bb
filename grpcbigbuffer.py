@@ -253,7 +253,9 @@ def parse_from_buffer(
             ):
                 all_buffer += b.chunk
             message = message_field()
-            if message_field is str:
+            if message_field is bytes:
+                message = all_buffer
+            elif message_field is str:
                 message = all_buffer.decode('utf-8')
             elif type(message_field) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
                 message.ParseFromString(
@@ -313,6 +315,7 @@ def parse_from_buffer(
             ):
             yield pf_object
             try:
+                print(1)
                 os.mkdir(cache_dir+'remote/')
             except FileExistsError: raise Exception('gRPCbb error: Conversor error, remote dir already exists')
             dirs = []
@@ -552,6 +555,7 @@ def serialize_to_buffer(
                 )
                 
                 for partition in message[1:]:
+                    print('partition -> ', partition)
                     if type(partition) is Dir:
                         for b in send_file(
                             filedir = partition,
