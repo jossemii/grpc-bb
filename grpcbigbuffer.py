@@ -553,7 +553,6 @@ def serialize_to_buffer(
                 )
                 
                 for partition in message[1:]:
-                    print('partition -> ', partition)
                     if type(partition) is Dir:
                         for b in send_file(
                             filedir = partition,
