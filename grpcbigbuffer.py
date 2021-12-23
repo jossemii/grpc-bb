@@ -252,17 +252,19 @@ def parse_from_buffer(
                 signal=signal,
             ):
                 all_buffer += b.chunk
-            message = message_field()
-            if message_field is bytes:
-                message = all_buffer
-            elif message_field is str:
+            
+            if message_field is str:
                 message = all_buffer.decode('utf-8')
             elif type(message_field) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
+                message = message_field()
                 message.ParseFromString(
                         all_buffer
                     )
             else:
-                raise Exception('gRPCbb error -> Parse message error: some primitive type message not suported for contain partition '+ str(message_field))
+                try:
+                    message = message_field(all_buffer)
+                except Exception as e:
+                    raise Exception('gRPCbb error -> Parse message error: some primitive type message not suported for contain partition '+ str(message_field) + str(e))
             if len(all_buffer)>0: return message
             else: raise EmptyBufferException()
 
