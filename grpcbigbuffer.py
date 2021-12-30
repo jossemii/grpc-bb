@@ -106,7 +106,8 @@ def save_chunks_to_file(buffer_iterator, filename, signal):
     signal.wait()
     with open(filename, 'wb') as f:
         signal.wait()
-        f.write(b''.join([buffer.chunk for buffer in buffer_iterator]))
+        for buffer in buffer_iterator: f.write(buffer.chunk) # MAYBE IT'S MORE SLOW, BUT USES ONLY THE CHUNK LEN OF RAM.
+        # f.write(b''.join([buffer.chunk for buffer in buffer_iterator])) # MAYBE IT'S FASTER BUT CONSUMES A LOT OF RAM with big buffers.
 
 def get_subclass(partition, object_cls):
     return get_subclass(
