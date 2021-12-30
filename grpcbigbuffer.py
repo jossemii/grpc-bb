@@ -318,7 +318,6 @@ def parse_from_buffer(
             ):
             yield pf_object
             try:
-                print(1)
                 os.mkdir(cache_dir+'remote/')
             except FileExistsError: raise Exception('gRPCbb error: Conversor error, remote dir already exists')
             dirs = []
