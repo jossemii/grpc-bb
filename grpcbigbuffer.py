@@ -199,7 +199,10 @@ def combine_partitions(
         )
     return obj
 
-def parse_from_buffer(
+def parse_from_buffer(= solver_stub.RandomCnf,
+        indices_parser = api_pb2.Cnf,
+        partitions_message_mode_parser = True,
+        input = gateway_pb2.Empty()
         request_iterator, 
         signal = Signal(exist=False), 
         indices: Union[protobuf.pyext.cpp_message.GeneratedProtocolMessageType, dict] = {}, # indice: method      message_field = None,
@@ -320,7 +323,7 @@ def parse_from_buffer(
                 cache_dir: str = None,
                 partitions_message_mode: list = [],
             ):
-            yield pf_object
+            if len(local_partitions_model) > 1: yield pf_object
             try:
                 os.mkdir(cache_dir+'remote/')
             except FileExistsError: raise Exception('gRPCbb error: Conversor error, remote dir already exists')
