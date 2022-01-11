@@ -323,7 +323,7 @@ def parse_from_buffer(= solver_stub.RandomCnf,
                 cache_dir: str = None,
                 partitions_message_mode: list = [],
             ):
-            if len(local_partitions_model) > 1: yield pf_object
+            yield pf_object
             try:
                 os.mkdir(cache_dir+'remote/')
             except FileExistsError: raise Exception('gRPCbb error: Conversor error, remote dir already exists')
