@@ -374,7 +374,6 @@ def parse_from_buffer(
                 buffer = next(request_iterator)
                 # The order of conditions is important.
                 if buffer.HasField('head'):
-                    print('TIENE HEAD.')
                     if buffer.head.index not in indices: raise Exception('Parse from buffer error: buffer head index is not correct ' + str(buffer.head.index) + str(indices.keys()))
                     if not ((len(buffer.head.partitions)==0 and len(partitions_model[buffer.head.index])==1) or \
                             (len(buffer.head.partitions) == len(partitions_model[buffer.head.index]) and
@@ -433,7 +432,6 @@ def parse_from_buffer(
                         ): yield b
                     else:
                         try:
-                            print('ITS AT THIS POINT.')
                             yield iterate_partition(
                                 message_field_or_route = indices[1] if partitions_message_mode[1][0] else None,
                                 signal = signal,
