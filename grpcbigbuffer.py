@@ -243,7 +243,11 @@ def parse_from_buffer(
 
     def parser_iterator(request_iterator, signal: Signal = None) -> Generator[buffer_pb2.Buffer, None, None]:
         if not signal: signal = Signal(exist=False)
-        for buffer in request_iterator:
+        while True:
+            try:
+                buffer = next(request_iterator)
+            except StopIteration: raise Exception('AbortedIteration')
+
             if buffer.HasField('signal') and buffer.signal:
                 signal.change()
             if buffer.HasField('chunk'):
@@ -277,15 +281,19 @@ def parse_from_buffer(
 
     def save_to_file(request_iterator, signal) -> str:
         filename = generate_random_dir()
-        save_chunks_to_file(
-            filename = filename,
-            buffer_iterator = parser_iterator(
-                request_iterator = request_iterator,
+        try:
+            save_chunks_to_file(
+                filename = filename,
+                buffer_iterator = parser_iterator(
+                    request_iterator = request_iterator,
+                    signal = signal,
+                ),
                 signal = signal,
-            ),
-            signal = signal,
-        )
-        return filename
+            )
+            return filename
+        except Exception as e:
+            remove_file(file=filename)
+            raise e
     
     def iterate_partition(message_field_or_route, signal: Signal, request_iterator):
         if message_field_or_route and type(message_field_or_route) is not str:
