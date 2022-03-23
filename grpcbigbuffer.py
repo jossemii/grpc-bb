@@ -8,7 +8,7 @@ import os, gc, itertools, sys
 from google import protobuf
 import buffer_pb2
 from random import randint
-from typing import Generator, Union
+from typing import Generator, Union, final
 from threading import Condition
 
 class EmptyBufferException(Exception):
@@ -526,11 +526,13 @@ def serialize_to_buffer(
             file = generate_random_dir()
             with open(file, 'wb') as f, mem_manager(len=len(message_bytes)):
                 f.write(message_bytes)
-            for b in get_file_chunks(
-                filename=file,
-                signal=signal
-            ): yield b
-            remove_file(file)
+            try:
+                for b in get_file_chunks(
+                    filename=file,
+                    signal=signal
+                ): yield b
+            finally:
+                remove_file(file)
 
             try:
                 yield buffer_pb2.Buffer(
