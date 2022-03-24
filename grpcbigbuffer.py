@@ -263,7 +263,7 @@ def parse_from_buffer(
             if not all_buffer: all_buffer = b.chunk
             else: all_buffer += b.chunk
         
-        if not all_buffer: raise EmptyBufferException()
+        if all_buffer == None: raise EmptyBufferException()
         if message_field is str:
             return all_buffer.decode('utf-8')
         elif type(message_field) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
