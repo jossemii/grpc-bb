@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+message Empty {}
+
 message Buffer  {
     message Head {
         message Partition {

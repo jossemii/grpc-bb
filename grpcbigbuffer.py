@@ -208,7 +208,7 @@ def parse_from_buffer(
         yield_remote_partition_dir: bool = False,
     ): 
     try:
-        if not indices: indices = {}
+        if not indices: indices = buffer_pb2.Empty()
         if not partitions_model: partitions_model = [buffer_pb2.Buffer.Head.Partition()]
         if not signal: signal = Signal(exist=False)
         if not mem_manager: mem_manager = Enviroment.mem_manager
@@ -580,13 +580,16 @@ def client_grpc(
         timeout = None, 
         indices_parser: Union[protobuf.pyext.cpp_message.GeneratedProtocolMessageType, dict] = None,
         partitions_parser: Union[list, dict] = None,
-        partitions_message_mode_parser: Union[bool, list, dict] = False,
+        partitions_message_mode_parser: Union[bool, list, dict] = None,
         indices_serializer: Union[protobuf.pyext.cpp_message.GeneratedProtocolMessageType, dict] = None,
         partitions_serializer: Union[list, dict] = None,
         mem_manager = None,
         yield_remote_partition_dir_on_serializer: bool = False,
     ): # indice: method
-    if not indices_parser: indices_parser = {}
+    if not indices_parser: 
+        indices_parser = buffer_pb2.Empty
+        partitions_message_mode_parser = True
+    if not partitions_message_mode_parser: partitions_message_mode_parser = False
     if not partitions_parser: partitions_parser = [buffer_pb2.Buffer.Head.Partition()]
     if not indices_serializer: indices_serializer = {}
     if not partitions_serializer: partitions_serializer = [buffer_pb2.Buffer.Head.Partition()]
@@ -595,7 +598,7 @@ def client_grpc(
     for b in parse_from_buffer(
         request_iterator = method(
                             serialize_to_buffer(
-                                message_iterator = input if input else '',
+                                message_iterator = input if input else buffer_pb2.Empty(),
                                 signal = signal,
                                 indices = indices_serializer,
                                 partitions_model = partitions_serializer,
