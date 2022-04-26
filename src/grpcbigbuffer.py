@@ -119,7 +119,7 @@ def get_subclass(partition, object_cls):
         partition = list(partition.index.values())[0]
         ) if len(partition.index) == 1 else object_cls
 
-def copy_message(obj, field_name, message):
+def copy_message(obj, field_name, message):  # TODO for list too.
     e = getattr(obj, field_name) if field_name else obj
     if hasattr(message, 'CopyFrom'):
         e.CopyFrom(message)
