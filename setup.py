@@ -10,8 +10,9 @@ setup(
 
     py_modules=['grpcbigbuffer', 'buffer_pb2'],
     install_requires=[
-        'protobuf',
-        'grpcio',
+        'grpcio==1.34.1',
+        'grpcio-tools==1.34.1',
+        'protobuf==3.19.4',
     ],
     package_dir={"": "src"},
     packages=find_packages(where="src"),
