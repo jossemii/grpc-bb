@@ -12,8 +12,13 @@ message Buffer  {
         int32 index = 1;
         repeated Partition partitions = 2;
     }
+    message Container {
+        map<bytes, bytes> hashes = 1;
+        // If server sends a Container means that client needs generate the next from it.
+    }
     optional bytes chunk = 1;
     optional bool separator = 2;
     optional bool signal = 3;
     optional Head head = 4;
+    optional Container container = 5;
 }
