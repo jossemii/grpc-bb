@@ -13,7 +13,11 @@ message Buffer  {
         repeated Partition partitions = 2;
     }
     message Container {
-        map<bytes, bytes> hashes = 1;
+        message Hash {
+            bytes type = 1;
+            bytes value = 2;
+        }
+        repeated Hash hashes = 1;
         // If server sends a Container means that client needs generate the next from it.
     }
     optional bytes chunk = 1;

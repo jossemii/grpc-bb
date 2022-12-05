@@ -242,7 +242,11 @@ def parse_from_buffer(
     except:
         raise Exception('Parse from buffer error: Partitions or Indices are not correct.' + str(partitions_model) + str(partitions_message_mode) + str(indices))
 
-    def parser_iterator(request_iterator, signal: Signal = None) -> Generator[buffer_pb2.Buffer, None, None]:
+    def parser_iterator(
+            request_iterator,
+            signal: Signal = None,
+            containers: List[str] = None
+    ) -> Generator[buffer_pb2.Buffer, None, None]:
         if not signal: signal = Signal(exist=False)
         while True:
             try:
@@ -251,6 +255,19 @@ def parse_from_buffer(
 
             if buffer.HasField('signal') and buffer.signal:
                 signal.change()
+            if buffer.HasField('container'):
+                hash: str = get_hash_from_container(buffer.container)
+                if hash:
+                    if not containers: containers = [hash]
+                    elif hash in containers:
+                        continue  # TODO break ???
+                    else: containers.append(hash)
+                    for container_chunk in parser_iterator(
+                        request_iterator=request_iterator,
+                        signal=signal,
+                        containers=containers
+                    ):
+                        yield container_chunk
             if buffer.HasField('chunk'):
                 yield buffer
             elif not buffer.HasField('head'): break
