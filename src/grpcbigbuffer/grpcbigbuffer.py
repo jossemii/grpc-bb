@@ -291,7 +291,7 @@ def parse_from_buffer(
                             c = containers.pop()
                             if c == hash:
                                 break
-                                
+
                     else:
                         if not containers:
                             containers = [hash]
