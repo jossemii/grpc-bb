@@ -3,7 +3,7 @@ __version__ = 'dev'
 # GrpcBigBuffer.
 CHUNK_SIZE = 1024 * 1024  # 1MB
 MAX_DIR = 999999999
-import os, gc, itertools, sys
+import os, gc, itertools, sys, shutil
 
 from google import protobuf
 from grpcbigbuffer import buffer_pb2
@@ -26,42 +26,67 @@ class MemManager(object):
     def __exit__(self, exc_type, exc_value, trace):
         pass
 
-class Driver:
 
-    def __init__(self, exists_lambda, hash_type: bytes):
-        self.exists = exists_lambda
-        self.hash_type: bytes = hash_type
+## Block driver ##
+def block_exists(hash: str) -> bool:
+    return os.path.isfile(Enviroment.block_dir + hash)
 
 
-    def signal_block_buffer_stream(self, hash: str):
-        # Receiver sends the Buffer with block attr. for stops the block buffer stream.
-        pass  # Sends Buffer(block=Block())
+def signal_block_buffer_stream(hash: str):
+    # Receiver sends the Buffer with block attr. for stops the block buffer stream.
+    pass  # Sends Buffer(block=Block())
 
-    def get_hash_from_from_block(self, block: buffer_pb2.Buffer.Block) -> str | None:
-        for hash in block.hashes:
-            if hash.type == self.hash_type:
-                return hash.value.hex()
-        return None
 
-    def generate_random_dir(self) -> str:
-        return generate_random_dir()
+def get_hash_from_block(block: buffer_pb2.Buffer.Block) -> str | None:
+    for hash in block.hashes:
+        if hash.type == Enviroment.hash_type:
+            return hash.value.hex()
+    return None
+
+
+def generate_random_dir() -> str:
+    cache_dir = Enviroment.cache_dir
+    try:
+        os.mkdir(cache_dir)
+    except FileExistsError: pass
+    while True:
+        try:
+            new_dir: str = cache_dir + str(randint(1, MAX_DIR))
+            os.mkdir(new_dir)
+            return new_dir
+        except FileExistsError: pass
+
+
+def generate_random_file() -> str:
+    cache_dir = Enviroment.cache_dir
+    try:
+        os.mkdir(cache_dir)
+    except FileExistsError: pass
+    while True:
+        file = cache_dir+str(randint(1, MAX_DIR))
+        if not os.path.isfile(file): return file
+
+
+## Enviroment ##
 
 class Enviroment(type):
     # Using singleton pattern
     _instances = {}
     cache_dir = os.path.abspath(os.curdir) + '/__cache__/grpcbigbuffer/'
+    block_dir = os.path.abspath(os.curdir) + '/__block__/'
     mem_manager = lambda len: MemManager(len=len)
     driver = None
+    # SHA3_256
+    hash_type: bytes = bytes.fromhex("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a")
 
     def __call__(cls):
         if cls not in cls._instances:
             cls._instances[cls] = super(Enviroment, cls).__call__()
         return cls._instances[cls]
 
-def modify_env(driver: Driver, cache_dir: str = None, mem_manager = None):
+def modify_env(cache_dir: str = None, mem_manager = None):
     if cache_dir: Enviroment.cache_dir = cache_dir + 'grpcbigbuffer/'
     if mem_manager: Enviroment.mem_manager = mem_manager
-    if driver: Enviroment.driver = driver
 
 def message_to_bytes(message) -> bytes:
     if type(type(message)) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
@@ -73,17 +98,12 @@ def message_to_bytes(message) -> bytes:
             return bytes(message)
         except TypeError: raise('gRPCbb error -> Serialize message error: some primitive type message not suported for contain partition '+ str(type(message)))
 
-def generate_random_dir() -> str: 
-    cache_dir = Enviroment.cache_dir
-    try:
-        os.mkdir(cache_dir)
-    except FileExistsError: pass
-    while True:
-        file = cache_dir+str(randint(1, MAX_DIR))
-        if not os.path.isfile(file): return file
 
 def remove_file(file: str):
     os.remove(file) # TODO could be async.
+
+def remove_dir(dir: str):
+    shutil.rmdir()
 
 class Signal():
     # The parser use change() when reads a signal on the buffer.
@@ -124,15 +144,39 @@ def get_file_chunks(filename, signal = None) -> Generator[buffer_pb2.Buffer, Non
     finally: 
         gc.collect()
 
-def save_chunks_to_file(buffer_iterator, filename, signal = None, driver = None):
-    if not driver: driver = Enviroment.driver
+def save_chunks_to_block(
+        id: str,
+        buffer_iterator,
+        signal: Signal = None,
+        _json: List[int | str] = None
+):
+    if _json: _json.append(id)
+    if not block_exists(id): # Second com probation of that.
+        save_chunks_to_file(
+            buffer_iterator = buffer_iterator,
+            filename = Enviroment.block_dir + id,
+            signal = signal
+        )
+
+def save_chunks_to_file(
+        buffer_iterator,
+        filename: str,
+        signal: Signal = None,
+        _json: List[int | str] = None
+):
     if not signal: signal = Signal(exist=False)
     signal.wait()
     with open(filename, 'wb') as f:
         signal.wait()
         for buffer in buffer_iterator:
             if buffer.HasField('block'):
-                pass # TODO write on block and set the block to the filename file. OR iterate without write (if is already on db )
+                save_chunks_to_block(
+                    id = get_hash_from_block(buffer.block),
+                    buffer_iterator = itertools.chain([buffer], buffer_iterator),
+                    signal = signal,
+                    _json = _json
+                )
+                break
             f.write(buffer.chunk)
 def get_subclass(partition, object_cls):
     return get_subclass(
@@ -271,11 +315,9 @@ def parse_from_buffer(
     def parser_iterator(
             request_iterator_obj,
             signal_obj: Signal = None,
-            blocks: List[str] = None,
-            driver: Driver = None,
+            blocks: List[str] = None
     ) -> Generator[buffer_pb2.Buffer, None, None]:
         if not signal_obj: signal_obj = Signal(exist=False)
-        if not driver: driver = Enviroment.driver
         while True:
             try:
                 buffer_obj = next(request_iterator_obj)
@@ -284,7 +326,7 @@ def parse_from_buffer(
             if buffer_obj.HasField('signal') and buffer_obj.signal:
                 signal_obj.change()
             if buffer_obj.HasField('block'):
-                hash: str = driver.get_hash_from_block(buffer_obj.block)
+                hash: str = get_hash_from_block(buffer_obj.block)
                 if hash:
                     if blocks and hash in blocks:
                         while True:  # Delete all blocks on <hash> (<hash> included.).
@@ -297,8 +339,8 @@ def parse_from_buffer(
                             blocks = [hash]
                         else: blocks.append(hash)
 
-                        if driver.exists(hash):
-                            driver.signal_block_buffer_stream(hash)  # Envia la señal de detención del sub-buffer
+                        if block_exists(hash):
+                            signal_block_buffer_stream(hash)  # Send the sub-buffer stop signal
 
                         for block_chunk in parser_iterator(
                             request_iterator_obj=request_iterator_obj,
@@ -321,7 +363,7 @@ def parse_from_buffer(
         ):
             if b.HasField('block'):
                 pass
-                # for c in driver.read_block(b.block): TODO read the block buffer. from db if is on it. ELSE dont write.
+                # for c in read_block(b.block): TODO read the block buffer. from db if is on it. ELSE dont write.
 
             if not all_buffer: all_buffer = b.chunk
             else: all_buffer += b.chunk
@@ -341,23 +383,30 @@ def parse_from_buffer(
             except Exception as e:
                 raise Exception('gRPCbb error -> Parse message error: some primitive type message not suported for contain partition '+ str(message_field) + str(e))
 
-    def save_to_file(request_iterator, signal, driver: Driver = None) -> str:
-        if not driver: driver = Enviroment.driver
-        filename = driver.generate_random_dir()
+    def save_to_dir(request_iterator, signal) -> str:
+        dirname = generate_random_dir()
+        i: int = 1
+        _json: List[int|str] = []
         try:
-            save_chunks_to_file(
-                filename = filename,
-                buffer_iterator = parser_iterator(
-                    request_iterator_obj= request_iterator,
-                    signal_obj= signal,
-                    driver=driver
-                ),
-                signal = signal,
-                driver = driver
-            )
-            return filename
+            while True:
+                _json.append(i)
+                save_chunks_to_file(
+                    filename = dirname + '/' + str(i),
+                    buffer_iterator = parser_iterator(
+                        request_iterator_obj = request_iterator,
+                        signal_obj= signal
+                    ),
+                    signal = signal,
+                    _json= _json
+                )
+                i +=1
+
+        except StopIteration:
+            with os.
+            return dirname # separator break.
+
         except Exception as e:
-            remove_file(file=filename)
+            remove_dir(dir=dirname)
             raise e
     
     def iterate_partition(message_field_or_route, signal: Signal, request_iterator):
@@ -369,7 +418,7 @@ def parse_from_buffer(
             )
 
         else:
-            return save_to_file(
+            return save_to_dir(
                 request_iterator = request_iterator,
                 signal = signal
             )
@@ -436,7 +485,7 @@ def parse_from_buffer(
                 aux_object = get_submessage(partition = partition, obj = aux_object)
                 message_mode = partitions_message_mode[i]
                 if not message_mode:
-                    filename = generate_random_dir()
+                    filename = generate_random_file()
                     with open(filename, 'wb') as f:
                         f.write(
                             aux_object.SerializeToString() if hasattr(aux_object, 'SerializeToString') \
@@ -600,7 +649,7 @@ def serialize_to_buffer(
             finally: signal.wait()
 
             signal.wait()
-            file = generate_random_dir()
+            file = generate_random_file()
             with open(file, 'wb') as f, mem_manager(len=len(message_bytes)):
                 f.write(message_bytes)
             try:
