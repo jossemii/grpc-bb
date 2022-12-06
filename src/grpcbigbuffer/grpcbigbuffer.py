@@ -156,16 +156,16 @@ def get_file_chunks(filename, signal = None) -> Generator[buffer_pb2.Buffer, Non
         gc.collect()
 
 def save_chunks_to_block(
-        id: str,
+        block_id: str,
         buffer_iterator,
         signal: Signal = None,
         _json: List[int | str] = None
 ):
-    if _json: _json.append(id)
-    if not block_exists(id): # Second com probation of that.
+    if _json: _json.append(block_id)
+    if not block_exists(block_id): # Second com probation of that.
         save_chunks_to_file(
             buffer_iterator = buffer_iterator,
-            filename = Enviroment.block_dir + id,
+            filename =Enviroment.block_dir + block_id,
             signal = signal
         )
 
@@ -182,7 +182,7 @@ def save_chunks_to_file(
         for buffer in buffer_iterator:
             if buffer.HasField('block'):
                 save_chunks_to_block(
-                    id = get_hash_from_block(buffer.block),
+                    block_id= get_hash_from_block(buffer.block),
                     buffer_iterator = itertools.chain([buffer], buffer_iterator),
                     signal = signal,
                     _json = _json
@@ -370,20 +370,32 @@ def parse_from_buffer(
             if buffer_obj.HasField('separator') and buffer_obj.separator:
                 break
 
-    def parse_message(message_field, request_iterator, signal):
-        all_buffer = None
+    def read_block(block_id: str, dont_check: bool = False) -> bytes:
+        if dont_check or block_exists(hash=block_id):
+            with open(Enviroment.block_dir + block_id, 'rb') as f:
+                return f.read()
+
+    def parse_message(message_field, request_iterator, signal: Signal):
+        all_buffer: bytes = b''
+        in_block: str |None = None
         for b in parser_iterator(
             request_iterator_obj=request_iterator,
             signal_obj=signal,
         ):
             if b.HasField('block'):
-                pass
-                # for c in read_block(b.block): TODO read the block buffer. from db if is on it. ELSE dont write.
+                id: str = get_hash_from_block(block = b.block)
+                if id == in_block:
+                    in_block = None
 
-            if not all_buffer: all_buffer = b.chunk
-            else: all_buffer += b.chunk
+                elif not in_block and block_exists(hash = id):
+                    in_block: str = id
+                    all_buffer += read_block(block_id=id, dont_check=True)
+                    continue
+
+            if not in_block:
+                all_buffer += b.chunk
         
-        if all_buffer == None: raise EmptyBufferException()
+        if len(all_buffer) == 0: raise EmptyBufferException()
         if message_field is str:
             return all_buffer.decode('utf-8')
         elif type(message_field) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
