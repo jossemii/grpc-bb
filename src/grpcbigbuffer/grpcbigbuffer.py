@@ -485,8 +485,8 @@ def parse_from_buffer(
             else:
                 main_object = combine_partitions(
                     obj_cls = pf_object,
-                    partitions_model = remote_partitions_model,
-                    partitions = dirs
+                    partitions_model = tuple(remote_partitions_model),
+                    partitions = tuple(dirs)
                 )
                 for dir in dirs: remove_file(dir)
 
