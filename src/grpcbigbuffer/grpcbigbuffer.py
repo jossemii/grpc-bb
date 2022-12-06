@@ -8,7 +8,7 @@ import os, gc, itertools, sys
 from google import protobuf
 from grpcbigbuffer import buffer_pb2
 from random import randint
-from typing import Generator, Union
+from typing import Generator, Union, List
 from threading import Condition
 
 class EmptyBufferException(Exception):
@@ -25,21 +25,40 @@ class MemManager(object):
         return self
     def __exit__(self, exc_type, exc_value, trace):
         pass
-    
+
+class ContainerDriver:
+
+    def __init__(self, exists_lambda, hash_type: bytes):
+        self.exists_lambda = exists_lambda
+        self.hash_type: bytes = hash_type
+
+
+    def signal_container_buffer_stream(self):
+        # Receiver sends the Buffer with container attr. for stops the container buffer stream.
+        pass  # Sends Buffer(container=Container())
+
+    def get_hash_from_from_container(self, container: buffer_pb2.Buffer.Container) -> str |None:
+        for hash in container.hashes:
+            if hash.type == self.hash_type:
+                return hash.value.hex()
+        return None
+
 class Enviroment(type):
     # Using singleton pattern
     _instances = {}
     cache_dir = os.path.abspath(os.curdir) + '/__cache__/grpcbigbuffer/'
     mem_manager = lambda len: MemManager(len=len)
+    container_driver = None
 
     def __call__(cls):
         if cls not in cls._instances:
             cls._instances[cls] = super(Enviroment, cls).__call__()
         return cls._instances[cls]
 
-def modify_env(cache_dir: str = None, mem_manager = None):
+def modify_env(container_driver: ContainerDriver, cache_dir: str = None, mem_manager = None):
     if cache_dir: Enviroment.cache_dir = cache_dir + 'grpcbigbuffer/'
     if mem_manager: Enviroment.mem_manager = mem_manager
+    if container_driver: Enviroment.container_driver = container_driver
 
 def message_to_bytes(message) -> bytes:
     if type(type(message)) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
@@ -87,25 +106,6 @@ class Signal():
                 self.condition.wait()
 
 
-class ContainerDriver:
-
-    def __init__(self, exists_lambda, extract_hash_lambda):
-        self.exists_lambda = exists_lambda
-        self.extract_hash_lambda = extract_hash_lambda
-
-
-    def signal_container_buffer_stream(self):
-        # Receiver sends the Buffer with container attr. for stops the container buffer stream.
-        yield Buffer(
-            container = Container(
-                hashes = [
-                    Hash(
-                        type = type,
-                        value = value
-                    )
-                ]
-            )
-        )
 
 def get_file_chunks(filename, signal = None) -> Generator[buffer_pb2.Buffer, None, None]:
     if not signal: signal = Signal(exist=False)
@@ -266,9 +266,11 @@ def parse_from_buffer(
     def parser_iterator(
             request_iterator_obj,
             signal_obj: Signal = None,
-            containers: List[str] = None
+            containers: List[str] = None,
+            container_driver: ContainerDriver = None,
     ) -> Generator[buffer_pb2.Buffer, None, None]:
         if not signal_obj: signal_obj = Signal(exist=False)
+        if not container_driver: container_driver = Enviroment.container_driver
         while True:
             try:
                 buffer_obj = next(request_iterator_obj)
@@ -277,9 +279,10 @@ def parse_from_buffer(
             if buffer_obj.HasField('signal') and buffer_obj.signal:
                 signal_obj.change()
             if buffer_obj.HasField('container'):
-                hash: str = get_hash_from_container(buffer_obj.container)
+                hash: str = container_driver.get_hash_from_container(buffer_obj.container)
                 if hash:
-                    if not containers: containers = [hash]
+                    if not containers:
+                        containers = [hash]
                     elif hash in containers:
                         continue  # TODO break ???
                     else: containers.append(hash)
