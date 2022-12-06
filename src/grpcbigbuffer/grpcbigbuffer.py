@@ -1,5 +1,7 @@
 __version__ = 'dev'
 
+import json
+
 # GrpcBigBuffer.
 CHUNK_SIZE = 1024 * 1024  # 1MB
 MAX_DIR = 999999999
@@ -415,7 +417,9 @@ def parse_from_buffer(
                 i +=1
 
         except StopIteration:
-            with os.
+            with open("_.json", 'w') as f:
+                json.dump(_json, f)
+
             return dirname # separator break.
 
         except Exception as e:
