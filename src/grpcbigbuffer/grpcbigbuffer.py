@@ -86,6 +86,27 @@ class Signal():
             with self.condition:
                 self.condition.wait()
 
+
+class ContainerDriver:
+
+    def __init__(self, exists_lambda, extract_hash_lambda):
+        self.exists_lambda = exists_lambda
+        self.extract_hash_lambda = extract_hash_lambda
+
+
+    def signal_container_buffer_stream(self):
+        # Receiver sends the Buffer with container attr. for stops the container buffer stream.
+        yield Buffer(
+            container = Container(
+                hashes = [
+                    Hash(
+                        type = type,
+                        value = value
+                    )
+                ]
+            )
+        )
+
 def get_file_chunks(filename, signal = None) -> Generator[buffer_pb2.Buffer, None, None]:
     if not signal: signal = Signal(exist=False)
     signal.wait()
@@ -243,42 +264,42 @@ def parse_from_buffer(
         raise Exception('Parse from buffer error: Partitions or Indices are not correct.' + str(partitions_model) + str(partitions_message_mode) + str(indices))
 
     def parser_iterator(
-            request_iterator,
-            signal: Signal = None,
+            request_iterator_obj,
+            signal_obj: Signal = None,
             containers: List[str] = None
     ) -> Generator[buffer_pb2.Buffer, None, None]:
-        if not signal: signal = Signal(exist=False)
+        if not signal_obj: signal_obj = Signal(exist=False)
         while True:
             try:
-                buffer = next(request_iterator)
+                buffer_obj = next(request_iterator_obj)
             except StopIteration: raise Exception('AbortedIteration')
 
-            if buffer.HasField('signal') and buffer.signal:
-                signal.change()
-            if buffer.HasField('container'):
-                hash: str = get_hash_from_container(buffer.container)
+            if buffer_obj.HasField('signal') and buffer_obj.signal:
+                signal_obj.change()
+            if buffer_obj.HasField('container'):
+                hash: str = get_hash_from_container(buffer_obj.container)
                 if hash:
                     if not containers: containers = [hash]
                     elif hash in containers:
                         continue  # TODO break ???
                     else: containers.append(hash)
                     for container_chunk in parser_iterator(
-                        request_iterator=request_iterator,
-                        signal=signal,
+                        request_iterator_obj=request_iterator_obj,
+                        signal_obj=signal_obj,
                         containers=containers
                     ):
                         yield container_chunk
-            if buffer.HasField('chunk'):
-                yield buffer
-            elif not buffer.HasField('head'): break
-            if buffer.HasField('separator') and buffer.separator:
+            if buffer_obj.HasField('chunk'):
+                yield buffer_obj
+            elif not buffer_obj.HasField('head'): break
+            if buffer_obj.HasField('separator') and buffer_obj.separator:
                 break
 
     def parse_message(message_field, request_iterator, signal):
         all_buffer = None
         for b in parser_iterator(
-            request_iterator=request_iterator,
-            signal=signal,
+            request_iterator_obj=request_iterator,
+            signal_obj=signal,
         ):
             if not all_buffer: all_buffer = b.chunk
             else: all_buffer += b.chunk
@@ -304,8 +325,8 @@ def parse_from_buffer(
             save_chunks_to_file(
                 filename = filename,
                 buffer_iterator = parser_iterator(
-                    request_iterator = request_iterator,
-                    signal = signal,
+                    request_iterator_obj= request_iterator,
+                    signal_obj= signal,
                 ),
                 signal = signal,
             )
