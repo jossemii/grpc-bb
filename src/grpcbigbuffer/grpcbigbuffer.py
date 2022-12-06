@@ -417,7 +417,7 @@ def parse_from_buffer(
                 i +=1
 
         except StopIteration:
-            with open("_.json", 'w') as f:
+            with open(dirname+"_.json", 'w') as f:
                 json.dump(_json, f)
 
             return dirname # separator break.
