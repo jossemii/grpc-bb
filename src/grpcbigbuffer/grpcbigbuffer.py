@@ -30,9 +30,10 @@ class MemManager(object):
 
 
 ## Block driver ##
-def block_exists(hash: str) -> bool:
-    return os.path.isfile(Enviroment.block_dir + hash)
-
+def block_exists(hash: str, is_dir: bool = False) -> bool:
+    f: bool = os.path.isfile(Enviroment.block_dir + hash)
+    d: bool = os.path.isdir(Enviroment.block_dir + hash)
+    return f or d if not is_dir else (f or d, d)
 
 def signal_block_buffer_stream(hash: str):
     # Receiver sends the Buffer with block attr. for stops the block buffer stream.
@@ -372,6 +373,7 @@ def parse_from_buffer(
 
     def read_block(block_id: str, dont_check: bool = False) -> bytes:
         if dont_check or block_exists(hash=block_id):
+
             with open(Enviroment.block_dir + block_id, 'rb') as f:
                 return f.read()
 
