@@ -371,11 +371,23 @@ def parse_from_buffer(
             if buffer_obj.HasField('separator') and buffer_obj.separator:
                 break
 
-    def read_block(block_id: str, dont_check: bool = False) -> bytes:
-        if dont_check or block_exists(hash=block_id):
-
+    def read_block(block_id: str) -> bytes:
+        b, d = block_exists(hash = block_id, is_dir=True)
+        if b and not d:
             with open(Enviroment.block_dir + block_id, 'rb') as f:
                 return f.read()
+        elif d:
+            block_dir: str = Enviroment.block_dir + block_id + '/'
+            _json: List[int|str] = json.load(open(
+                block_dir+'_.json',
+            ))
+            return b''.join([
+                open(block_dir+str(e)) if type(e) == int else read_block(block_id=e) \
+                for e in _json
+            ])
+        else:
+            raise Exception('gRPCbb: Error reading block.')
+
 
     def parse_message(message_field, request_iterator, signal: Signal):
         all_buffer: bytes = b''
@@ -391,7 +403,7 @@ def parse_from_buffer(
 
                 elif not in_block and block_exists(hash = id):
                     in_block: str = id
-                    all_buffer += read_block(block_id=id, dont_check=True)
+                    all_buffer += read_block(block_id=id)
                     continue
 
             if not in_block:
