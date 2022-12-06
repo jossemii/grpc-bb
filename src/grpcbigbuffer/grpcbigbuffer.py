@@ -74,8 +74,8 @@ class Enviroment(type):
     _instances = {}
     cache_dir = os.path.abspath(os.curdir) + '/__cache__/grpcbigbuffer/'
     block_dir = os.path.abspath(os.curdir) + '/__block__/'
+    block_depth = 1
     mem_manager = lambda len: MemManager(len=len)
-    driver = None
     # SHA3_256
     hash_type: bytes = bytes.fromhex("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a")
 
@@ -84,9 +84,18 @@ class Enviroment(type):
             cls._instances[cls] = super(Enviroment, cls).__call__()
         return cls._instances[cls]
 
-def modify_env(cache_dir: str = None, mem_manager = None):
+def modify_env(
+        cache_dir: str,
+        mem_manager: MemManager,
+        hash_type: bytes,
+        block_depth: int,
+        block_dir: str
+):
     if cache_dir: Enviroment.cache_dir = cache_dir + 'grpcbigbuffer/'
     if mem_manager: Enviroment.mem_manager = mem_manager
+    if hash_type: Enviroment.hash_type = hash_type
+    if block_depth: Enviroment.block_depth = block_depth
+    if block_dir: Enviroment.block_dir = block_dir
 
 def message_to_bytes(message) -> bytes:
     if type(type(message)) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
@@ -325,7 +334,10 @@ def parse_from_buffer(
 
             if buffer_obj.HasField('signal') and buffer_obj.signal:
                 signal_obj.change()
-            if buffer_obj.HasField('block'):
+
+            if not blocks and buffer_obj.HasField('block') or \
+                    blocks and buffer_obj.HasField('block') and len(blocks) < Enviroment.block_depth:
+
                 hash: str = get_hash_from_block(buffer_obj.block)
                 if hash:
                     if blocks and hash in blocks:
@@ -342,6 +354,7 @@ def parse_from_buffer(
                         if block_exists(hash):
                             signal_block_buffer_stream(hash)  # Send the sub-buffer stop signal
 
+                        yield buffer_obj
                         for block_chunk in parser_iterator(
                             request_iterator_obj=request_iterator_obj,
                             signal_obj=signal_obj,
