@@ -33,12 +33,12 @@ class Driver:
         self.hash_type: bytes = hash_type
 
 
-    def signal_container_buffer_stream(self, hash: str):
-        # Receiver sends the Buffer with container attr. for stops the container buffer stream.
-        pass  # Sends Buffer(container=Container())
+    def signal_block_buffer_stream(self, hash: str):
+        # Receiver sends the Buffer with block attr. for stops the block buffer stream.
+        pass  # Sends Buffer(block=Block())
 
-    def get_hash_from_from_container(self, container: buffer_pb2.Buffer.Container) -> str |None:
-        for hash in container.hashes:
+    def get_hash_from_from_block(self, block: buffer_pb2.Buffer.Block) -> str | None:
+        for hash in block.hashes:
             if hash.type == self.hash_type:
                 return hash.value.hex()
         return None
@@ -58,10 +58,10 @@ class Enviroment(type):
             cls._instances[cls] = super(Enviroment, cls).__call__()
         return cls._instances[cls]
 
-def modify_env(container_driver: Driver, cache_dir: str = None, mem_manager = None):
+def modify_env(driver: Driver, cache_dir: str = None, mem_manager = None):
     if cache_dir: Enviroment.cache_dir = cache_dir + 'grpcbigbuffer/'
     if mem_manager: Enviroment.mem_manager = mem_manager
-    if container_driver: Enviroment.driver = container_driver
+    if driver: Enviroment.driver = driver
 
 def message_to_bytes(message) -> bytes:
     if type(type(message)) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
@@ -131,8 +131,8 @@ def save_chunks_to_file(buffer_iterator, filename, signal = None, driver = None)
     with open(filename, 'wb') as f:
         signal.wait()
         for buffer in buffer_iterator:
-            if buffer.HasField('container'):
-                pass # TODO write on container and set the container to the filename file. OR iterate without write (if is already on db )
+            if buffer.HasField('block'):
+                pass # TODO write on block and set the block to the filename file. OR iterate without write (if is already on db )
             f.write(buffer.chunk)
 def get_subclass(partition, object_cls):
     return get_subclass(
@@ -271,7 +271,7 @@ def parse_from_buffer(
     def parser_iterator(
             request_iterator_obj,
             signal_obj: Signal = None,
-            containers: List[str] = None,
+            blocks: List[str] = None,
             driver: Driver = None,
     ) -> Generator[buffer_pb2.Buffer, None, None]:
         if not signal_obj: signal_obj = Signal(exist=False)
@@ -283,29 +283,29 @@ def parse_from_buffer(
 
             if buffer_obj.HasField('signal') and buffer_obj.signal:
                 signal_obj.change()
-            if buffer_obj.HasField('container'):
-                hash: str = driver.get_hash_from_container(buffer_obj.container)
+            if buffer_obj.HasField('block'):
+                hash: str = driver.get_hash_from_block(buffer_obj.block)
                 if hash:
-                    if containers and hash in containers:
-                        while True:  # Delete all containers on <hash> (<hash> included.).
-                            c = containers.pop()
+                    if blocks and hash in blocks:
+                        while True:  # Delete all blocks on <hash> (<hash> included.).
+                            c = blocks.pop()
                             if c == hash:
                                 break
 
                     else:
-                        if not containers:
-                            containers = [hash]
-                        else: containers.append(hash)
+                        if not blocks:
+                            blocks = [hash]
+                        else: blocks.append(hash)
 
                         if driver.exists(hash):
-                            driver.signal_container_buffer_stream(hash)  # Envia la señal de detención del sub-buffer
+                            driver.signal_block_buffer_stream(hash)  # Envia la señal de detención del sub-buffer
 
-                        for container_chunk in parser_iterator(
+                        for block_chunk in parser_iterator(
                             request_iterator_obj=request_iterator_obj,
                             signal_obj=signal_obj,
-                            containers=containers
+                            blocks=blocks
                         ):
-                            yield container_chunk
+                            yield block_chunk
 
             if buffer_obj.HasField('chunk'):
                 yield buffer_obj
@@ -319,9 +319,9 @@ def parse_from_buffer(
             request_iterator_obj=request_iterator,
             signal_obj=signal,
         ):
-            if b.HasField('container'):
+            if b.HasField('block'):
                 pass
-                # for c in driver.read_container(b.container): TODO read the container buffer. from db if is on it. ELSE dont write.
+                # for c in driver.read_block(b.block): TODO read the block buffer. from db if is on it. ELSE dont write.
 
             if not all_buffer: all_buffer = b.chunk
             else: all_buffer += b.chunk
