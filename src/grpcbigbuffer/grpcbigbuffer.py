@@ -26,14 +26,14 @@ class MemManager(object):
     def __exit__(self, exc_type, exc_value, trace):
         pass
 
-class ContainerDriver:
+class Driver:
 
     def __init__(self, exists_lambda, hash_type: bytes):
-        self.exists_lambda = exists_lambda
+        self.exists = exists_lambda
         self.hash_type: bytes = hash_type
 
 
-    def signal_container_buffer_stream(self):
+    def signal_container_buffer_stream(self, hash: str):
         # Receiver sends the Buffer with container attr. for stops the container buffer stream.
         pass  # Sends Buffer(container=Container())
 
@@ -43,22 +43,25 @@ class ContainerDriver:
                 return hash.value.hex()
         return None
 
+    def generate_random_dir(self) -> str:
+        return generate_random_dir()
+
 class Enviroment(type):
     # Using singleton pattern
     _instances = {}
     cache_dir = os.path.abspath(os.curdir) + '/__cache__/grpcbigbuffer/'
     mem_manager = lambda len: MemManager(len=len)
-    container_driver = None
+    driver = None
 
     def __call__(cls):
         if cls not in cls._instances:
             cls._instances[cls] = super(Enviroment, cls).__call__()
         return cls._instances[cls]
 
-def modify_env(container_driver: ContainerDriver, cache_dir: str = None, mem_manager = None):
+def modify_env(container_driver: Driver, cache_dir: str = None, mem_manager = None):
     if cache_dir: Enviroment.cache_dir = cache_dir + 'grpcbigbuffer/'
     if mem_manager: Enviroment.mem_manager = mem_manager
-    if container_driver: Enviroment.container_driver = container_driver
+    if container_driver: Enviroment.driver = container_driver
 
 def message_to_bytes(message) -> bytes:
     if type(type(message)) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
@@ -121,14 +124,16 @@ def get_file_chunks(filename, signal = None) -> Generator[buffer_pb2.Buffer, Non
     finally: 
         gc.collect()
 
-def save_chunks_to_file(buffer_iterator, filename, signal = None):
+def save_chunks_to_file(buffer_iterator, filename, signal = None, driver = None):
+    if not driver: driver = Enviroment.driver
     if not signal: signal = Signal(exist=False)
     signal.wait()
     with open(filename, 'wb') as f:
         signal.wait()
-        for buffer in buffer_iterator: f.write(buffer.chunk) # MAYBE IT'S MORE SLOW, BUT USES ONLY THE CHUNK LEN OF RAM.
-        # f.write(b''.join([buffer.chunk for buffer in buffer_iterator])) # MAYBE IT'S FASTER BUT CONSUMES A LOT OF RAM with big buffers.
-
+        for buffer in buffer_iterator:
+            if buffer.HasField('container'):
+                pass # TODO write on container and set the container to the filename file. OR iterate without write (if is already on db )
+            f.write(buffer.chunk)
 def get_subclass(partition, object_cls):
     return get_subclass(
         object_cls = type(
@@ -267,10 +272,10 @@ def parse_from_buffer(
             request_iterator_obj,
             signal_obj: Signal = None,
             containers: List[str] = None,
-            container_driver: ContainerDriver = None,
+            driver: Driver = None,
     ) -> Generator[buffer_pb2.Buffer, None, None]:
         if not signal_obj: signal_obj = Signal(exist=False)
-        if not container_driver: container_driver = Enviroment.container_driver
+        if not driver: driver = Enviroment.driver
         while True:
             try:
                 buffer_obj = next(request_iterator_obj)
@@ -279,19 +284,29 @@ def parse_from_buffer(
             if buffer_obj.HasField('signal') and buffer_obj.signal:
                 signal_obj.change()
             if buffer_obj.HasField('container'):
-                hash: str = container_driver.get_hash_from_container(buffer_obj.container)
+                hash: str = driver.get_hash_from_container(buffer_obj.container)
                 if hash:
-                    if not containers:
-                        containers = [hash]
-                    elif hash in containers:
-                        continue  # TODO break ???
-                    else: containers.append(hash)
-                    for container_chunk in parser_iterator(
-                        request_iterator_obj=request_iterator_obj,
-                        signal_obj=signal_obj,
-                        containers=containers
-                    ):
-                        yield container_chunk
+                    if containers and hash in containers:
+                        while True:  # Delete all containers on <hash> (<hash> included.).
+                            c = containers.pop()
+                            if c == hash:
+                                break
+                                
+                    else:
+                        if not containers:
+                            containers = [hash]
+                        else: containers.append(hash)
+
+                        if driver.exists(hash):
+                            driver.signal_container_buffer_stream(hash)  # Envia la señal de detención del sub-buffer
+
+                        for container_chunk in parser_iterator(
+                            request_iterator_obj=request_iterator_obj,
+                            signal_obj=signal_obj,
+                            containers=containers
+                        ):
+                            yield container_chunk
+
             if buffer_obj.HasField('chunk'):
                 yield buffer_obj
             elif not buffer_obj.HasField('head'): break
@@ -304,6 +319,10 @@ def parse_from_buffer(
             request_iterator_obj=request_iterator,
             signal_obj=signal,
         ):
+            if b.HasField('container'):
+                pass
+                # for c in driver.read_container(b.container): TODO read the container buffer. from db if is on it. ELSE dont write.
+
             if not all_buffer: all_buffer = b.chunk
             else: all_buffer += b.chunk
         
@@ -322,16 +341,19 @@ def parse_from_buffer(
             except Exception as e:
                 raise Exception('gRPCbb error -> Parse message error: some primitive type message not suported for contain partition '+ str(message_field) + str(e))
 
-    def save_to_file(request_iterator, signal) -> str:
-        filename = generate_random_dir()
+    def save_to_file(request_iterator, signal, driver: Driver = None) -> str:
+        if not driver: driver = Enviroment.driver
+        filename = driver.generate_random_dir()
         try:
             save_chunks_to_file(
                 filename = filename,
                 buffer_iterator = parser_iterator(
                     request_iterator_obj= request_iterator,
                     signal_obj= signal,
+                    driver=driver
                 ),
                 signal = signal,
+                driver = driver
             )
             return filename
         except Exception as e:
