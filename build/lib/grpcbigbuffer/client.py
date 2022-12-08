@@ -160,7 +160,7 @@ def save_chunks_to_block(
         block_id: str,
         buffer_iterator,
         signal: Signal = None,
-        _json: List[int | str] = None
+        _json: List[Union[int, str]] = None
 ):
     if _json: _json.append(block_id)
     if not block_exists(block_id): # Second com probation of that.
@@ -174,7 +174,7 @@ def save_chunks_to_file(
         buffer_iterator,
         filename: str,
         signal: Signal = None,
-        _json: List[int | str] = None
+        _json: List[Union[int, str]] = None
 ):
     if not signal: signal = Signal(exist=False)
     signal.wait()
@@ -378,7 +378,7 @@ def parse_from_buffer(
                 return f.read()
         elif d:
             block_dir: str = Enviroment.block_dir + block_id + '/'
-            _json: List[int|str] = json.load(open(
+            _json: List[Union[int, str]] = json.load(open(
                 block_dir+'_.json',
             ))
             return b''.join([
@@ -427,7 +427,7 @@ def parse_from_buffer(
     def save_to_dir(request_iterator, signal) -> str:
         dirname = generate_random_dir()
         i: int = 1
-        _json: List[int|str] = []
+        _json: List[Union[int, str]] = []
         try:
             while True:
                 _json.append(i)
