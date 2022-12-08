@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x0c\x62uffer.proto\x12\x06\x62uffer\"\x07\n\x05\x45mpty\"\xfc\x02\n\x06\x42uffer\x12\x12\n\x05\x63hunk\x18\x01 \x01(\x0cH\x00\x88\x01\x01\x12\x16\n\tseparator\x18\x02 \x01(\x08H\x01\x88\x01\x01\x12\x13\n\x06signal\x18\x03 \x01(\x08H\x02\x88\x01\x01\x12&\n\x04head\x18\x04 \x01(\x0b\x32\x13.buffer.Buffer.HeadH\x03\x88\x01\x01\x1a\xdc\x01\n\x04Head\x12\r\n\x05index\x18\x01 \x01(\x05\x12\x31\n\npartitions\x18\x02 \x03(\x0b\x32\x1d.buffer.Buffer.Head.Partition\x1a\x91\x01\n\tPartition\x12\x37\n\x05index\x18\x01 \x03(\x0b\x32(.buffer.Buffer.Head.Partition.IndexEntry\x1aK\n\nIndexEntry\x12\x0b\n\x03key\x18\x01 \x01(\x05\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x1d.buffer.Buffer.Head.Partition:\x02\x38\x01\x42\x08\n\x06_chunkB\x0c\n\n_separatorB\t\n\x07_signalB\x07\n\x05_headb\x06proto3'
+  serialized_pb=b'\n\x0c\x62uffer.proto\x12\x06\x62uffer\"\x07\n\x05\x45mpty\"\x89\x04\n\x06\x42uffer\x12\x12\n\x05\x63hunk\x18\x01 \x01(\x0cH\x00\x88\x01\x01\x12\x16\n\tseparator\x18\x02 \x01(\x08H\x01\x88\x01\x01\x12\x13\n\x06signal\x18\x03 \x01(\x08H\x02\x88\x01\x01\x12&\n\x04head\x18\x04 \x01(\x0b\x32\x13.buffer.Buffer.HeadH\x03\x88\x01\x01\x12(\n\x05\x62lock\x18\x05 \x01(\x0b\x32\x14.buffer.Buffer.BlockH\x04\x88\x01\x01\x1a\xdc\x01\n\x04Head\x12\r\n\x05index\x18\x01 \x01(\x05\x12\x31\n\npartitions\x18\x02 \x03(\x0b\x32\x1d.buffer.Buffer.Head.Partition\x1a\x91\x01\n\tPartition\x12\x37\n\x05index\x18\x01 \x03(\x0b\x32(.buffer.Buffer.Head.Partition.IndexEntry\x1aK\n\nIndexEntry\x12\x0b\n\x03key\x18\x01 \x01(\x05\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x1d.buffer.Buffer.Head.Partition:\x02\x38\x01\x1aW\n\x05\x42lock\x12)\n\x06hashes\x18\x01 \x03(\x0b\x32\x19.buffer.Buffer.Block.Hash\x1a#\n\x04Hash\x12\x0c\n\x04type\x18\x01 \x01(\x0c\x12\r\n\x05value\x18\x02 \x01(\x0c\x42\x08\n\x06_chunkB\x0c\n\n_separatorB\t\n\x07_signalB\x07\n\x05_headB\x08\n\x06_blockb\x06proto3'
 )
 
 
@@ -84,8 +84,8 @@ _BUFFER_HEAD_PARTITION_INDEXENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=295,
-  serialized_end=370,
+  serialized_start=337,
+  serialized_end=412,
 )
 
 _BUFFER_HEAD_PARTITION = _descriptor.Descriptor(
@@ -115,8 +115,8 @@ _BUFFER_HEAD_PARTITION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=225,
-  serialized_end=370,
+  serialized_start=267,
+  serialized_end=412,
 )
 
 _BUFFER_HEAD = _descriptor.Descriptor(
@@ -153,8 +153,77 @@ _BUFFER_HEAD = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=150,
-  serialized_end=370,
+  serialized_start=192,
+  serialized_end=412,
+)
+
+_BUFFER_BLOCK_HASH = _descriptor.Descriptor(
+  name='Hash',
+  full_name='buffer.Buffer.Block.Hash',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='type', full_name='buffer.Buffer.Block.Hash.type', index=0,
+      number=1, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"",
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='value', full_name='buffer.Buffer.Block.Hash.value', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"",
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=466,
+  serialized_end=501,
+)
+
+_BUFFER_BLOCK = _descriptor.Descriptor(
+  name='Block',
+  full_name='buffer.Buffer.Block',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='hashes', full_name='buffer.Buffer.Block.hashes', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[_BUFFER_BLOCK_HASH, ],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=414,
+  serialized_end=501,
 )
 
 _BUFFER = _descriptor.Descriptor(
@@ -193,10 +262,17 @@ _BUFFER = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='block', full_name='buffer.Buffer.block', index=4,
+      number=5, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
-  nested_types=[_BUFFER_HEAD, ],
+  nested_types=[_BUFFER_HEAD, _BUFFER_BLOCK, ],
   enum_types=[
   ],
   serialized_options=None,
@@ -224,9 +300,14 @@ _BUFFER = _descriptor.Descriptor(
       index=3, containing_type=None,
       create_key=_descriptor._internal_create_key,
     fields=[]),
+    _descriptor.OneofDescriptor(
+      name='_block', full_name='buffer.Buffer._block',
+      index=4, containing_type=None,
+      create_key=_descriptor._internal_create_key,
+    fields=[]),
   ],
   serialized_start=34,
-  serialized_end=414,
+  serialized_end=555,
 )
 
 _BUFFER_HEAD_PARTITION_INDEXENTRY.fields_by_name['value'].message_type = _BUFFER_HEAD_PARTITION
@@ -235,7 +316,11 @@ _BUFFER_HEAD_PARTITION.fields_by_name['index'].message_type = _BUFFER_HEAD_PARTI
 _BUFFER_HEAD_PARTITION.containing_type = _BUFFER_HEAD
 _BUFFER_HEAD.fields_by_name['partitions'].message_type = _BUFFER_HEAD_PARTITION
 _BUFFER_HEAD.containing_type = _BUFFER
+_BUFFER_BLOCK_HASH.containing_type = _BUFFER_BLOCK
+_BUFFER_BLOCK.fields_by_name['hashes'].message_type = _BUFFER_BLOCK_HASH
+_BUFFER_BLOCK.containing_type = _BUFFER
 _BUFFER.fields_by_name['head'].message_type = _BUFFER_HEAD
+_BUFFER.fields_by_name['block'].message_type = _BUFFER_BLOCK
 _BUFFER.oneofs_by_name['_chunk'].fields.append(
   _BUFFER.fields_by_name['chunk'])
 _BUFFER.fields_by_name['chunk'].containing_oneof = _BUFFER.oneofs_by_name['_chunk']
@@ -248,6 +333,9 @@ _BUFFER.fields_by_name['signal'].containing_oneof = _BUFFER.oneofs_by_name['_sig
 _BUFFER.oneofs_by_name['_head'].fields.append(
   _BUFFER.fields_by_name['head'])
 _BUFFER.fields_by_name['head'].containing_oneof = _BUFFER.oneofs_by_name['_head']
+_BUFFER.oneofs_by_name['_block'].fields.append(
+  _BUFFER.fields_by_name['block'])
+_BUFFER.fields_by_name['block'].containing_oneof = _BUFFER.oneofs_by_name['_block']
 DESCRIPTOR.message_types_by_name['Empty'] = _EMPTY
 DESCRIPTOR.message_types_by_name['Buffer'] = _BUFFER
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -281,6 +369,20 @@ Buffer = _reflection.GeneratedProtocolMessageType('Buffer', (_message.Message,),
     # @@protoc_insertion_point(class_scope:buffer.Buffer.Head)
     })
   ,
+
+  'Block' : _reflection.GeneratedProtocolMessageType('Block', (_message.Message,), {
+
+    'Hash' : _reflection.GeneratedProtocolMessageType('Hash', (_message.Message,), {
+      'DESCRIPTOR' : _BUFFER_BLOCK_HASH,
+      '__module__' : 'buffer_pb2'
+      # @@protoc_insertion_point(class_scope:buffer.Buffer.Block.Hash)
+      })
+    ,
+    'DESCRIPTOR' : _BUFFER_BLOCK,
+    '__module__' : 'buffer_pb2'
+    # @@protoc_insertion_point(class_scope:buffer.Buffer.Block)
+    })
+  ,
   'DESCRIPTOR' : _BUFFER,
   '__module__' : 'buffer_pb2'
   # @@protoc_insertion_point(class_scope:buffer.Buffer)
@@ -289,6 +391,8 @@ _sym_db.RegisterMessage(Buffer)
 _sym_db.RegisterMessage(Buffer.Head)
 _sym_db.RegisterMessage(Buffer.Head.Partition)
 _sym_db.RegisterMessage(Buffer.Head.Partition.IndexEntry)
+_sym_db.RegisterMessage(Buffer.Block)
+_sym_db.RegisterMessage(Buffer.Block.Hash)
 
 
 _BUFFER_HEAD_PARTITION_INDEXENTRY._options = None

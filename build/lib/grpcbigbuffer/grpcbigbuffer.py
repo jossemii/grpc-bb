@@ -1,14 +1,16 @@
 __version__ = 'dev'
 
+import json
+
 # GrpcBigBuffer.
 CHUNK_SIZE = 1024 * 1024  # 1MB
 MAX_DIR = 999999999
-import os, gc, itertools, sys
+import os, gc, itertools, sys, shutil
 
 from google import protobuf
 from grpcbigbuffer import buffer_pb2
 from random import randint
-from typing import Generator, Union
+from typing import Generator, Union, List
 from threading import Condition
 
 class EmptyBufferException(Exception):
@@ -25,21 +27,78 @@ class MemManager(object):
         return self
     def __exit__(self, exc_type, exc_value, trace):
         pass
-    
+
+
+## Block driver ##
+def block_exists(hash: str, is_dir: bool = False) -> bool:
+    f: bool = os.path.isfile(Enviroment.block_dir + hash)
+    d: bool = os.path.isdir(Enviroment.block_dir + hash)
+    return f or d if not is_dir else (f or d, d)
+
+def signal_block_buffer_stream(hash: str):
+    # Receiver sends the Buffer with block attr. for stops the block buffer stream.
+    pass  # Sends Buffer(block=Block())
+
+
+def get_hash_from_block(block: buffer_pb2.Buffer.Block) -> str | None:
+    for hash in block.hashes:
+        if hash.type == Enviroment.hash_type:
+            return hash.value.hex()
+    return None
+
+
+def generate_random_dir() -> str:
+    cache_dir = Enviroment.cache_dir
+    try:
+        os.mkdir(cache_dir)
+    except FileExistsError: pass
+    while True:
+        try:
+            new_dir: str = cache_dir + str(randint(1, MAX_DIR))
+            os.mkdir(new_dir)
+            return new_dir
+        except FileExistsError: pass
+
+
+def generate_random_file() -> str:
+    cache_dir = Enviroment.cache_dir
+    try:
+        os.mkdir(cache_dir)
+    except FileExistsError: pass
+    while True:
+        file = cache_dir+str(randint(1, MAX_DIR))
+        if not os.path.isfile(file): return file
+
+
+## Enviroment ##
+
 class Enviroment(type):
     # Using singleton pattern
     _instances = {}
     cache_dir = os.path.abspath(os.curdir) + '/__cache__/grpcbigbuffer/'
+    block_dir = os.path.abspath(os.curdir) + '/__block__/'
+    block_depth = 1
     mem_manager = lambda len: MemManager(len=len)
+    # SHA3_256
+    hash_type: bytes = bytes.fromhex("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a")
 
     def __call__(cls):
         if cls not in cls._instances:
             cls._instances[cls] = super(Enviroment, cls).__call__()
         return cls._instances[cls]
 
-def modify_env(cache_dir: str = None, mem_manager = None):
+def modify_env(
+        cache_dir: str,
+        mem_manager: MemManager,
+        hash_type: bytes,
+        block_depth: int,
+        block_dir: str
+):
     if cache_dir: Enviroment.cache_dir = cache_dir + 'grpcbigbuffer/'
     if mem_manager: Enviroment.mem_manager = mem_manager
+    if hash_type: Enviroment.hash_type = hash_type
+    if block_depth: Enviroment.block_depth = block_depth
+    if block_dir: Enviroment.block_dir = block_dir
 
 def message_to_bytes(message) -> bytes:
     if type(type(message)) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
@@ -51,17 +110,12 @@ def message_to_bytes(message) -> bytes:
             return bytes(message)
         except TypeError: raise('gRPCbb error -> Serialize message error: some primitive type message not suported for contain partition '+ str(type(message)))
 
-def generate_random_dir() -> str: 
-    cache_dir = Enviroment.cache_dir
-    try:
-        os.mkdir(cache_dir)
-    except FileExistsError: pass
-    while True:
-        file = cache_dir+str(randint(1, MAX_DIR))
-        if not os.path.isfile(file): return file
 
 def remove_file(file: str):
     os.remove(file) # TODO could be async.
+
+def remove_dir(dir: str):
+    shutil.rmdir()
 
 class Signal():
     # The parser use change() when reads a signal on the buffer.
@@ -86,6 +140,8 @@ class Signal():
             with self.condition:
                 self.condition.wait()
 
+
+
 def get_file_chunks(filename, signal = None) -> Generator[buffer_pb2.Buffer, None, None]:
     if not signal: signal = Signal(exist=False)
     signal.wait()
@@ -100,14 +156,40 @@ def get_file_chunks(filename, signal = None) -> Generator[buffer_pb2.Buffer, Non
     finally: 
         gc.collect()
 
-def save_chunks_to_file(buffer_iterator, filename, signal = None):
+def save_chunks_to_block(
+        block_id: str,
+        buffer_iterator,
+        signal: Signal = None,
+        _json: List[int | str] = None
+):
+    if _json: _json.append(block_id)
+    if not block_exists(block_id): # Second com probation of that.
+        save_chunks_to_file(
+            buffer_iterator = buffer_iterator,
+            filename =Enviroment.block_dir + block_id,
+            signal = signal
+        )
+
+def save_chunks_to_file(
+        buffer_iterator,
+        filename: str,
+        signal: Signal = None,
+        _json: List[int | str] = None
+):
     if not signal: signal = Signal(exist=False)
     signal.wait()
     with open(filename, 'wb') as f:
         signal.wait()
-        for buffer in buffer_iterator: f.write(buffer.chunk) # MAYBE IT'S MORE SLOW, BUT USES ONLY THE CHUNK LEN OF RAM.
-        # f.write(b''.join([buffer.chunk for buffer in buffer_iterator])) # MAYBE IT'S FASTER BUT CONSUMES A LOT OF RAM with big buffers.
-
+        for buffer in buffer_iterator:
+            if buffer.HasField('block'):
+                save_chunks_to_block(
+                    block_id= get_hash_from_block(buffer.block),
+                    buffer_iterator = itertools.chain([buffer], buffer_iterator),
+                    signal = signal,
+                    _json = _json
+                )
+                break
+            f.write(buffer.chunk)
 def get_subclass(partition, object_cls):
     return get_subclass(
         object_cls = type(
@@ -242,31 +324,92 @@ def parse_from_buffer(
     except:
         raise Exception('Parse from buffer error: Partitions or Indices are not correct.' + str(partitions_model) + str(partitions_message_mode) + str(indices))
 
-    def parser_iterator(request_iterator, signal: Signal = None) -> Generator[buffer_pb2.Buffer, None, None]:
-        if not signal: signal = Signal(exist=False)
+    def parser_iterator(
+            request_iterator_obj,
+            signal_obj: Signal = None,
+            blocks: List[str] = None
+    ) -> Generator[buffer_pb2.Buffer, None, None]:
+        if not signal_obj: signal_obj = Signal(exist=False)
         while True:
             try:
-                buffer = next(request_iterator)
+                buffer_obj = next(request_iterator_obj)
             except StopIteration: raise Exception('AbortedIteration')
 
-            if buffer.HasField('signal') and buffer.signal:
-                signal.change()
-            if buffer.HasField('chunk'):
-                yield buffer
-            elif not buffer.HasField('head'): break
-            if buffer.HasField('separator') and buffer.separator:
+            if buffer_obj.HasField('signal') and buffer_obj.signal:
+                signal_obj.change()
+
+            if not blocks and buffer_obj.HasField('block') or \
+                    blocks and buffer_obj.HasField('block') and len(blocks) < Enviroment.block_depth:
+
+                hash: str = get_hash_from_block(buffer_obj.block)
+                if hash:
+                    if blocks and hash in blocks:
+                        while True:  # Delete all blocks on <hash> (<hash> included.).
+                            c = blocks.pop()
+                            if c == hash:
+                                break
+
+                    else:
+                        if not blocks:
+                            blocks = [hash]
+                        else: blocks.append(hash)
+
+                        if block_exists(hash):
+                            signal_block_buffer_stream(hash)  # Send the sub-buffer stop signal
+
+                        yield buffer_obj
+                        for block_chunk in parser_iterator(
+                            request_iterator_obj=request_iterator_obj,
+                            signal_obj=signal_obj,
+                            blocks=blocks
+                        ):
+                            yield block_chunk
+
+            if buffer_obj.HasField('chunk'):
+                yield buffer_obj
+            elif not buffer_obj.HasField('head'): break
+            if buffer_obj.HasField('separator') and buffer_obj.separator:
                 break
 
-    def parse_message(message_field, request_iterator, signal):
-        all_buffer = None
+    def read_block(block_id: str) -> bytes:
+        b, d = block_exists(hash = block_id, is_dir=True)
+        if b and not d:
+            with open(Enviroment.block_dir + block_id, 'rb') as f:
+                return f.read()
+        elif d:
+            block_dir: str = Enviroment.block_dir + block_id + '/'
+            _json: List[int|str] = json.load(open(
+                block_dir+'_.json',
+            ))
+            return b''.join([
+                open(block_dir+str(e)) if type(e) == int else read_block(block_id=e) \
+                for e in _json
+            ])
+        else:
+            raise Exception('gRPCbb: Error reading block.')
+
+
+    def parse_message(message_field, request_iterator, signal: Signal):
+        all_buffer: bytes = b''
+        in_block: str |None = None
         for b in parser_iterator(
-            request_iterator=request_iterator,
-            signal=signal,
+            request_iterator_obj=request_iterator,
+            signal_obj=signal,
         ):
-            if not all_buffer: all_buffer = b.chunk
-            else: all_buffer += b.chunk
+            if b.HasField('block'):
+                id: str = get_hash_from_block(block = b.block)
+                if id == in_block:
+                    in_block = None
+
+                elif not in_block and block_exists(hash = id):
+                    in_block: str = id
+                    all_buffer += read_block(block_id=id)
+                    continue
+
+            if not in_block:
+                all_buffer += b.chunk
         
-        if all_buffer == None: raise EmptyBufferException()
+        if len(all_buffer) == 0: raise EmptyBufferException()
         if message_field is str:
             return all_buffer.decode('utf-8')
         elif type(message_field) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
@@ -281,20 +424,32 @@ def parse_from_buffer(
             except Exception as e:
                 raise Exception('gRPCbb error -> Parse message error: some primitive type message not suported for contain partition '+ str(message_field) + str(e))
 
-    def save_to_file(request_iterator, signal) -> str:
-        filename = generate_random_dir()
+    def save_to_dir(request_iterator, signal) -> str:
+        dirname = generate_random_dir()
+        i: int = 1
+        _json: List[int|str] = []
         try:
-            save_chunks_to_file(
-                filename = filename,
-                buffer_iterator = parser_iterator(
-                    request_iterator = request_iterator,
+            while True:
+                _json.append(i)
+                save_chunks_to_file(
+                    filename = dirname + '/' + str(i),
+                    buffer_iterator = parser_iterator(
+                        request_iterator_obj = request_iterator,
+                        signal_obj= signal
+                    ),
                     signal = signal,
-                ),
-                signal = signal,
-            )
-            return filename
+                    _json= _json
+                )
+                i +=1
+
+        except StopIteration:
+            with open(dirname+"_.json", 'w') as f:
+                json.dump(_json, f)
+
+            return dirname # separator break.
+
         except Exception as e:
-            remove_file(file=filename)
+            remove_dir(dir=dirname)
             raise e
     
     def iterate_partition(message_field_or_route, signal: Signal, request_iterator):
@@ -306,7 +461,7 @@ def parse_from_buffer(
             )
 
         else:
-            return save_to_file(
+            return save_to_dir(
                 request_iterator = request_iterator,
                 signal = signal
             )
@@ -356,8 +511,8 @@ def parse_from_buffer(
             else:
                 main_object = combine_partitions(
                     obj_cls = pf_object,
-                    partitions_model = remote_partitions_model,
-                    partitions = dirs
+                    partitions_model = tuple(remote_partitions_model),
+                    partitions = tuple(dirs)
                 )
                 for dir in dirs: remove_file(dir)
 
@@ -373,7 +528,7 @@ def parse_from_buffer(
                 aux_object = get_submessage(partition = partition, obj = aux_object)
                 message_mode = partitions_message_mode[i]
                 if not message_mode:
-                    filename = generate_random_dir()
+                    filename = generate_random_file()
                     with open(filename, 'wb') as f:
                         f.write(
                             aux_object.SerializeToString() if hasattr(aux_object, 'SerializeToString') \
@@ -537,7 +692,7 @@ def serialize_to_buffer(
             finally: signal.wait()
 
             signal.wait()
-            file = generate_random_dir()
+            file = generate_random_file()
             with open(file, 'wb') as f, mem_manager(len=len(message_bytes)):
                 f.write(message_bytes)
             try:
