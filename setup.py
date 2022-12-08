@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='grpcbigbuffer',
-    version='0.0.3',
+    version='0.0.4',
 
     url='https://github.com/jossemii/GRPCBigBuffer.git',
     author='Josemi Avellana',

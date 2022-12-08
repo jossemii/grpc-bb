@@ -4,7 +4,7 @@ from io import BytesIO
 from typing import Generator, List, Dict, Tuple
 import os
 
-import buffer_pb2
+from grpcbigbuffer import buffer_pb2
 import numpy as np
 
 
