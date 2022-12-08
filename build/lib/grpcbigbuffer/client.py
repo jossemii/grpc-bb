@@ -88,11 +88,11 @@ class Enviroment(type):
         return cls._instances[cls]
 
 def modify_env(
-        cache_dir: str,
-        mem_manager: MemManager,
-        hash_type: bytes,
-        block_depth: int,
-        block_dir: str
+        cache_dir: typing.Optional[str] = None,
+        mem_manager: typing.Optional[MemManager] = None,
+        hash_type: typing.Optional[bytes] = None,
+        block_depth: typing.Optional[int] = None,
+        block_dir: typing.Optional[str] = None
 ):
     if cache_dir: Enviroment.cache_dir = cache_dir + 'grpcbigbuffer/'
     if mem_manager: Enviroment.mem_manager = mem_manager
