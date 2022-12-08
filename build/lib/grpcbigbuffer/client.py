@@ -1,5 +1,6 @@
 
 import json
+import typing
 
 # GrpcBigBuffer.
 CHUNK_SIZE = 1024 * 1024  # 1MB
@@ -39,7 +40,7 @@ def signal_block_buffer_stream(hash: str):
     pass  # Sends Buffer(block=Block())
 
 
-def get_hash_from_block(block: buffer_pb2.Buffer.Block) -> str | None:
+def get_hash_from_block(block: buffer_pb2.Buffer.Block) -> typing.Optional[str]:
     for hash in block.hashes:
         if hash.type == Enviroment.hash_type:
             return hash.value.hex()
@@ -390,7 +391,7 @@ def parse_from_buffer(
 
     def parse_message(message_field, request_iterator, signal: Signal):
         all_buffer: bytes = b''
-        in_block: str |None = None
+        in_block: typing.Optional[str] = None
         for b in parser_iterator(
             request_iterator_obj=request_iterator,
             signal_obj=signal,
