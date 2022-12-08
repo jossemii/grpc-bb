@@ -1,4 +1,3 @@
-__version__ = 'dev'
 
 import json
 
@@ -8,7 +7,7 @@ MAX_DIR = 999999999
 import os, gc, itertools, sys, shutil
 
 from google import protobuf
-from grpcbigbuffer import buffer_pb2
+import buffer_pb2
 from random import randint
 from typing import Generator, Union, List
 from threading import Condition
