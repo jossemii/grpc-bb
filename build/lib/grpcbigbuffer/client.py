@@ -115,7 +115,7 @@ def remove_file(file: str):
     os.remove(file) # TODO could be async.
 
 def remove_dir(dir: str):
-    shutil.rmdir()
+    shutil.rmtree(dir)
 
 class Signal():
     # The parser use change() when reads a signal on the buffer.
