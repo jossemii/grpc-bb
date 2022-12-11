@@ -516,8 +516,7 @@ def parse_from_buffer(
             with open(dirname + '/' + METADATA_FILE_NAME, 'w') as f:
                 json.dump(_json, f)
 
-            with open(dirname +'/'+ WITHOUT_BLOCK_POINTERS_FILE_NAME) as f:
-                f.write(generate_wbp_file(dirname), 'wb')
+            generate_wbp_file(dirname)
 
             return dirname  # separator break.
 

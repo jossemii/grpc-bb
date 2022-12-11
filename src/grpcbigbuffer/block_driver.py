@@ -71,7 +71,7 @@ def generate_new_buffer(lengths: Dict[int, int], buffer: bytes) -> bytes:
     return buffer
 
 
-def generate_wbp_file(dirname: str) -> bytes:
+def generate_wbp_file(dirname: str):
     with open(dirname + '/' + METADATA_FILE_NAME, 'r') as f:
         _json: List[Union[
             int,
@@ -91,4 +91,7 @@ def generate_wbp_file(dirname: str) -> bytes:
         for length_position, blocks_names in lengths_with_pointers.items()
     }
 
-    generate_new_buffer(recalculated_lengths, buffer)
+    with open(dirname + '/' + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
+        f.write(
+            generate_new_buffer(recalculated_lengths, buffer)
+        )
