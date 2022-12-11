@@ -175,7 +175,7 @@ def save_chunks_to_file(
         filename: str,
         signal: Signal = None,
         _json: List[Union[int, str]] = None
-):
+) -> bool:
     if not signal: signal = Signal(exist=False)
     signal.wait()
     with open(filename, 'wb') as f:
@@ -188,8 +188,10 @@ def save_chunks_to_file(
                     signal = signal,
                     _json = _json
                 )
-                break
+                return False
             f.write(buffer.chunk)
+        return True
+
 def get_subclass(partition, object_cls):
     return get_subclass(
         object_cls = type(
@@ -431,7 +433,7 @@ def parse_from_buffer(
         try:
             while True:
                 _json.append(i)
-                save_chunks_to_file(
+                if save_chunks_to_file(
                     filename = dirname + '/' + str(i),
                     buffer_iterator = parser_iterator(
                         request_iterator_obj = request_iterator,
@@ -439,19 +441,22 @@ def parse_from_buffer(
                     ),
                     signal = signal,
                     _json= _json
-                )
+                ): break
                 i +=1
 
         except StopIteration:
-            with open(dirname+"_.json", 'w') as f:
-                json.dump(_json, f)
-
-            return dirname # separator break.
+            pass
 
         except Exception as e:
             remove_dir(dir=dirname)
             raise e
-    
+
+        with open(dirname + "_.json", 'w') as f:
+            json.dump(_json, f)
+
+        return dirname  # separator break.
+
+
     def iterate_partition(message_field_or_route, signal: Signal, request_iterator):
         if message_field_or_route and type(message_field_or_route) is not str:
             return parse_message(
