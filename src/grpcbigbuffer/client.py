@@ -1,10 +1,12 @@
 import json
 import typing
 
+from grpcbigbuffer.block_driver import generate_wbp_file, WITHOUT_BLOCK_POINTERS_FILE_NAME, METADATA_FILE_NAME
+
 # GrpcBigBuffer.
 CHUNK_SIZE = 1024 * 1024  # 1MB
 MAX_DIR = 999999999
-WITHOUT_BLOCK_POINTERS_FILE_NAME = '/wbp.bin'
+
 import os, gc, itertools, sys, shutil
 
 from google import protobuf
@@ -426,7 +428,7 @@ def parse_from_buffer(
         elif d:
             block_dir: str = Enviroment.block_dir + block_id + '/'
             _json: List[Union[int, str]] = json.load(open(
-                block_dir + '_.json',
+                block_dir + METADATA_FILE_NAME,
             ))
             return b''.join([
                 open(block_dir + str(e)) if type(e) == int else read_block(block_id=e) \
@@ -511,8 +513,11 @@ def parse_from_buffer(
                 raise Exception('gRPCbb error: on save_to_dir function, the only file had no name 1')
 
         else:
-            with open(dirname + "_.json", 'w') as f:
+            with open(dirname + '/' + METADATA_FILE_NAME, 'w') as f:
                 json.dump(_json, f)
+
+            with open(dirname +'/'+ WITHOUT_BLOCK_POINTERS_FILE_NAME) as f:
+                f.write(generate_wbp_file(dirname), 'wb')
 
             return dirname  # separator break.
 
@@ -573,7 +578,7 @@ def parse_from_buffer(
                 d: str = dirs[0]
                 is_dir: bool = False
                 if os.path.isdir(d):
-                    d = dirs[0] + WITHOUT_BLOCK_POINTERS_FILE_NAME
+                    d = dirs[0] +'/'+ WITHOUT_BLOCK_POINTERS_FILE_NAME
                     is_dir = True
                 main_object.ParseFromString(open(d, 'rb').read())
                 remove_file(file=d) if not is_dir else remove_dir(dir=d)
