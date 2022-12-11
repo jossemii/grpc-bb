@@ -452,10 +452,21 @@ def parse_from_buffer(
             remove_dir(dir=dirname)
             raise e
 
-        with open(dirname + "_.json", 'w') as f:
-            json.dump(_json, f)
+        if len(_json) < 2:
+            filename: str = generate_random_file()
+            try:
+                shutil.move(dirname+'/1', filename)
+                return filename
 
-        return dirname  # separator break.
+            except FileNotFoundError:
+                remove_file(file=filename)
+                raise Exception('gRPCbb error: on save_to_dir function, the only file had no name 1')
+
+        else:
+            with open(dirname + "_.json", 'w') as f:
+                json.dump(_json, f)
+
+            return dirname  # separator break.
 
 
     def iterate_partition(message_field_or_route, signal: Signal, request_iterator):

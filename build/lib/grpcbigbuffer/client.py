@@ -5,6 +5,7 @@ import typing
 # GrpcBigBuffer.
 CHUNK_SIZE = 1024 * 1024  # 1MB
 MAX_DIR = 999999999
+WITHOUT_BLOCK_POINTERS_FILE_NAME = '/wbp.bin'
 import os, gc, itertools, sys, shutil
 
 from google import protobuf
@@ -451,10 +452,21 @@ def parse_from_buffer(
             remove_dir(dir=dirname)
             raise e
 
-        with open(dirname + "_.json", 'w') as f:
-            json.dump(_json, f)
+        if len(_json) < 2:
+            filename: str = generate_random_file()
+            try:
+                shutil.move(dirname+'/1', filename)
+                return filename
 
-        return dirname  # separator break.
+            except FileNotFoundError:
+                remove_file(file=filename)
+                raise Exception('gRPCbb error: on save_to_dir function, the only file had no name 1')
+
+        else:
+            with open(dirname + "_.json", 'w') as f:
+                json.dump(_json, f)
+
+            return dirname  # separator break.
 
 
     def iterate_partition(message_field_or_route, signal: Signal, request_iterator):
@@ -509,8 +521,13 @@ def parse_from_buffer(
         with mem_manager(len = 3*sum([os.path.getsize(dir) for dir in dirs[:-1]]) + 2*os.path.getsize(dirs[-1])):
             if (len(remote_partitions_model)==0 or len(remote_partitions_model)==1) and len(dirs)==1:
                 main_object = pf_object()
-                main_object.ParseFromString(open(dirs[0], 'rb').read())
-                remove_file(file=dirs[0])
+                d: str = dirs[0]
+                is_dir: bool = False
+                if os.path.isdir(d):
+                    d = dirs[0]+WITHOUT_BLOCK_POINTERS_FILE_NAME
+                    is_dir = True
+                main_object.ParseFromString(open(d, 'rb').read())
+                remove_file(file=d) if not is_dir else remove_dir(dir=d)
             elif len(remote_partitions_model)!=len(dirs): 
                 raise Exception("Error: remote partitions model are not correct with the buffer.")
             else:
