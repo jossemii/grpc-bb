@@ -121,8 +121,8 @@ def message_to_bytes(message) -> bytes:
             return bytes(message)
         except TypeError:
             raise (
-                        'gRPCbb error -> Serialize message error: some primitive type message not suported for contain partition ' + str(
-                    type(message)))
+                    'gRPCbb error -> Serialize message error: some primitive type message not suported for contain partition ' + str(
+                type(message)))
 
 
 def remove_file(file: str):
