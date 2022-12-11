@@ -39,6 +39,38 @@ def recalculate_block_length(position: int, blocks_names: List[str], buffer: byt
     ])
 
 
+def set_varint_value(varint_pos: int, buffer: bytes, new_value: int) -> bytes:
+    """
+    Sets the value of the varint at the given position in the Protobuf buffer to the given value and returns the modified buffer.
+    """
+    # Convert the given value to a varint and store it in a bytes object
+    varint_bytes = []
+    while True:
+        byte = new_value & 0x7F
+        new_value >>= 7
+        varint_bytes.append(byte | 0x80 if new_value > 0 else byte)
+        if new_value == 0:
+            break
+    varint_bytes = bytes(varint_bytes)
+
+    # Calculate the number of bytes to remove from the original varint
+    original_varint_bytes = buffer[varint_pos:]
+    original_varint_length = 0
+    while (original_varint_bytes[original_varint_length] & 0x80) != 0:
+        original_varint_length += 1
+    original_varint_length += 1
+
+    # Remove the original varint and append the new one
+    return buffer[:varint_pos] + varint_bytes + buffer[varint_pos + original_varint_length:]
+
+
+def generate_new_buffer(lengths: Dict[int, int], buffer: bytes) -> bytes:
+    for varint_pos, new_value in lengths.items():
+        buffer = set_varint_value(varint_pos, buffer, new_value)
+
+    return buffer
+
+
 def generate_wbp_file(dirname: str) -> bytes:
     with open(dirname + '/' + METADATA_FILE_NAME, 'r') as f:
         _json: List[Union[
@@ -58,3 +90,5 @@ def generate_wbp_file(dirname: str) -> bytes:
         length_position: recalculate_block_length(length_position, blocks_names, buffer) \
         for length_position, blocks_names in lengths_with_pointers.items()
     }
+
+    generate_new_buffer(recalculated_lengths, buffer)
