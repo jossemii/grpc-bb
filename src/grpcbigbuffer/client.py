@@ -303,13 +303,16 @@ def put_submessage(partition, message, obj):
 def combine_partitions(
         obj_cls: protobuf.pyext.cpp_message.GeneratedProtocolMessageType,
         partitions_model: tuple,
-        partitions: tuple
+        partitions: typing.Tuple[str]
 ):
     obj = obj_cls()
     for i, partition in enumerate(partitions):
-        if type(partition) is str:
+        if type(partition) is str and os.path.isfile(partition):
             with open(partition, 'rb') as f:
-                partition = f.read()
+                partition: bytes = f.read()
+        elif type(partition) is str and os.path.isdir(partition):
+            with open(partition + '/' + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'rb') as f:
+                partition: bytes = f.read()
         elif not (hasattr(partition, 'SerializeToString') or not type(
                 partition) is bytes):  # TODO check.   'not type(partition) is bytes' could affect on partitions to buffer()
             raise Exception('Partitions to buffer error.')
@@ -559,7 +562,7 @@ def parse_from_buffer(
         if not remote_partitions_model: remote_partitions_model = []
         if not partitions_message_mode: partitions_message_mode = []
         yield pf_object
-        dirs = []
+        dirs: List[str] = []
         # 1. Save the remote partitions on cache.
         try:
             for d in iterator:
@@ -568,7 +571,7 @@ def parse_from_buffer(
                 dirs.append(d)
         except EmptyBufferException:
             pass
-        if not pf_object or len(remote_partitions_model) > 0 and len(dirs) != len(remote_partitions_model): return None
+        if not pf_object or 0 < len(remote_partitions_model) != len(dirs): return None
         # 3. Parse to the local partitions from the remote partitions using mem_manager.
         # TODO: check the limit memory formula.
         with mem_manager(len=3 * sum([os.path.getsize(dir) for dir in dirs[:-1]]) + 2 * os.path.getsize(dirs[-1])):
@@ -577,7 +580,7 @@ def parse_from_buffer(
                 d: str = dirs[0]
                 is_dir: bool = False
                 if os.path.isdir(d):
-                    d = dirs[0] +'/'+ WITHOUT_BLOCK_POINTERS_FILE_NAME
+                    d = dirs[0] + '/' + WITHOUT_BLOCK_POINTERS_FILE_NAME
                     is_dir = True
                 main_object.ParseFromString(open(d, 'rb').read())
                 remove_file(file=d) if not is_dir else remove_dir(dir=d)
@@ -589,10 +592,11 @@ def parse_from_buffer(
                     partitions_model=tuple(remote_partitions_model),
                     partitions=tuple(dirs)
                 )
-                for dir in dirs: remove_file(dir)
+                for directory in dirs:
+                    remove_file(directory) if os.path.isfile(directory) else remove_dir(directory)
 
             # 4. yield local partitions.
-            if local_partitions_model == []: local_partitions_model.append(buffer_pb2.Buffer.Head.Partition())
+            if not local_partitions_model: local_partitions_model.append(buffer_pb2.Buffer.Head.Partition())
             for i, partition in enumerate(local_partitions_model):
                 if i + 1 == len(local_partitions_model):
                     aux_object = main_object
@@ -606,7 +610,7 @@ def parse_from_buffer(
                     filename = generate_random_file()
                     with open(filename, 'wb') as f:
                         f.write(
-                            aux_object.SerializeToString() if hasattr(aux_object, 'SerializeToString') \
+                            aux_object.SerializeToString() if hasattr(aux_object, 'SerializeToString')
                                 else bytes(aux_object) if type(aux_object) is not str else bytes(aux_object, 'utf8')
                         )
                     del aux_object
@@ -628,7 +632,7 @@ def parse_from_buffer(
             if buffer.head.index not in indices: raise Exception(
                 'Parse from buffer error: buffer head index is not correct ' + str(buffer.head.index) + str(
                     indices.keys()))
-            if not ((len(buffer.head.partitions) == 0 and len(partitions_model[buffer.head.index]) == 1) or \
+            if not ((len(buffer.head.partitions) == 0 and len(partitions_model[buffer.head.index]) == 1) or
                     (len(buffer.head.partitions) == len(partitions_model[buffer.head.index]) and
                      list(buffer.head.partitions) == partitions_model[buffer.head.index])):  # If not match
                 for b in conversor(
