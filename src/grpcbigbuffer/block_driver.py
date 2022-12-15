@@ -2,6 +2,8 @@ import json
 import os.path
 from typing import Union, List, Tuple, Dict
 
+from grpcbigbuffer.disk_stream import encode_bytes
+
 WITHOUT_BLOCK_POINTERS_FILE_NAME = 'wbp.bin'
 METADATA_FILE_NAME = '_.json'
 BLOCK_LENGTH = 36
@@ -13,7 +15,8 @@ def transform_dictionary_format(d: Dict[str, List[int]]) -> Dict[int, List[str]]
 
 
 def get_pruned_block_length(block_name: str) -> int:
-    return os.path.getsize(block_name) - BLOCK_LENGTH
+    block_size: int = os.path.getsize(block_name)
+    return block_size + len(encode_bytes(block_size)) - BLOCK_LENGTH - len(encode_bytes(BLOCK_LENGTH))
 
 
 def get_position_length(varint_pos: int, buffer: bytes) -> int:
@@ -87,7 +90,7 @@ def generate_wbp_file(dirname: str):
     lengths_with_pointers: Dict[int, List[str]] = transform_dictionary_format(blocks)
 
     recalculated_lengths: Dict[int, int] = {
-        length_position: recalculate_block_length(length_position, blocks_names, buffer) \
+        length_position: recalculate_block_length(length_position, blocks_names, buffer)
         for length_position, blocks_names in lengths_with_pointers.items()
     }
 
