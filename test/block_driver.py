@@ -15,7 +15,7 @@ class TestGetVarintValue(unittest.TestCase):
         # Test a varint with multiple bytes
         buffer = b"\xC0\x03"
         value = get_position_length(0, buffer)
-        self.assertEqual(value, 192)
+        self.assertEqual(value, 448)
 
     def test_max_varint(self):
         # Test the maximum varint value (2**64 - 1)
@@ -27,7 +27,7 @@ class TestGetVarintValue(unittest.TestCase):
         # Test a varint at a non-zero position in the buffer
         buffer = b"\x00\x00\xC0\x03"
         value = get_position_length(2, buffer)
-        self.assertEqual(value, 192)
+        self.assertEqual(value, 448)
 
 
 if __name__ == "__main__":
