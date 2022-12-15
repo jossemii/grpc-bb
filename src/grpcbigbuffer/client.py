@@ -159,7 +159,7 @@ class Signal():
                 self.condition.wait()
 
 
-def get_file_chunks(filename, signal=None) -> Generator[buffer_pb2.Buffer, None, None]:
+def read_file_by_chunks(filename: str, signal: Signal = None) -> Generator[bytes, None, None]:
     if not signal: signal = Signal(exist=False)
     signal.wait()
     try:
@@ -167,11 +167,49 @@ def get_file_chunks(filename, signal=None) -> Generator[buffer_pb2.Buffer, None,
             while True:
                 f.flush()
                 signal.wait()
-                piece = f.read(CHUNK_SIZE)
+                piece: bytes = f.read(CHUNK_SIZE)
                 if len(piece) == 0: return
-                yield buffer_pb2.Buffer(chunk=piece)
+                yield piece
     finally:
         gc.collect()
+
+
+def read_multiblock_directory(directory: str) -> Generator[bytes, None, None]:
+    if not os.path.isdir(directory):
+        raise Exception("gRPCbb error reading multiblock directory. It's not directory")
+
+    for e in json.load(open(
+        directory + METADATA_FILE_NAME,
+    )):
+        if type(e) == int:
+            yield from read_file_by_chunks(filename=directory + str(e))
+        else:
+            yield from read_block(block_id=e)
+
+
+def read_block(block_id: str) -> Generator[bytes, None, None]:
+    b, d = block_exists(hash=block_id, is_dir=True)
+    if b and not d:
+        yield from read_file_by_chunks(filename=Enviroment.block_dir + block_id)
+
+    elif d:
+        yield from read_multiblock_directory(
+            directory=Enviroment.block_dir + block_id
+        )
+
+    else:
+        raise Exception('gRPCbb: Error reading block.')
+
+
+def read_from_registry(filename: str, signal: Signal = None) -> Generator[buffer_pb2.Buffer, None, None]:
+    for c in read_multiblock_directory(
+        directory=filename
+    ) if os.path.isdir(filename) else \
+        read_file_by_chunks(
+            filename=filename,
+            signal=signal
+    ):
+        yield buffer_pb2.Buffer(chunk=c)
 
 
 def save_chunks_to_block(
@@ -424,22 +462,6 @@ def parse_from_buffer(
             if buffer_obj.HasField('separator') and buffer_obj.separator:
                 break
 
-    def read_block(block_id: str) -> bytes:
-        b, d = block_exists(hash=block_id, is_dir=True)
-        if b and not d:
-            with open(Enviroment.block_dir + block_id, 'rb') as f:
-                return f.read()
-        elif d:
-            block_dir: str = Enviroment.block_dir + block_id + '/'
-            _json: List[Union[int, str]] = json.load(open(
-                block_dir + METADATA_FILE_NAME,
-            ))
-            return b''.join([
-                open(block_dir + str(e)) if type(e) == int else read_block(block_id=e) \
-                for e in _json
-            ])
-        else:
-            raise Exception('gRPCbb: Error reading block.')
 
     def parse_message(message_field, request_iterator, signal: Signal):
         all_buffer: bytes = b''
@@ -455,7 +477,7 @@ def parse_from_buffer(
 
                 elif not in_block and block_exists(hash=id):
                     in_block: str = id
-                    all_buffer += read_block(block_id=id)
+                    all_buffer += b''.join([c for c in read_block(block_id=id)])
                     continue
 
             if not in_block:
@@ -612,7 +634,7 @@ def parse_from_buffer(
                     with open(filename, 'wb') as f:
                         f.write(
                             aux_object.SerializeToString() if hasattr(aux_object, 'SerializeToString')
-                                else bytes(aux_object) if type(aux_object) is not str else bytes(aux_object, 'utf8')
+                            else bytes(aux_object) if type(aux_object) is not str else bytes(aux_object, 'utf8')
                         )
                     del aux_object
                     if i + 1 == len(local_partitions_model):
@@ -741,7 +763,7 @@ def serialize_to_buffer(
         raise Exception('Serialzie to buffer error: Indices are not correct ' + str(indices) + str(partitions_model))
 
     def send_file(filedir: Dir, signal: Signal) -> Generator[buffer_pb2.Buffer, None, None]:
-        for b in get_file_chunks(
+        for b in read_from_registry(
                 filename=filedir.name,
                 signal=signal
         ):
@@ -789,7 +811,7 @@ def serialize_to_buffer(
             with open(file, 'wb') as f, mem_manager(len=len(message_bytes)):
                 f.write(message_bytes)
             try:
-                for b in get_file_chunks(
+                for b in read_from_registry(
                         filename=file,
                         signal=signal
                 ): yield b
