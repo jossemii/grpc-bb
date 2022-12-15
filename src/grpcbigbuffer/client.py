@@ -184,9 +184,10 @@ def save_chunks_to_block(
         ]] = None
 ):
     block_id: str = get_hash_from_block(block)
-    if _json: _json.append(
-        (block_id, block.previous_lengths_position)
-    )
+    if _json:
+        _json.append(
+            (block_id, list(block.previous_lengths_position))
+        )
     if not block_exists(block_id):  # Second com probation of that.
         save_chunks_to_file(
             buffer_iterator=buffer_iterator,
