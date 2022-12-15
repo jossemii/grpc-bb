@@ -1,5 +1,6 @@
 import json
 import typing
+from io import BufferedReader
 
 from grpcbigbuffer.block_driver import generate_wbp_file, WITHOUT_BLOCK_POINTERS_FILE_NAME, METADATA_FILE_NAME
 
@@ -163,7 +164,7 @@ def read_file_by_chunks(filename: str, signal: Signal = None) -> Generator[bytes
     if not signal: signal = Signal(exist=False)
     signal.wait()
     try:
-        with open(filename, 'rb', buffering=CHUNK_SIZE) as f:
+        with BufferedReader(open(filename, 'rb')) as f:
             while True:
                 f.flush()
                 signal.wait()
