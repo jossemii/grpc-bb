@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package test;
+
+message Test {
+  bytes t1 = 1;
+  bytes t2 = 2;
+  optional Test t3 = 3;
+}
