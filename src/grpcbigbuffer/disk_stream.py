@@ -179,6 +179,7 @@ def decode_bytes(buf):
 
     return decode_stream(BytesIO(buf))
 
+
 def encode_bytes(n: int) -> bytes:
     # https://github.com/fmoo/python-varint/blob/master/varint.py
     def _byte(b):
