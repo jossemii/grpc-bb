@@ -193,8 +193,8 @@ def build_multiblock(
 
         if b2:
             _json.append((
-                b2,
-                container[b2]
+                b2.hex(),
+                container[b2.hex()]
             ))
 
     with open(cache_dir + '_.json', 'w') as f:
