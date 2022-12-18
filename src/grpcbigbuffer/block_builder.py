@@ -9,7 +9,7 @@ from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
 
 from grpcbigbuffer.block_driver import WITHOUT_BLOCK_POINTERS_FILE_NAME
-from grpcbigbuffer.client import Enviroment, CHUNK_SIZE
+from grpcbigbuffer.client import Enviroment, CHUNK_SIZE, generate_random_dir
 from grpcbigbuffer.disk_stream import encode_bytes
 
 
@@ -131,7 +131,7 @@ def generate_buffer(buffer: bytes, lengths: Dict[int, Tuple[int, int]]) -> List[
     return list_of_bytes
 
 
-def generate_id(buffers: List[bytes], blocks: List[bytes]) -> str:
+def generate_id(buffers: List[bytes], blocks: List[bytes]) -> bytes:
     hash_id = sha3_256()
     for buffer, block in zip_longest(buffers, blocks):
         if buffer: hash_id.update(buffer)
@@ -142,13 +142,13 @@ def generate_id(buffers: List[bytes], blocks: List[bytes]) -> str:
                     piece: bytes = f.read(CHUNK_SIZE)
                     if len(piece) == 0: break
                     hash_id.update(piece)
-    return hash_id.hexdigest()
+    return hash_id.digest()
 
 
 def build_multiblock(
         pf_object_with_block_pointers: Any,
         blocks: List[bytes]
-):
+) -> Tuple[bytes, str]:
     container: Dict[str, List[int]] = search_on_message(
         message=pf_object_with_block_pointers,
         pointers=[1],
@@ -176,11 +176,11 @@ def build_multiblock(
 
     print('\nnew buffer -> ', new_buff)
 
-    object_id: str = generate_id(
+    object_id: bytes = generate_id(
         buffers=new_buff,
         blocks=blocks
     )
-    os.mkdir(Enviroment.cache_dir + object_id)
+    cache_dir: str = generate_random_dir() + '/'
     _json: List[Union[
             int,
             Tuple[str, List[int]]
@@ -188,7 +188,7 @@ def build_multiblock(
 
     for i, (b1, b2) in enumerate(zip_longest(new_buff, blocks)):
         _json.append(i+1)
-        with open(Enviroment.cache_dir + object_id + '/' + str(i + 1), 'wb') as f:
+        with open(cache_dir + str(i + 1), 'wb') as f:
             f.write(b1)
 
         if b2:
@@ -197,9 +197,11 @@ def build_multiblock(
                 container[b2]
             ))
 
-    with open('_.json', 'w') as f:
+    with open(cache_dir + '_.json', 'w') as f:
         json.dump(_json, f)
 
-    with open(Enviroment.cache_dir + object_id + '/' + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
+    with open(cache_dir + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
         f.write(pf_object_with_block_pointers.SerializeToString())
+
+    return object_id, dir
 
