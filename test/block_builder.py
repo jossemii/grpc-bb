@@ -2,6 +2,7 @@ import sys, unittest
 
 sys.path.append('../src/')
 
+from grpcbigbuffer.client import Enviroment
 from grpcbigbuffer import buffer_pb2
 from grpcbigbuffer.block_builder import build_multiblock, create_lengths_tree, search_on_message
 
@@ -53,12 +54,12 @@ class TestSearchOnMessage(unittest.TestCase):
 class TestCreateLengthsTree(unittest.TestCase):
     def test_create_lengths_tree(self):
         # Test with a single element
-        pointer_container = {'abc': [1,2,3]}
-        expected_output = {1: {2: { 3: 'abc'}}}
+        pointer_container = {'abc': [1, 2, 3]}
+        expected_output = {1: {2: {3: 'abc'}}}
         self.assertEqual(create_lengths_tree(pointer_container), expected_output)
 
         # Test with multiple elements
-        pointer_container = {'abc': [1,2,3, 5], 'fjk': [1,8]}
+        pointer_container = {'abc': [1, 2, 3, 5], 'fjk': [1, 8]}
         expected_output = {1: {2: {3: {5: 'abc'}}, 8: 'fjk'}}
         self.assertEqual(create_lengths_tree(pointer_container), expected_output)
 
@@ -75,19 +76,19 @@ if __name__ == '__main__':
 
     block = buffer_pb2.Buffer.Block()
     h = buffer_pb2.Buffer.Block.Hash()
-    h.type = b'sha256'
+    h.type = Enviroment.hash_type
     h.value = b'sha512'
     block.hashes.append(h)
 
     block2 = buffer_pb2.Buffer.Block()
     h = buffer_pb2.Buffer.Block.Hash()
-    h.type = b'sha256'
+    h.type = Enviroment.hash_type
     h.value = b'sha256'
     block2.hashes.append(h)
 
     block3 = buffer_pb2.Buffer.Block()
     h = buffer_pb2.Buffer.Block.Hash()
-    h.type = b'sha256'
+    h.type = Enviroment.hash_type
     h.value = b'sha3256'
     block3.hashes.append(h)
 
@@ -102,5 +103,5 @@ if __name__ == '__main__':
 
     build_multiblock(
         pf_object_with_block_pointers=c,
-        blocks = [b'sha256', b'sha512', b'sha3256']
+        blocks=[b'sha256', b'sha512', b'sha3256']
     )

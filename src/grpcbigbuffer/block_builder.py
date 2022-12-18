@@ -30,7 +30,7 @@ def get_hash(block: buffer_pb2.Buffer.Block) -> str:
     from hashlib import sha3_256
     for hash in block.hashes:
         if hash.type == Enviroment.hash_type:
-            return hash.value.hexdigest()
+            return hash.value.hex()
     raise Exception('gRPCbb: any hash of type ' + Enviroment.hash_type.hex())
 
 
