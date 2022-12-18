@@ -136,7 +136,7 @@ def generate_id(buffers: List[bytes], blocks: List[bytes]) -> str:
     for buffer, block in zip_longest(buffers, blocks):
         if buffer: hash_id.update(buffer)
         if block:
-            with BufferedReader(open(Enviroment.block_dir+block.hex())) as f:
+            with BufferedReader(open(Enviroment.block_dir+block.hex(), 'rb')) as f:
                 while True:
                     f.flush()
                     piece: bytes = f.read(CHUNK_SIZE)
