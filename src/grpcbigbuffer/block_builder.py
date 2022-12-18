@@ -115,8 +115,10 @@ def build_multiblock(
 
     print('\nlengths tree -> ', tree)
 
-    new_buff: Dict[int, int] = compute_real_lengths(
+    real_lengths: Dict[int, int] = compute_real_lengths(
         tree=tree
     )
 
-    print('\nnew buff -> ', new_buff)
+    print('\nreal_lengths -> ', real_lengths)
+
+
