@@ -203,5 +203,5 @@ def build_multiblock(
     with open(cache_dir + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
         f.write(pf_object_with_block_pointers.SerializeToString())
 
-    return object_id, dir
+    return object_id, cache_dir
 
