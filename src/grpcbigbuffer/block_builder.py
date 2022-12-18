@@ -1,10 +1,13 @@
 import os.path
 import warnings
+from hashlib import sha3_256
+from io import BufferedReader
+from itertools import zip_longest
 from typing import Any, List, Dict, Union, Tuple
 from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
 
-from grpcbigbuffer.client import Enviroment
+from grpcbigbuffer.client import Enviroment, CHUNK_SIZE
 from grpcbigbuffer.disk_stream import encode_bytes
 
 
@@ -126,6 +129,20 @@ def generate_buffer(buffer: bytes, lengths: Dict[int, Tuple[int, int]]) -> List[
     return list_of_bytes
 
 
+def generate_id(buffers: List[bytes], blocks: List[bytes]) -> str:
+    hash_id = sha3_256()
+    for buffer, block in zip_longest(buffers, blocks):
+        if buffer: hash_id.update(buffer)
+        if block:
+            with BufferedReader(open(Enviroment.block_dir+block.hex())) as f:
+                while True:
+                    f.flush()
+                    piece: bytes = f.read(CHUNK_SIZE)
+                    if len(piece) == 0: break
+                    hash_id.update(piece)
+    return hash_id.hexdigest()
+
+
 def build_multiblock(
         pf_object_with_block_pointers: Any,
         blocks: List[bytes]
@@ -156,3 +173,12 @@ def build_multiblock(
     )
 
     print('\nnew buffer -> ', new_buff)
+
+    id: str = generate_id(
+        buffers=new_buff,
+        blocks=blocks
+    )
+
+    for b in new_buff:
+        with open(Enviroment., 'wb') as f:
+            f.write(b)
