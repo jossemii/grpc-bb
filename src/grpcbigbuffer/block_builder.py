@@ -176,11 +176,11 @@ def build_multiblock(
 
     print('\nnew buffer -> ', new_buff)
 
-    id: str = generate_id(
+    object_id: str = generate_id(
         buffers=new_buff,
         blocks=blocks
     )
-    os.mkdir(Enviroment.cache_dir+id)
+    os.mkdir(Enviroment.cache_dir + object_id)
     _json: List[Union[
             int,
             Tuple[str, List[int]]
@@ -188,7 +188,7 @@ def build_multiblock(
 
     for i, (b1, b2) in enumerate(zip_longest(new_buff, blocks)):
         _json.append(i+1)
-        with open(Enviroment.cache_dir+id+'/'+str(i+1), 'wb') as f:
+        with open(Enviroment.cache_dir + object_id + '/' + str(i + 1), 'wb') as f:
             f.write(b1)
 
         if b2:
@@ -200,6 +200,6 @@ def build_multiblock(
     with open('_.json', 'w') as f:
         json.dump(_json, f)
 
-    with open(Enviroment.cache_dir+id+'/'+WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
+    with open(Enviroment.cache_dir + object_id + '/' + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
         f.write(pf_object_with_block_pointers.SerializeToString())
 
