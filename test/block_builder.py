@@ -58,8 +58,8 @@ class TestCreateLengthsTree(unittest.TestCase):
         self.assertEqual(create_lengths_tree(pointer_container), expected_output)
 
         # Test with multiple elements
-        pointer_container = {'abc': [1,2,5, 3], 'fjk': [1,6]}
-        expected_output = {1: {2: {5: {3: 'abc'}}, 6: 'fjk'}}
+        pointer_container = {'abc': [1,2,3, 5], 'fjk': [1,8]}
+        expected_output = {1: {2: {3: {5: 'abc'}}, 8: 'fjk'}}
         self.assertEqual(create_lengths_tree(pointer_container), expected_output)
 
         # Test with empty input

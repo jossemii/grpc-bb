@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, List, Dict, Union
+from typing import Any, List, Dict, Union, Tuple
 from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
 
@@ -73,8 +73,28 @@ def create_lengths_tree(
     return tree
 
 
-def generate_buffer(tree: Dict[int, Union[Dict, str]], initial_buffer: bytes) -> bytes:
-    
+def compute_real_lengths(tree: Dict[int, Union[Dict, str]]) -> Dict[int, int]:
+    def get_block_length(block_id: str) -> int:
+        return len(block_id)
+
+    def traverse_tree(tree: Dict) -> Tuple[int, Dict[int, int]]:
+        real_lengths: Dict[int, int] = {}
+        total_tree_length: int = 0
+        for key, value in tree.items():
+            if isinstance(value, dict):
+                real_length, internal_lengths = traverse_tree(value)
+                real_lengths[key] = real_length
+                real_lengths.update(internal_lengths)
+                total_tree_length += real_length + len(encode_bytes(real_length)) + 1
+
+            else:
+                real_length: int = get_block_length(value)
+                real_lengths[key] = real_length
+                total_tree_length += real_length + len(encode_bytes(real_length)) + 1
+
+        return total_tree_length, real_lengths
+
+    return traverse_tree(tree)[1]
 
 
 def build_multiblock(
@@ -95,9 +115,8 @@ def build_multiblock(
 
     print('\nlengths tree -> ', tree)
 
-    new_buff: bytes = generate_buffer(
-        tree=tree,
-        initial_buffer=pf_object_with_block_pointers
+    new_buff: Dict[int, int] = compute_real_lengths(
+        tree=tree
     )
 
     print('\nnew buff -> ', new_buff)
