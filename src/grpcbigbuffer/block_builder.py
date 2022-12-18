@@ -1,3 +1,4 @@
+import json
 import os.path
 import warnings
 from hashlib import sha3_256
@@ -7,6 +8,7 @@ from typing import Any, List, Dict, Union, Tuple
 from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
 
+from grpcbigbuffer.block_driver import WITHOUT_BLOCK_POINTERS_FILE_NAME
 from grpcbigbuffer.client import Enviroment, CHUNK_SIZE
 from grpcbigbuffer.disk_stream import encode_bytes
 
@@ -178,7 +180,26 @@ def build_multiblock(
         buffers=new_buff,
         blocks=blocks
     )
+    os.mkdir(Enviroment.cache_dir+id)
+    _json: List[Union[
+            int,
+            Tuple[str, List[int]]
+        ]] = []
 
-    for b in new_buff:
-        with open(Enviroment., 'wb') as f:
-            f.write(b)
+    for i, (b1, b2) in enumerate(zip_longest(new_buff, blocks)):
+        _json.append(i+1)
+        with open(Enviroment.cache_dir+id+'/'+str(i+1), 'wb') as f:
+            f.write(b1)
+
+        if b2:
+            _json.append((
+                b2,
+                container[b2]
+            ))
+
+    with open('_.json', 'w') as f:
+        json.dump(_json, f)
+
+    with open(Enviroment.cache_dir+id+'/'+WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
+        f.write(pf_object_with_block_pointers.SerializeToString())
+
