@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Union
 from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
 
@@ -59,6 +59,24 @@ def search_on_message(
     return container
 
 
+def create_lengths_tree(
+        pointer_container: Dict[str, List[int]]
+) -> Dict[int, Union[Dict, str]]:
+    tree = {}
+    for key, pointers in pointer_container.items():
+        current_level = tree
+        for pointer in pointers[:-1]:
+            if pointer not in current_level:
+                current_level[pointer] = {}
+            current_level = current_level[pointer]
+        current_level[pointers[-1]] = key
+    return tree
+
+
+def generate_buffer(tree: Dict[int, Union[Dict, str]], initial_buffer: bytes) -> bytes:
+    
+
+
 def build_multiblock(
         pf_object_with_block_pointers: Any,
         blocks: List[bytes]
@@ -69,4 +87,17 @@ def build_multiblock(
         initial_position=2,
         blocks=blocks
     )
-    return container
+    print('\npointer container -> ', container)
+
+    tree: Dict[int, Union[Dict, str]] = create_lengths_tree(
+        pointer_container=container
+    )
+
+    print('\nlengths tree -> ', tree)
+
+    new_buff: bytes = generate_buffer(
+        tree=tree,
+        initial_buffer=pf_object_with_block_pointers
+    )
+
+    print('\nnew buff -> ', new_buff)
