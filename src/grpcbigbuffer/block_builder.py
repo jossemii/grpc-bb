@@ -1,8 +1,10 @@
+import os.path
 import warnings
 from typing import Any, List, Dict, Union, Tuple
 from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
 
+from grpcbigbuffer.client import Enviroment
 from grpcbigbuffer.disk_stream import encode_bytes
 
 
@@ -21,7 +23,10 @@ def is_block(bytes_obj, blocks: List[bytes]):
 
 def get_hash(block: buffer_pb2.Buffer.Block) -> str:
     from hashlib import sha3_256
-    return sha3_256(block.SerializeToString()).hexdigest()
+    for hash in block.hashes:
+        if hash.type == Enviroment.hash_type:
+            return hash.value.hexdigest()
+    raise Exception('gRPCbb: any hash of type ' + Enviroment.hash_type.hex())
 
 
 def search_on_message(
@@ -75,12 +80,15 @@ def create_lengths_tree(
 
 def compute_real_lengths(tree: Dict[int, Union[Dict, str]]) -> Dict[int, Tuple[int, int]]:
     def get_block_length(block_id: str) -> int:
-        return len(block_id)
+        if os.path.isfile(Enviroment.block_dir + block_id):
+            return os.path.getsize(Enviroment.block_dir+block_id)
+        else:
+            raise Exception('gRPCbb: error on compute_real_lengths, multiblock blocks dont supported.')
 
-    def traverse_tree(tree: Dict) -> Tuple[int, Dict[int, Tuple[int, int]]]:
+    def traverse_tree(internal_tree: Dict) -> Tuple[int, Dict[int, Tuple[int, int]]]:
         real_lengths: Dict[int, Tuple[int, int]] = {}
         total_tree_length: int = 0
-        for key, value in tree.items():
+        for key, value in internal_tree.items():
             if isinstance(value, dict):
                 real_length, internal_lengths = traverse_tree(value)
                 real_lengths[key] = (real_length, 0)
