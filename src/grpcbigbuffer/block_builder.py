@@ -149,6 +149,8 @@ def build_multiblock(
         pf_object_with_block_pointers: Any,
         blocks: List[bytes]
 ) -> Tuple[bytes, str]:
+    print('buffer -> ', pf_object_with_block_pointers.SerializeToString())
+
     container: Dict[str, List[int]] = search_on_message(
         message=pf_object_with_block_pointers,
         pointers=[1],

@@ -118,7 +118,9 @@ if __name__ == '__main__':
     for element in _json:
         if type(element) == int:
             with open(os.path.join(cache_dir, str(element)), 'rb') as f:
-                buffer += f.read()
+                block = f.read()
+                print('block -> ', block)
+                buffer += block
 
         if type(element) == tuple:
             with open(os.path.join(cache_dir, element[0]), 'rb') as f:
@@ -131,7 +133,10 @@ if __name__ == '__main__':
                 break
 
     print('\n total buffer -> ', buffer)
+    print('\n total indices buffer -> ', [(i, bytes([b])) for i, b in enumerate(buffer)])
 
+
+    print('\n\n')
     object = Test()
     object.ParseFromString(buffer)
 
