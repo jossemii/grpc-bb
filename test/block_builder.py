@@ -1,3 +1,5 @@
+import json
+import os
 import sys, unittest
 
 sys.path.append('../src/')
@@ -101,7 +103,38 @@ if __name__ == '__main__':
     c.t2 = b'adios'
     c.t3.CopyFrom(b)
 
-    build_multiblock(
+    object_id, cache_dir = build_multiblock(
         pf_object_with_block_pointers=c,
         blocks=[b'sha256', b'sha512', b'sha3256']
     )
+
+    # Read the buffer.
+    buffer = b''
+    with open(os.path.join(cache_dir, '_.json'), 'r') as f:
+        _json = json.load(f)
+
+    print('\n _json -> ', _json)
+
+    for element in _json:
+        if type(element) == int:
+            with open(os.path.join(cache_dir, str(element)), 'rb') as f:
+                buffer += f.read()
+
+        if type(element) == tuple:
+            with open(os.path.join(cache_dir, element[0]), 'rb') as f:
+                with True:
+                    block = f.read(1024)
+
+                if block:
+                    buffer += block
+                    continue
+                break
+
+    print('\n total buffer -> ', buffer)
+
+    object = Test()
+    object.ParseFromString(buffer)
+
+    print('\n total object -> ', object)
+
+
