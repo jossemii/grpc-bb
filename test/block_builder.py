@@ -107,12 +107,9 @@ if __name__ == '__main__':
     c.t2 = b'adios'
     c.t3.CopyFrom(b)
 
-    simple = Test()
-    simple.t1 = block.SerializeToString()
-
     more_complex = Test()
-    more_complex.t1 = block2.SerializeToString()
-    more_complex.t3.CopyFrom(simple)
+    more_complex.t1 = b'ho'
+    more_complex.t3.CopyFrom(c)
 
     object_id, cache_dir = build_multiblock(
         pf_object_with_block_pointers=more_complex,

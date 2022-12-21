@@ -92,11 +92,13 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]]) -> Dict[int, Tuple[i
     def traverse_tree(internal_tree: Dict) -> Tuple[int, Dict[int, Tuple[int, int]]]:
         real_lengths: Dict[int, Tuple[int, int]] = {}
         total_tree_length: int = 0
+        print('\n\n')
         for key, value in internal_tree.items():
             if isinstance(value, dict):
                 real_length, internal_lengths = traverse_tree(value)
                 real_lengths[key] = (real_length, 0)
                 real_lengths.update(internal_lengths)
+                print(internal_tree, 'add ', real_length + len(encode_bytes(real_length)) + 1)
                 total_tree_length += real_length + len(encode_bytes(real_length)) + 1
 
             else:
@@ -108,8 +110,10 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]]) -> Dict[int, Tuple[i
 
                 real_length: int = get_block_length(value)
                 real_lengths[key] = (real_length, len(b.SerializeToString()))
+                print(internal_tree, 'add ', real_length + len(encode_bytes(real_length)) + 1 )
                 total_tree_length += real_length + len(encode_bytes(real_length)) + 1
 
+        print(internal_tree, total_tree_length, real_lengths, '\n\n')
         return total_tree_length, real_lengths
 
     return traverse_tree(tree)[1]
