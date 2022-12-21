@@ -188,15 +188,15 @@ def build_multiblock(
             Tuple[str, List[int]]
         ]] = []
 
-    for i, (b1, b2) in enumerate(zip_longest(new_buff, blocks)):
+    for i, (b1, b2) in enumerate(zip_longest(new_buff, container.keys())):
         _json.append(i+1)
         with open(cache_dir + str(i + 1), 'wb') as f:
             f.write(b1)
 
         if b2:
             _json.append((
-                b2.hex(),
-                container[b2.hex()]
+                b2,
+                container[b2]
             ))
 
     with open(cache_dir + '_.json', 'w') as f:

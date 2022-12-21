@@ -2,6 +2,8 @@ import json
 import os
 import sys, unittest
 
+from google import protobuf
+
 sys.path.append('../src/')
 
 from grpcbigbuffer.client import Enviroment
@@ -103,8 +105,15 @@ if __name__ == '__main__':
     c.t2 = b'adios'
     c.t3.CopyFrom(b)
 
+    simple = Test()
+    simple.t1 = block.SerializeToString()
+
+    more_complex = Test()
+    more_complex.t1 = block2.SerializeToString()
+    more_complex.t3.CopyFrom(simple)
+
     object_id, cache_dir = build_multiblock(
-        pf_object_with_block_pointers=c,
+        pf_object_with_block_pointers=more_complex,
         blocks=[b'sha256', b'sha512', b'sha3256']
     )
 
@@ -113,27 +122,27 @@ if __name__ == '__main__':
     with open(os.path.join(cache_dir, '_.json'), 'r') as f:
         _json = json.load(f)
 
-    print('\n _json -> ', _json)
+    print('\n\n\n _json -> ', _json)
 
     for element in _json:
         if type(element) == int:
             with open(os.path.join(cache_dir, str(element)), 'rb') as f:
                 block = f.read()
-                print('block -> ', block)
+                print('\ninter block -> ', block)
                 buffer += block
 
-        if type(element) == tuple:
-            with open(os.path.join(cache_dir, element[0]), 'rb') as f:
-                with True:
+        if type(element) == list:
+            with open(os.path.join(Enviroment.block_dir, element[0]), 'rb') as f:
+                while True:
                     block = f.read(1024)
 
-                if block:
+                    if not block:
+                        break
+                    print('b-> ', block)
                     buffer += block
-                    continue
-                break
 
     print('\n total buffer -> ', buffer)
-    print('\n total indices buffer -> ', [(i, bytes([b])) for i, b in enumerate(buffer)])
+    #print('\n total indices buffer -> ', [(i, bytes([b])) for i, b in enumerate(buffer)])
 
 
     print('\n\n')
