@@ -2,13 +2,15 @@ import json
 import os
 import sys, unittest
 
-from google import protobuf
 
 sys.path.append('../src/')
 
 from grpcbigbuffer.client import Enviroment
 from grpcbigbuffer import buffer_pb2
 from grpcbigbuffer.block_builder import build_multiblock, create_lengths_tree, search_on_message
+
+from grpcbigbuffer.block_driver import get_position_length
+from grpcbigbuffer.disk_stream import encode_bytes, decode_bytes, get_tag, get_field
 
 
 class TestSearchOnMessage(unittest.TestCase):
@@ -150,5 +152,4 @@ if __name__ == '__main__':
     object.ParseFromString(buffer)
 
     print('\n total object -> ', object)
-
 

@@ -153,8 +153,8 @@ def build_multiblock(
 
     container: Dict[str, List[int]] = search_on_message(
         message=pf_object_with_block_pointers,
-        pointers=[1],
-        initial_position=2,
+        pointers=[],
+        initial_position=0,
         blocks=blocks
     )
     print('\npointer container -> ', container)
