@@ -27,7 +27,6 @@ def is_block(bytes_obj, blocks: List[bytes]):
 
 
 def get_hash(block: buffer_pb2.Buffer.Block) -> str:
-    from hashlib import sha3_256
     for hash in block.hashes:
         if hash.type == Enviroment.hash_type:
             return hash.value.hex()
@@ -103,7 +102,7 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]]) -> Dict[int, Tuple[i
             else:
                 b = buffer_pb2.Buffer.Block()
                 h = buffer_pb2.Buffer.Block.Hash()
-                h.type = b''
+                h.type = Enviroment.hash_type
                 h.value = bytes.fromhex(value)
                 b.hashes.append(h)
 
