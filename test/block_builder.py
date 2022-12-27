@@ -111,6 +111,10 @@ if __name__ == '__main__':
     more_complex.t1 = b'ho'
     more_complex.t3.CopyFrom(c)
 
+    more_more_complex = Test()
+    #more_more_complex.t2 = b''.join([b'abc' for i in range(100)])
+    more_more_complex.t3.CopyFrom(more_complex)
+
     object_id, cache_dir = build_multiblock(
         pf_object_with_block_pointers=more_complex,
         blocks=[b'sha256', b'sha512', b'sha3256']

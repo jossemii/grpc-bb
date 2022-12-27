@@ -91,6 +91,7 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
 
     def traverse_tree(internal_tree: Dict, internal_buffer: bytes, initial_total_length: int) \
             -> Tuple[int, int, Dict[int, Tuple[int, int]]]:
+        
         real_lengths: Dict[int, Tuple[int, int]] = {}
         total_tree_length: int = 0
         total_block_length: int = 0
@@ -102,7 +103,9 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
                 real_lengths[key] = (real_length, 1)
                 real_lengths.update(internal_lengths)
                 total_tree_length += real_length + len(encode_bytes(real_length)) + 1
-                total_block_length += block_length + len(encode_bytes(block_length)) + 1
+
+                block_length: int = block_length + len(encode_bytes(block_length)) + 1
+                total_block_length += block_length
 
             else:
                 b = buffer_pb2.Buffer.Block()
@@ -114,7 +117,9 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
                 real_length: int = get_block_length(value)
                 real_lengths[key] = (real_length, len(b.SerializeToString()))
                 total_tree_length += real_length + len(encode_bytes(real_length)) + 1
-                total_block_length += len(b.SerializeToString()) + len(encode_bytes(len(b.SerializeToString()))) + 1
+
+                block_length: int = len(b.SerializeToString()) + len(encode_bytes(len(b.SerializeToString()))) + 1
+                total_block_length += block_length
 
         if initial_total_length < total_block_length:
             raise Exception('Error on compute real lengths, block length cant be greater than the total length',
