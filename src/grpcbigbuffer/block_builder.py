@@ -99,7 +99,7 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
                 real_length, block_length, internal_lengths = traverse_tree(
                     value, internal_buffer, get_position_length(key, internal_buffer)
                 )
-                real_lengths[key] = (real_length, 0)
+                real_lengths[key] = (real_length, 1)
                 real_lengths.update(internal_lengths)
                 total_tree_length += real_length + len(encode_bytes(real_length)) + 1
                 total_block_length += block_length + len(encode_bytes(block_length)) + 1
@@ -132,10 +132,10 @@ def generate_buffer(buffer: bytes, lengths: Dict[int, Tuple[int, int]]) -> List[
     new_buff: bytes = b''
     i: int = 0
     for key, value in lengths.items():
+        if i == key: i -= 1
         new_buff += buffer[i:key] + encode_bytes(value[0])
         i = key + len(encode_bytes(key)) + value[1]
-
-        if value[1] > 0:
+        if value[1] > 1:
             list_of_bytes.append(new_buff)
             new_buff = b''
 
