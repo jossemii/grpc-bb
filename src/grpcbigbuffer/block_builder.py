@@ -8,7 +8,7 @@ from typing import Any, List, Dict, Union, Tuple
 from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
 
-from grpcbigbuffer.block_driver import WITHOUT_BLOCK_POINTERS_FILE_NAME
+from grpcbigbuffer.block_driver import WITHOUT_BLOCK_POINTERS_FILE_NAME, get_position_length
 from grpcbigbuffer.client import Enviroment, CHUNK_SIZE, generate_random_dir
 from grpcbigbuffer.disk_stream import encode_bytes
 
@@ -82,24 +82,29 @@ def create_lengths_tree(
     return tree
 
 
-def compute_real_lengths(tree: Dict[int, Union[Dict, str]]) -> Dict[int, Tuple[int, int]]:
+def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Dict[int, Tuple[int, int]]:
     def get_block_length(block_id: str) -> int:
         if os.path.isfile(Enviroment.block_dir + block_id):
             return os.path.getsize(Enviroment.block_dir+block_id)
         else:
             raise Exception('gRPCbb: error on compute_real_lengths, multiblock blocks dont supported.')
 
-    def traverse_tree(internal_tree: Dict) -> Tuple[int, Dict[int, Tuple[int, int]]]:
+    def traverse_tree(internal_tree: Dict, internal_buffer: bytes, initial_total_length: int, ikey=0) \
+            -> Tuple[int, int, Dict[int, Tuple[int, int]]]:
         real_lengths: Dict[int, Tuple[int, int]] = {}
         total_tree_length: int = 0
+        total_block_length: int = 0
         print('\n\n')
         for key, value in internal_tree.items():
             if isinstance(value, dict):
-                real_length, internal_lengths = traverse_tree(value)
+                real_length, block_length, internal_lengths = traverse_tree(
+                    value, internal_buffer, get_position_length(key, internal_buffer), ikey=key
+                )
                 real_lengths[key] = (real_length, 0)
                 real_lengths.update(internal_lengths)
                 print(internal_tree, 'add ', real_length + len(encode_bytes(real_length)) + 1)
                 total_tree_length += real_length + len(encode_bytes(real_length)) + 1
+                total_block_length += block_length + len(encode_bytes(block_length)) + 1
 
             else:
                 b = buffer_pb2.Buffer.Block()
@@ -110,13 +115,25 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]]) -> Dict[int, Tuple[i
 
                 real_length: int = get_block_length(value)
                 real_lengths[key] = (real_length, len(b.SerializeToString()))
-                print(internal_tree, 'add ', real_length + len(encode_bytes(real_length)) + 1 )
+                print(internal_tree, 'add ', real_length + len(encode_bytes(real_length)) + 1)
                 total_tree_length += real_length + len(encode_bytes(real_length)) + 1
+                total_block_length += len(b.SerializeToString()) + len(encode_bytes(len(b.SerializeToString()))) + 1
 
-        print(internal_tree, total_tree_length, real_lengths, '\n\n')
-        return total_tree_length, real_lengths
+        if initial_total_length < total_block_length:
+            raise Exception('No puede ser', initial_total_length, total_block_length,
+                                ikey, get_position_length(ikey, internal_buffer),
+                                internal_buffer[
+                                    ikey+len(encode_bytes(get_position_length(ikey, internal_buffer))):
+                                    ikey+get_position_length(ikey, internal_buffer)
+                                ],
+                                internal_buffer
+                            )
+        total_tree_length += initial_total_length - total_block_length
 
-    return traverse_tree(tree)[1]
+        print(internal_tree, total_tree_length, initial_total_length - total_block_length, real_lengths, '\n\n')
+        return total_tree_length, total_block_length, real_lengths
+
+    return traverse_tree(tree, buffer, len(buffer))[2]
 
 
 def generate_buffer(buffer: bytes, lengths: Dict[int, Tuple[int, int]]) -> List[bytes]:
@@ -169,7 +186,8 @@ def build_multiblock(
     print('\nlengths tree -> ', tree)
 
     real_lengths: Dict[int, Tuple[int, int]] = compute_real_lengths(
-        tree=tree
+        tree=tree,
+        buffer=pf_object_with_block_pointers.SerializeToString()
     )
 
     print('\nreal lengths -> ', real_lengths)
