@@ -94,7 +94,6 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
         real_lengths: Dict[int, Tuple[int, int]] = {}
         total_tree_length: int = 0
         total_block_length: int = 0
-        print('\n\n')
         for key, value in internal_tree.items():
             if isinstance(value, dict):
                 real_length, block_length, internal_lengths = traverse_tree(
