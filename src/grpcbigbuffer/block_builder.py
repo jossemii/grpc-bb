@@ -90,21 +90,22 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
             raise Exception('gRPCbb: error on compute_real_lengths, multiblock blocks dont supported.')
 
     def traverse_tree(internal_tree: Dict, internal_buffer: bytes, initial_total_length: int) \
-            -> Tuple[int, int, Dict[int, Tuple[int, int]]]:
-        
+            -> Tuple[int, Dict[int, Tuple[int, int]]]:
+
         real_lengths: Dict[int, Tuple[int, int]] = {}
         total_tree_length: int = 0
         total_block_length: int = 0
         for key, value in internal_tree.items():
             if isinstance(value, dict):
-                real_length, block_length, internal_lengths = traverse_tree(
-                    value, internal_buffer, get_position_length(key, internal_buffer)
+                initial_length: int = get_position_length(key, internal_buffer)
+                real_length, internal_lengths = traverse_tree(
+                    value, internal_buffer, initial_length
                 )
                 real_lengths[key] = (real_length, 1)
                 real_lengths.update(internal_lengths)
                 total_tree_length += real_length + len(encode_bytes(real_length)) + 1
 
-                block_length: int = block_length + len(encode_bytes(block_length)) + 1
+                block_length: int = initial_length + len(encode_bytes(initial_length)) + 1
                 total_block_length += block_length
 
             else:
@@ -127,9 +128,9 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
 
         total_tree_length += initial_total_length - total_block_length
 
-        return total_tree_length, total_block_length, real_lengths
+        return total_tree_length, real_lengths
 
-    return traverse_tree(tree, buffer, len(buffer))[2]
+    return traverse_tree(tree, buffer, len(buffer))[1]
 
 
 def generate_buffer(buffer: bytes, lengths: Dict[int, Tuple[int, int]]) -> List[bytes]:

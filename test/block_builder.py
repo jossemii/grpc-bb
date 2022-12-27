@@ -116,7 +116,7 @@ if __name__ == '__main__':
     more_more_complex.t3.CopyFrom(more_complex)
 
     object_id, cache_dir = build_multiblock(
-        pf_object_with_block_pointers=more_complex,
+        pf_object_with_block_pointers=more_more_complex,
         blocks=[b'sha256', b'sha512', b'sha3256']
     )
 
