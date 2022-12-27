@@ -89,7 +89,7 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
         else:
             raise Exception('gRPCbb: error on compute_real_lengths, multiblock blocks dont supported.')
 
-    def traverse_tree(internal_tree: Dict, internal_buffer: bytes, initial_total_length: int, ikey=0) \
+    def traverse_tree(internal_tree: Dict, internal_buffer: bytes, initial_total_length: int) \
             -> Tuple[int, int, Dict[int, Tuple[int, int]]]:
         real_lengths: Dict[int, Tuple[int, int]] = {}
         total_tree_length: int = 0
@@ -98,11 +98,10 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
         for key, value in internal_tree.items():
             if isinstance(value, dict):
                 real_length, block_length, internal_lengths = traverse_tree(
-                    value, internal_buffer, get_position_length(key, internal_buffer), ikey=key
+                    value, internal_buffer, get_position_length(key, internal_buffer)
                 )
                 real_lengths[key] = (real_length, 0)
                 real_lengths.update(internal_lengths)
-                print(internal_tree, 'add ', real_length + len(encode_bytes(real_length)) + 1)
                 total_tree_length += real_length + len(encode_bytes(real_length)) + 1
                 total_block_length += block_length + len(encode_bytes(block_length)) + 1
 
@@ -115,22 +114,14 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
 
                 real_length: int = get_block_length(value)
                 real_lengths[key] = (real_length, len(b.SerializeToString()))
-                print(internal_tree, 'add ', real_length + len(encode_bytes(real_length)) + 1)
                 total_tree_length += real_length + len(encode_bytes(real_length)) + 1
                 total_block_length += len(b.SerializeToString()) + len(encode_bytes(len(b.SerializeToString()))) + 1
 
         if initial_total_length < total_block_length:
-            raise Exception('No puede ser', initial_total_length, total_block_length,
-                                ikey, get_position_length(ikey, internal_buffer),
-                                internal_buffer[
-                                    ikey+len(encode_bytes(get_position_length(ikey, internal_buffer))):
-                                    ikey+get_position_length(ikey, internal_buffer)
-                                ],
-                                internal_buffer
-                            )
+            raise Exception('No puede ser', initial_total_length, total_block_length )
+
         total_tree_length += initial_total_length - total_block_length
 
-        print(internal_tree, total_tree_length, initial_total_length - total_block_length, real_lengths, '\n\n')
         return total_tree_length, total_block_length, real_lengths
 
     return traverse_tree(tree, buffer, len(buffer))[2]
