@@ -117,7 +117,8 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
                 total_block_length += len(b.SerializeToString()) + len(encode_bytes(len(b.SerializeToString()))) + 1
 
         if initial_total_length < total_block_length:
-            raise Exception('No puede ser', initial_total_length, total_block_length )
+            raise Exception('Error on compute real lengths, block length cant be greater than the total length',
+                            initial_total_length, total_block_length)
 
         total_tree_length += initial_total_length - total_block_length
 
