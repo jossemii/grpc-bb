@@ -112,7 +112,8 @@ if __name__ == '__main__':
     more_complex.t3.CopyFrom(c)
 
     more_more_complex = Test()
-    #more_more_complex.t2 = b''.join([b'abc' for i in range(100)])
+    more_more_complex.t1 = b'la'
+    more_more_complex.t2 = b''.join([b'abc' for i in range(100)])
     more_more_complex.t3.CopyFrom(more_complex)
 
     object_id, cache_dir = build_multiblock(
