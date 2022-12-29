@@ -8,16 +8,16 @@ from grpcbigbuffer import buffer_pb2
 import numpy as np
 
 
-
 ################
 ## Validation ##
 ################
 def to_dict(partitions):
     l = {}
+
     def recursive(model, dir, prev_i=''):
         l = {}
         for index, partition in model.index.items():
-            i_name: str = prev_i+'.'+str(index) if prev_i != '' else str(index)
+            i_name: str = prev_i + '.' + str(index) if prev_i != '' else str(index)
             if len(partition.index) > 0:
                 l.update(recursive(partition, dir, i_name))
             else:
@@ -29,8 +29,10 @@ def to_dict(partitions):
 
     return l
 
+
 def sort(d):
     return sorted(d.items())
+
 
 def get_parsers(l):
     r = []
@@ -51,6 +53,7 @@ def get_parsers(l):
             r[-1][1].append(e[0])
     return r, f
 
+
 def check_sorted_list(l) -> bool:
     n = []
     aux = None
@@ -63,39 +66,40 @@ def check_sorted_list(l) -> bool:
                 n.append(e[1])
     return True
 
+
 def reorg_partitions(
         dirs: List[str],
         partitions: List[buffer_pb2.Buffer.Head.Partition]
 ):
-    partitions = {dirs[i]:p for i, p in enumerate(partitions)}
+    partitions = {dirs[i]: p for i, p in enumerate(partitions)}
     dict = to_dict(partitions=partitions)
     sorted_list = sort(dict)
     sorted_and_grouped, list_for_parse = get_parsers(sorted_list)
     # ...
 
+
 def validate_partitions(
-            partitions: List[buffer_pb2.Buffer.Head.Partition]
-    ) -> bool:
+        partitions: List[buffer_pb2.Buffer.Head.Partition]
+) -> bool:
     return check_sorted_list(
         sort(
             to_dict(
-                partitions={i:p for i, p in enumerate(partitions)}
+                partitions={i: p for i, p in enumerate(partitions)}
             )
         )
     )
 
 
-
 def calculate_hash_of_complete(
         dirs: List[str],
         partitions: List[buffer_pb2.Buffer.Head.Partition] = None,
-        hash_function = None
+        hash_function=None
 ) -> str:
     hash_id = hashlib.sha3_256() if not hash_function else hash_function()
     if partitions:
         for chunk in partition_disk_stream(
-            dirs = dirs,
-            partitions = partitions
+                dirs=dirs,
+                partitions=partitions
         ):
             hash_id.update(chunk)
 
@@ -120,20 +124,21 @@ def shifting(bitlist: str) -> int:
     for bit in bitlist:
         out = (out << 1) | int(bit)
     return out
+
+
 # returns varint encoded tag based upon field number and wire type
 def get_tag(field_num: int) -> bytes:
-
-
     return (
         shifting(''.join([
             str(i) for i in
             np.unpackbits(
                 np.array(
                     [[field_num]], dtype=np.uint8
-                ), axis = 1
-            ).tolist()[0]+[0,1,0]
+                ), axis=1
+            ).tolist()[0] + [0, 1, 0]
         ]))
     ).to_bytes(1, byteorder='little')
+
 
 def get_field(tag: bytes) -> int:
     return decode_bytes(
@@ -145,7 +150,7 @@ def get_field(tag: bytes) -> int:
                         [[
                             decode_bytes(tag)
                         ]], dtype=np.uint8
-                    ), axis = 1
+                    ), axis=1
                 ).tolist()[0][:-3]
             ])
         ).to_bytes(1, byteorder='little')
@@ -154,6 +159,7 @@ def get_field(tag: bytes) -> int:
 
 def decode_bytes(buf):
     """Read a varint from from `buf` bytes"""
+
     def decode_stream(stream):
         """Read a varint from `stream`"""
 
@@ -179,10 +185,11 @@ def decode_bytes(buf):
 
     return decode_stream(BytesIO(buf))
 
+
 def encode_bytes(n: int) -> bytes:
     # https://github.com/fmoo/python-varint/blob/master/varint.py
     def _byte(b):
-        return bytes((b, ))
+        return bytes((b,))
 
     buf = b''
     while True:
@@ -202,9 +209,8 @@ class Partition:
         self.file = open(file_path, 'r+b')
         self.size = os.path.getsize(file_path)
 
-
     def next_index(self) -> Tuple[int, int]:
-        index: bytes |None = None
+        index: bytes | None = None
         arr: bytes = b''
         while b := self.file.read(1):
 
@@ -218,7 +224,7 @@ class Partition:
                                 np.frombuffer(b, dtype=np.uint8)
                             ]], dtype=np.uint8
                         ), axis=1
-                    ).tolist()[0][0][0] == 0: break
+                ).tolist()[0][0][0] == 0: break
 
         return get_field(index), decode_bytes(arr)
 
@@ -233,7 +239,7 @@ class Index:
         self.index: int = index
         self.on_multiple_partitions: bool = False
         self.alone_on_all_partitions: bool = True
-        self.schema: List[Index] |None = None
+        self.schema: List[Index] | None = None
         self.schema_d: Dict[int, Index] = {}
         self.file_partitions: List[Partition] = []
         self.is_alone_on_partition: List[bool] = []
@@ -266,18 +272,18 @@ class Index:
                 index_obj: Index = self.schema_d[index]
 
                 index_obj.add_partition(
-                    partition = dir_partition,
-                    alone_on_it = only_one
+                    partition=dir_partition,
+                    alone_on_it=only_one
                 )
 
                 index_obj.add_indexes(
-                    buf_partition = sub_partition,
-                    dir_partition = dir_partition
+                    buf_partition=sub_partition,
+                    dir_partition=dir_partition
                 )
-
 
     def signed(self) -> bool:
         return self.schema is not None
+
     def sign(self):
         if self.signed(): raise Exception('Error, signed.')
         self.schema = list(self.schema_d.values())
@@ -286,10 +292,10 @@ class Index:
             try:
                 index.sign()
             except Exception as e:
-                raise Exception(str(index.index)+' '+str(e))
+                raise Exception(str(index.index) + ' ' + str(e))
 
-        self.name = str(self.index)+'-'+str(len(self.schema))+'-'+str(len(self.file_partitions))+\
-                    '-'+str(self.on_multiple_partitions)+'-'+str(self.alone_on_all_partitions)
+        self.name = str(self.index) + '-' + str(len(self.schema)) + '-' + str(len(self.file_partitions)) + \
+                    '-' + str(self.on_multiple_partitions) + '-' + str(self.alone_on_all_partitions)
 
     def get_size(self) -> int:
         if not self.size:
@@ -303,13 +309,13 @@ class Index:
 
     def compute_size(self):
         if not self.on_multiple_partitions and self.alone_on_all_partitions:
-           self.size = self.file_partitions[0].size
-           return
+            self.size = self.file_partitions[0].size
+            return
 
         elif self.on_multiple_partitions and False not in self.is_alone_on_partition:
             total_size = sum([p.size for p in self.file_partitions])
 
-        elif self.on_multiple_partitions: #  and not self.alone_on_all_partitions
+        elif self.on_multiple_partitions:  # and not self.alone_on_all_partitions
             total_size = 0
             pruned_bytes = 0
             for i, partition in enumerate(self.file_partitions):
@@ -317,8 +323,8 @@ class Index:
                 if not alone_on_it:
                     index, size = partition.next_index()
                     if index != self.index:
-                        raise Exception('Partition disk stream error. Unexpected index '\
-                                        +str(index)+' instead of '+str(self.index))
+                        raise Exception('Partition disk stream error. Unexpected index ' \
+                                        + str(index) + ' instead of ' + str(self.index))
                     pruned_bytes += len(encode_bytes(size)) + 1
                     if size == 0: continue
 
@@ -328,7 +334,7 @@ class Index:
                     total_size += partition.size
             self.pruned_bytes = pruned_bytes
 
-        else: #  not self.on_multiple_partitions and not self.alone_on_all_partitions
+        else:  # not self.on_multiple_partitions and not self.alone_on_all_partitions
             raise Exception('Partition disk stream error.')  # No debería llegar hasta aqui.
 
         if total_size > 0:
@@ -339,7 +345,6 @@ class Index:
 
         self.size = total_size
 
-
     def generate(self) -> Generator[bytes, None, None]:
         if self.alone_on_all_partitions and not self.on_multiple_partitions:
             size: int = os.path.getsize(self.file_partitions[0].file_path)
@@ -348,7 +353,7 @@ class Index:
             for i in self.file_partitions[0].read():
                 yield i
 
-        elif self.on_multiple_partitions: # and (alone_on_all_partitions or not_alone_on_all_partitions)
+        elif self.on_multiple_partitions:  # and (alone_on_all_partitions or not_alone_on_all_partitions)
             size: int = self.get_size()
             if size > 0:
                 yield get_tag(self.index)
@@ -357,7 +362,7 @@ class Index:
                     for c in i.generate():
                         yield c
 
-        else: # not alone_on_all_partitions and not on_multiple_partitions
+        else:  # not alone_on_all_partitions and not on_multiple_partitions
             # Partitions should be readen only on the first index on them. The rest index are not
             #  going to generate anything.
             for i in self.file_partitions[0].read():
@@ -382,12 +387,12 @@ def reorg_by_indexes(
             index_obj: Index = index_obj_d[index]
 
             index_obj.add_partition(
-                partition = partition_obj_arr[i],
-                alone_on_it = only_one
+                partition=partition_obj_arr[i],
+                alone_on_it=only_one
             )
             index_obj.add_indexes(
-                buf_partition = sub_partition,
-                dir_partition = partition_obj_arr[i]
+                buf_partition=sub_partition,
+                dir_partition=partition_obj_arr[i]
             )
 
     index_obj_arr: List[Index] = list(index_obj_d.values())
@@ -399,7 +404,6 @@ def partition_disk_stream(
         dirs: List[str],
         partitions: List[buffer_pb2.Buffer.Head.Partition]
 ) -> Generator[bytes, None, None]:
-
     if len(dirs) != len(partitions):
         raise Exception('Partition disk stream error, incompatible inputs.')
 
@@ -424,8 +428,8 @@ def partition_disk_stream(
     #
 
     for index in reorg_by_indexes(
-            dirs = dirs,
-            partitions = partitions
-        ):
+            dirs=dirs,
+            partitions=partitions
+    ):
         for b in index.generate():
             yield b
