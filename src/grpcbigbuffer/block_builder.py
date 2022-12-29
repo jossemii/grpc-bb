@@ -97,7 +97,7 @@ def create_lengths_tree(
 def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Dict[int, Tuple[int, int]]:
     def get_block_length(block_id: str) -> int:
         if os.path.isfile(Enviroment.block_dir + block_id):
-            return os.path.getsize(Enviroment.block_dir+block_id)
+            return os.path.getsize(Enviroment.block_dir + block_id)
         else:
             raise Exception('gRPCbb: error on compute_real_lengths, multiblock blocks dont supported.')
 
@@ -126,12 +126,13 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
                 h.type = Enviroment.hash_type
                 h.value = bytes.fromhex(value)
                 b.hashes.append(h)
+                b_length: int = len(b.SerializeToString())
 
                 real_length: int = get_block_length(value)
-                real_lengths[key] = (real_length, len(b.SerializeToString()))
+                real_lengths[key] = (real_length, b_length)
                 total_tree_length += real_length + len(encode_bytes(real_length)) + 1
 
-                block_length: int = len(b.SerializeToString()) + len(encode_bytes(len(b.SerializeToString()))) + 1
+                block_length: int = b_length + len(encode_bytes(b_length)) + 1
                 total_block_length += block_length
 
         if initial_total_length < total_block_length:
@@ -150,7 +151,8 @@ def generate_buffer(buffer: bytes, lengths: Dict[int, Tuple[int, int]]) -> List[
     new_buff: bytes = b''
     i: int = 0
     for key, value in lengths.items():
-        if i == key: i -= 1
+        if i == key:
+            i -= 1
         new_buff += buffer[i:key] + encode_bytes(value[0])
         i = key + 1 + value[1]
         if value[1] > 1:
@@ -163,9 +165,10 @@ def generate_buffer(buffer: bytes, lengths: Dict[int, Tuple[int, int]]) -> List[
 def generate_id(buffers: List[bytes], blocks: List[bytes]) -> bytes:
     hash_id = sha3_256()
     for buffer, block in zip_longest(buffers, blocks):
-        if buffer: hash_id.update(buffer)
+        if buffer:
+            hash_id.update(buffer)
         if block:
-            with BufferedReader(open(Enviroment.block_dir+block.hex(), 'rb')) as f:
+            with BufferedReader(open(Enviroment.block_dir + block.hex(), 'rb')) as f:
                 while True:
                     f.flush()
                     piece: bytes = f.read(CHUNK_SIZE)
@@ -178,35 +181,26 @@ def build_multiblock(
         pf_object_with_block_pointers: Any,
         blocks: List[bytes]
 ) -> Tuple[bytes, str]:
-    print('buffer -> ', pf_object_with_block_pointers.SerializeToString())
-
     container: Dict[str, List[int]] = search_on_message(
         message=pf_object_with_block_pointers,
         pointers=[],
         initial_position=0,
         blocks=blocks
     )
-    print('\npointer container -> ', container)
 
     tree: Dict[int, Union[Dict, str]] = create_lengths_tree(
         pointer_container=container
     )
-
-    print('\nlengths tree -> ', tree)
 
     real_lengths: Dict[int, Tuple[int, int]] = compute_real_lengths(
         tree=tree,
         buffer=pf_object_with_block_pointers.SerializeToString()
     )
 
-    print('\nreal lengths -> ', real_lengths)
-
     new_buff: List[bytes] = generate_buffer(
         buffer=pf_object_with_block_pointers.SerializeToString(),
         lengths=real_lengths
     )
-
-    print('\nnew buffer -> ', new_buff)
 
     object_id: bytes = generate_id(
         buffers=new_buff,
@@ -214,12 +208,12 @@ def build_multiblock(
     )
     cache_dir: str = generate_random_dir() + '/'
     _json: List[Union[
-            int,
-            Tuple[str, List[int]]
-        ]] = []
+        int,
+        Tuple[str, List[int]]
+    ]] = []
 
     for i, (b1, b2) in enumerate(zip_longest(new_buff, container.keys())):
-        _json.append(i+1)
+        _json.append(i + 1)
         with open(cache_dir + str(i + 1), 'wb') as f:
             f.write(b1)
 
@@ -236,4 +230,3 @@ def build_multiblock(
         f.write(pf_object_with_block_pointers.SerializeToString())
 
     return object_id, cache_dir
-
