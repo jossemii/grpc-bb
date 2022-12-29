@@ -7,6 +7,7 @@ from itertools import zip_longest
 from typing import Any, List, Dict, Union, Tuple
 from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
+from google.protobuf.pyext._message import RepeatedCompositeContainer
 
 from grpcbigbuffer.block_driver import WITHOUT_BLOCK_POINTERS_FILE_NAME, get_position_length
 from grpcbigbuffer.client import Enviroment, CHUNK_SIZE, generate_random_dir
@@ -42,8 +43,19 @@ def search_on_message(
     container: Dict[str, List[int]] = {}
     position: int = initial_position
     for field, value in message.ListFields():
+        if isinstance(value, RepeatedCompositeContainer):
+            for element in value:
+                container.update(
+                    search_on_message(
+                        message=element,
+                        pointers=pointers + [position + 1],
+                        initial_position=position + 1 + len(encode_bytes(element.ByteSize())),
+                        blocks=blocks
+                    )
+                )
+                position += 1 + len(encode_bytes(element.ByteSize())) + element.ByteSize()
 
-        if isinstance(value, Message):
+        elif isinstance(value, Message):
             container.update(
                 search_on_message(
                     message=value,

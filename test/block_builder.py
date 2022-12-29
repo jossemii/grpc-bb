@@ -115,10 +115,16 @@ if __name__ == '__main__':
     more_more_complex.t1 = b''.join([b'la' for i in range(int(sys.argv[1]))])
     more_more_complex.t2 = b''.join([b'abc' for i in range(int(sys.argv[1]))])
     more_more_complex.t3.CopyFrom(more_complex)
+    more_more_complex.t4.append(b)
+    more_more_complex.t4.append(c)
 
     ultra_complex = Test()
     ultra_complex.t1 = b''.join([b'jo' for i in range(int(sys.argv[1]))])
     ultra_complex.t2 = b''.join([b'hi' for i in range(int(sys.argv[1]))])
+    ultra_complex.t3.CopyFrom(more_more_complex)
+    ultra_complex.t4.append(b)
+    ultra_complex.t4.append(c)
+    ultra_complex.t4.append(more_complex)
     ultra_complex.t4.append(more_more_complex)
 
     object_id, cache_dir = build_multiblock(
