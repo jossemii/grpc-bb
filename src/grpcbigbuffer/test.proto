@@ -6,4 +6,5 @@ message Test {
   bytes t1 = 1;
   bytes t2 = 2;
   optional Test t3 = 3;
+  repeated Test t4 = 4;
 }

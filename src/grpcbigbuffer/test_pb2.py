@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\ntest.proto\x12\x04test\"B\n\x04Test\x12\n\n\x02t1\x18\x01 \x01(\x0c\x12\n\n\x02t2\x18\x02 \x01(\x0c\x12\x1b\n\x02t3\x18\x03 \x01(\x0b\x32\n.test.TestH\x00\x88\x01\x01\x42\x05\n\x03_t3b\x06proto3'
+  serialized_pb=b'\n\ntest.proto\x12\x04test\"Z\n\x04Test\x12\n\n\x02t1\x18\x01 \x01(\x0c\x12\n\n\x02t2\x18\x02 \x01(\x0c\x12\x1b\n\x02t3\x18\x03 \x01(\x0b\x32\n.test.TestH\x00\x88\x01\x01\x12\x16\n\x02t4\x18\x04 \x03(\x0b\x32\n.test.TestB\x05\n\x03_t3b\x06proto3'
 )
 
 
@@ -54,6 +54,13 @@ _TEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='t4', full_name='test.Test.t4', index=3,
+      number=4, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -72,10 +79,11 @@ _TEST = _descriptor.Descriptor(
     fields=[]),
   ],
   serialized_start=20,
-  serialized_end=86,
+  serialized_end=110,
 )
 
 _TEST.fields_by_name['t3'].message_type = _TEST
+_TEST.fields_by_name['t4'].message_type = _TEST
 _TEST.oneofs_by_name['_t3'].fields.append(
   _TEST.fields_by_name['t3'])
 _TEST.fields_by_name['t3'].containing_oneof = _TEST.oneofs_by_name['_t3']
