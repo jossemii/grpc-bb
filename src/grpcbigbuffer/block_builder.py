@@ -140,7 +140,7 @@ def generate_buffer(buffer: bytes, lengths: Dict[int, Tuple[int, int]]) -> List[
     for key, value in lengths.items():
         if i == key: i -= 1
         new_buff += buffer[i:key] + encode_bytes(value[0])
-        i = key + len(encode_bytes(key)) + value[1]
+        i = key + 1 + value[1]
         if value[1] > 1:
             list_of_bytes.append(new_buff)
             new_buff = b''

@@ -104,16 +104,16 @@ if __name__ == '__main__':
 
     c = Test()
     c.t1 = block3.SerializeToString()
-    c.t2 = b'adios'
+    c.t2 = b''.join([b'ja' for i in range(int(sys.argv[1]))])
     c.t3.CopyFrom(b)
 
     more_complex = Test()
-    more_complex.t1 = b'ho'
+    more_complex.t1 = b''.join([b'ho' for i in range(int(sys.argv[1]))])
     more_complex.t3.CopyFrom(c)
 
     more_more_complex = Test()
-    more_more_complex.t1 = b'la'
-    more_more_complex.t2 = b''.join([b'abc' for i in range(100)])
+    more_more_complex.t1 = b''.join([b'la' for i in range(int(sys.argv[1]))])
+    more_more_complex.t2 = b''.join([b'abc' for i in range(int(sys.argv[1]))])
     more_more_complex.t3.CopyFrom(more_complex)
 
     object_id, cache_dir = build_multiblock(
@@ -145,7 +145,7 @@ if __name__ == '__main__':
                     print('b-> ', block)
                     buffer += block
 
-    print('\n total buffer -> ', buffer)
+    print('\n total buffer -> ', buffer, len(buffer))
     #print('\n total indices buffer -> ', [(i, bytes([b])) for i, b in enumerate(buffer)])
 
 
