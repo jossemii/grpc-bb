@@ -10,8 +10,9 @@ from google.protobuf.message import Message, DecodeError
 from google.protobuf.pyext._message import RepeatedCompositeContainer
 
 from grpcbigbuffer.block_driver import WITHOUT_BLOCK_POINTERS_FILE_NAME, get_position_length
-from grpcbigbuffer.client import Enviroment, CHUNK_SIZE, generate_random_dir
+from grpcbigbuffer.client import Enviroment, CHUNK_SIZE, generate_random_dir, block_exists, move_to_block_dir
 from grpcbigbuffer.disk_stream import encode_bytes
+from grpcbigbuffer.utils import get_file_hash
 
 
 def is_block(bytes_obj, blocks: List[bytes]):
@@ -230,3 +231,12 @@ def build_multiblock(
         f.write(pf_object_with_block_pointers.SerializeToString())
 
     return object_id, cache_dir
+
+
+def create_block(file_path: str) -> bytes:
+    file_hash: str = get_file_hash(file_path=file_path)
+    if not block_exists(hash=file_hash):
+        if not move_to_block_dir(file_hash=file_hash, file_path=file_path):
+            raise Exception('gRPCbb error creating block, file could not be moved.')
+
+    return bytes(file_hash, 'utf-8')

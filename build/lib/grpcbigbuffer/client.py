@@ -38,6 +38,19 @@ class MemManager(object):
 
 
 ## Block driver ##
+def move_to_block_dir(file_hash: str, file_path: str) -> bool:
+    if not block_exists(hash=file_hash) and os.path.isfile(file_path):
+        try:
+            # Use a filesystem-specific method to move the file without reading or writing the contents
+            # (e.g. link() and unlink() on Unix-like systems) for improved performance.
+            destination_path = os.path.join(Enviroment.block_dir, file_hash)
+            os.rename(file_path, destination_path)
+            return True
+        except Exception as e:
+            raise Exception('gRPCbb error creating block, file could not be moved: '+str(e))
+    return False
+
+
 def block_exists(hash: str, is_dir: bool = False) -> bool:
     f: bool = os.path.isfile(Enviroment.block_dir + hash)
     d: bool = os.path.isdir(Enviroment.block_dir + hash)
