@@ -188,7 +188,7 @@ def read_file_by_chunks(filename: str, signal: Signal = None) -> Generator[bytes
         gc.collect()
 
 
-def read_multiblock_directory(directory: str) -> Generator[bytes, None, None]:
+def read_multiblock_directory(directory: str, delete_directory: bool = False) -> Generator[bytes, None, None]:
     if not os.path.isdir(directory):
         raise Exception("gRPCbb error reading multiblock directory. It's not directory")
 
@@ -199,6 +199,9 @@ def read_multiblock_directory(directory: str) -> Generator[bytes, None, None]:
             yield from read_file_by_chunks(filename=directory + str(e))
         else:
             yield from read_block(block_id=e)
+
+    if delete_directory:
+        shutil.rmtree(directory)
 
 
 def read_block(block_id: str) -> Generator[bytes, None, None]:
