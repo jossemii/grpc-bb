@@ -9,7 +9,7 @@ from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
 from google.protobuf.pyext._message import RepeatedCompositeContainer
 
-from grpcbigbuffer.block_driver import WITHOUT_BLOCK_POINTERS_FILE_NAME, get_position_length
+from grpcbigbuffer.block_driver import WITHOUT_BLOCK_POINTERS_FILE_NAME, get_position_length, METADATA_FILE_NAME
 from grpcbigbuffer.client import Enviroment, CHUNK_SIZE, generate_random_dir, block_exists, move_to_block_dir
 from grpcbigbuffer.disk_stream import encode_bytes
 from grpcbigbuffer.utils import get_file_hash
@@ -224,7 +224,7 @@ def build_multiblock(
                 container[b2]
             ))
 
-    with open(cache_dir + '_.json', 'w') as f:
+    with open(cache_dir + METADATA_FILE_NAME, 'w') as f:
         json.dump(_json, f)
 
     with open(cache_dir + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
