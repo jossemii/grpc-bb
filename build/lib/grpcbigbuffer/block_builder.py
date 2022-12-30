@@ -233,10 +233,18 @@ def build_multiblock(
     return object_id, cache_dir
 
 
-def create_block(file_path: str) -> bytes:
+def create_block(file_path: str) -> Tuple[bytes, buffer_pb2.Buffer.Block]:
     file_hash: str = get_file_hash(file_path=file_path)
     if not block_exists(hash=file_hash):
         if not move_to_block_dir(file_hash=file_hash, file_path=file_path):
             raise Exception('gRPCbb error creating block, file could not be moved.')
 
-    return bytes(file_hash, 'utf-8')
+    file_hash: bytes = bytes.fromhex(file_hash)
+
+    block = buffer_pb2.Buffer.Block()
+    h = buffer_pb2.Buffer.Block.Hash()
+    h.type = Enviroment.hash_type
+    h.value = file_hash
+    block.hashes.append(h)
+
+    return file_hash, block
