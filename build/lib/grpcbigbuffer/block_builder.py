@@ -76,7 +76,6 @@ def search_on_message(
             position += 1 + len(encode_bytes(block.ByteSize())) + block.ByteSize()
 
         else:
-            if type(value) != bytes: print('\n\n', type(value), value, '\n\n')
             position += 1 + len(encode_bytes(len(value))) + len(value)
 
     return container
