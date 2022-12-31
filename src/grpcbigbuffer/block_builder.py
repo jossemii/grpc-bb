@@ -15,7 +15,7 @@ from grpcbigbuffer.disk_stream import encode_bytes
 from grpcbigbuffer.utils import get_file_hash
 
 
-def is_block(bytes_obj, blocks: List[bytes]):
+def is_block(bytes_obj: bytes, blocks: List[bytes]):
     try:
         block = buffer_pb2.Buffer.Block()
         with warnings.catch_warnings():
@@ -67,7 +67,7 @@ def search_on_message(
             )
             position += 1 + len(encode_bytes(value.ByteSize())) + value.ByteSize()
 
-        elif is_block(value, blocks):
+        elif type(value) == bytes and is_block(value, blocks):
             block = buffer_pb2.Buffer.Block()
             block.ParseFromString(value)
             container[
@@ -76,6 +76,7 @@ def search_on_message(
             position += 1 + len(encode_bytes(block.ByteSize())) + block.ByteSize()
 
         else:
+            if type(value) != bytes: print('\n\n', type(value), value, '\n\n')
             position += 1 + len(encode_bytes(len(value))) + len(value)
 
     return container
