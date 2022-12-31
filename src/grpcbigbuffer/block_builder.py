@@ -235,7 +235,7 @@ def build_multiblock(
 
 def create_block(file_path: str) -> Tuple[bytes, buffer_pb2.Buffer.Block]:
     file_hash: str = get_file_hash(file_path=file_path)
-    if not block_exists(hash=file_hash):
+    if not block_exists(block_id=file_hash):
         if not move_to_block_dir(file_hash=file_hash, file_path=file_path):
             raise Exception('gRPCbb error creating block, file could not be moved.')
 

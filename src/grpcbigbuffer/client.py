@@ -39,7 +39,7 @@ class MemManager(object):
 
 ## Block driver ##
 def move_to_block_dir(file_hash: str, file_path: str) -> bool:
-    if not block_exists(hash=file_hash) and os.path.isfile(file_path):
+    if not block_exists(block_id=file_hash) and os.path.isfile(file_path):
         try:
             # Use a filesystem-specific method to move the file without reading or writing the contents
             # (e.g. link() and unlink() on Unix-like systems) for improved performance.
@@ -51,9 +51,9 @@ def move_to_block_dir(file_hash: str, file_path: str) -> bool:
     return False
 
 
-def block_exists(hash: str, is_dir: bool = False) -> bool:
-    f: bool = os.path.isfile(Enviroment.block_dir + hash)
-    d: bool = os.path.isdir(Enviroment.block_dir + hash)
+def block_exists(block_id: str, is_dir: bool = False) -> bool:
+    f: bool = os.path.isfile(Enviroment.block_dir + block_id)
+    d: bool = os.path.isdir(Enviroment.block_dir + block_id)
     return f or d if not is_dir else (f or d, d)
 
 
@@ -205,7 +205,7 @@ def read_multiblock_directory(directory: str, delete_directory: bool = False) ->
 
 
 def read_block(block_id: str) -> Generator[bytes, None, None]:
-    b, d = block_exists(hash=block_id, is_dir=True)
+    b, d = block_exists(block_id=block_id, is_dir=True)
     if b and not d:
         yield from read_file_by_chunks(filename=Enviroment.block_dir + block_id)
 
@@ -492,7 +492,7 @@ def parse_from_buffer(
                 if id == in_block:
                     in_block = None
 
-                elif not in_block and block_exists(hash=id):
+                elif not in_block and block_exists(block_id=id):
                     in_block: str = id
                     all_buffer += b''.join([c for c in read_block(block_id=id)])
                     continue
