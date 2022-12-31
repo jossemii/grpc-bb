@@ -198,7 +198,9 @@ def read_multiblock_directory(directory: str, delete_directory: bool = False) ->
         if type(e) == int:
             yield from read_file_by_chunks(filename=directory + str(e))
         else:
-            yield from read_block(block_id=e)
+            block_id: str = e[0]
+            if type(block_id) != str: raise Exception('gRPCbb error on block metadata file ( _.json ).')
+            yield from read_block(block_id=block_id)
 
     if delete_directory:
         shutil.rmtree(directory)
