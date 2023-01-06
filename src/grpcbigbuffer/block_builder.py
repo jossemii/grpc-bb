@@ -87,7 +87,7 @@ def search_on_message(
                         temp_message.ClearField(field_name.name)
                 position += temp_message.ByteSize()
             except Exception as e:
-                raise Exception('gRPCbb block builder error obtaining the length of a primitive value :'+str(e)+' - with value -> '+str(value))
+                raise Exception('gRPCbb block builder error obtaining the length of a primitive value :'+str(e))
 
     return container
 
