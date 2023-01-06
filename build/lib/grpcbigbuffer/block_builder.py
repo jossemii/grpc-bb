@@ -75,8 +75,19 @@ def search_on_message(
             ] = pointers + [position + 1]
             position += 1 + len(encode_bytes(block.ByteSize())) + block.ByteSize()
 
-        else:
+        elif type(value) == bytes or type(value) == str:
             position += 1 + len(encode_bytes(len(value))) + len(value)
+
+        else:
+            try:
+                temp_message = type(message)()
+                temp_message.CopyFrom(message)
+                for field_name, _ in temp_message.ListFields():
+                    if field_name.index != field.index:
+                        temp_message.ClearField(field_name)
+                position += temp_message.ByteSize()
+            except Exception as e:
+                raise Exception('gRPCbb block builder error obtaining the length of a primitive value '+str(e)+str(value))
 
     return container
 
