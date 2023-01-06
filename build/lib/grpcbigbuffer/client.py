@@ -52,8 +52,13 @@ def move_to_block_dir(file_hash: str, file_path: str) -> bool:
 
 
 def block_exists(block_id: str, is_dir: bool = False) -> bool:
-    f: bool = os.path.isfile(Enviroment.block_dir + block_id)
-    d: bool = os.path.isdir(Enviroment.block_dir + block_id)
+    try:
+        f: bool = os.path.isfile(Enviroment.block_dir + block_id)
+        d: bool = os.path.isdir(Enviroment.block_dir + block_id)
+    except Exception as e:
+        raise Exception(
+            'gRPCbb error checking block: '+str(e)+" "+str(Enviroment.block_dir)+" "+str(block_id)+" "+str(is_dir)
+        )
     return f or d if not is_dir else (f or d, d)
 
 
