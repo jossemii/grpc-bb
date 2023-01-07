@@ -1,6 +1,8 @@
 import json
 import typing
 from io import BufferedReader
+import warnings
+import shutil
 
 from grpcbigbuffer.block_driver import generate_wbp_file, WITHOUT_BLOCK_POINTERS_FILE_NAME, METADATA_FILE_NAME
 
@@ -12,6 +14,7 @@ import os, gc, itertools, sys, shutil
 
 from google import protobuf
 from grpcbigbuffer import buffer_pb2
+from google.protobuf.message import DecodeError
 from random import randint
 from typing import Generator, Union, List
 from threading import Condition
@@ -38,6 +41,25 @@ class MemManager(object):
 
 
 ## Block driver ##
+def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
+    try:
+        block = buffer_pb2.Buffer.Block()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            block.ParseFromString(buffer)
+    except DecodeError:
+        return False
+    
+    with open(directory, 'wb') as file:
+        shutil.copyfileobj(
+            read_block(
+                block_id=get_hash_from_block(block=block)
+            ), 
+            file
+        )
+    
+    
+
 def move_to_block_dir(file_hash: str, file_path: str) -> bool:
     if not block_exists(block_id=file_hash) and os.path.isfile(file_path):
         try:
