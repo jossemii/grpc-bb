@@ -49,16 +49,13 @@ def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
             block.ParseFromString(buffer)
     except DecodeError:
         return False
-    
+
     with open(directory, 'wb') as file:
-        shutil.copyfileobj(
-            read_block(
+        for data in read_block(
                 block_id=get_hash_from_block(block=block)
-            ), 
-            file
-        )
-    
-    
+        ):
+            file.write(data)
+
 
 def move_to_block_dir(file_hash: str, file_path: str) -> bool:
     if not block_exists(block_id=file_hash) and os.path.isfile(file_path):
@@ -69,7 +66,7 @@ def move_to_block_dir(file_hash: str, file_path: str) -> bool:
             os.rename(file_path, destination_path)
             return True
         except Exception as e:
-            raise Exception('gRPCbb error creating block, file could not be moved: '+str(e))
+            raise Exception('gRPCbb error creating block, file could not be moved: ' + str(e))
     return False
 
 
@@ -79,7 +76,8 @@ def block_exists(block_id: str, is_dir: bool = False) -> bool:
         d: bool = os.path.isdir(Enviroment.block_dir + block_id)
     except Exception as e:
         raise Exception(
-            'gRPCbb error checking block: '+str(e)+" "+str(Enviroment.block_dir)+" "+str(block_id)+" "+str(is_dir)
+            'gRPCbb error checking block: ' + str(e) + " " + str(Enviroment.block_dir) + " " + str(
+                block_id) + " " + str(is_dir)
         )
     return f or d if not is_dir else (f or d, d)
 
@@ -220,7 +218,7 @@ def read_multiblock_directory(directory: str, delete_directory: bool = False) ->
         raise Exception("gRPCbb error reading multiblock directory. It's not directory")
 
     for e in json.load(open(
-        directory + METADATA_FILE_NAME,
+            directory + METADATA_FILE_NAME,
     )):
         if type(e) == int:
             yield from read_file_by_chunks(filename=directory + str(e))
@@ -249,12 +247,12 @@ def read_block(block_id: str) -> Generator[bytes, None, None]:
 
 def read_from_registry(filename: str, signal: Signal = None) -> Generator[buffer_pb2.Buffer, None, None]:
     for c in read_multiblock_directory(
-        directory=filename
+            directory=filename
     ) if os.path.isdir(filename) else \
-        read_file_by_chunks(
-            filename=filename,
-            signal=signal
-    ):
+            read_file_by_chunks(
+                filename=filename,
+                signal=signal
+            ):
         yield buffer_pb2.Buffer(chunk=c)
 
 
@@ -508,7 +506,6 @@ def parse_from_buffer(
             if buffer_obj.HasField('separator') and buffer_obj.separator:
                 break
 
-
     def parse_message(message_field, request_iterator, signal: Signal):
         all_buffer: bytes = b''
         in_block: typing.Optional[str] = None
@@ -728,16 +725,22 @@ def parse_from_buffer(
                         # TODO performance
                         signal=signal,
                         request_iterator=itertools.chain([buffer], request_iterator),
-                ): yield b
+                ):
+                    yield b
 
             else:
                 try:
+                    if not partitions_message_mode[buffer.head.index][0]:
+                        # return a dir with some indices and only one partition, specify the index is needed.
+                        yield indices[buffer.head.index]
+
                     yield iterate_partition(
                         message_field_or_route=indices[buffer.head.index] if partitions_message_mode[buffer.head.index][
                             0] else None,
                         signal=signal,
                         request_iterator=itertools.chain([buffer], request_iterator),
                     )
+
                 except EmptyBufferException:
                     continue
 
