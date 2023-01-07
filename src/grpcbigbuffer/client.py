@@ -725,16 +725,22 @@ def parse_from_buffer(
                         # TODO performance
                         signal=signal,
                         request_iterator=itertools.chain([buffer], request_iterator),
-                ): yield b
+                ):
+                    yield b
 
             else:
                 try:
+                    if not partitions_message_mode[buffer.head.index][0]:
+                        # return a dir with some indices and only one partition, specify the index is needed.
+                        yield indices[buffer.head.index]
+
                     yield iterate_partition(
                         message_field_or_route=indices[buffer.head.index] if partitions_message_mode[buffer.head.index][
                             0] else None,
                         signal=signal,
                         request_iterator=itertools.chain([buffer], request_iterator),
                     )
+
                 except EmptyBufferException:
                     continue
 
