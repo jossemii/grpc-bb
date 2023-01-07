@@ -50,9 +50,13 @@ def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
     except DecodeError:
         return False
 
+    block_id: typing.Optional[str] = get_hash_from_block(block=block)
+    if not block_id:
+        return False
+
     with open(directory, 'wb') as file:
         for data in read_block(
-                block_id=get_hash_from_block(block=block)
+                block_id=block_id
         ):
             file.write(data)
 
