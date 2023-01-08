@@ -286,7 +286,9 @@ def save_chunks_to_block(
         _json.append(
             (block_id, list(block.previous_lengths_position))
         )
+    print('         \nblock save?')
     if not block_exists(block_id):  # Second com probation of that.
+        print('         block save becouse not exists\n')
         save_chunks_to_file(
             buffer_iterator=buffer_iterator,
             filename=Enviroment.block_dir + block_id,
@@ -316,6 +318,7 @@ def save_chunks_to_file(
                     _json=_json
                 )
                 return False
+            print('         write to file')
             f.write(buffer.chunk)
         return True
 
