@@ -42,6 +42,7 @@ class MemManager(object):
 
 ## Block driver ##
 def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
+    # TODO support copy of multiblocks blocks. Now it will create a single file block.
     try:
         block = buffer_pb2.Buffer.Block()
         with warnings.catch_warnings():
@@ -58,7 +59,8 @@ def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
         for data in read_block(
                 block_id=block_id
         ):
-            file.write(data)
+            if type(data) is bytes:
+                file.write(data)
 
 
 def move_to_block_dir(file_hash: str, file_path: str) -> bool:
@@ -217,7 +219,9 @@ def read_file_by_chunks(filename: str, signal: Signal = None) -> Generator[bytes
         gc.collect()
 
 
-def read_multiblock_directory(directory: str, delete_directory: bool = False) -> Generator[bytes, None, None]:
+def read_multiblock_directory(directory: str, delete_directory: bool = False) \
+        -> Generator[Union[bytes, buffer_pb2.Buffer.Block], None, None]:
+
     for e in json.load(open(
             directory + METADATA_FILE_NAME,
     )):
@@ -226,15 +230,20 @@ def read_multiblock_directory(directory: str, delete_directory: bool = False) ->
             yield from read_file_by_chunks(filename=directory + str(e))
         else:
             block_id: str = e[0]
+            block = buffer_pb2.Buffer.Block(
+                hashes=[buffer_pb2.Buffer.Block.Hash(type=Enviroment.hash_type, value=bytes.fromhex(block_id))]
+            )
             if type(block_id) != str:
                 raise Exception('gRPCbb error on block metadata file ( _.json ).')
+            yield block
             yield from read_block(block_id=block_id)
+            yield block
 
     if delete_directory:
         shutil.rmtree(directory)
 
 
-def read_block(block_id: str) -> Generator[bytes, None, None]:
+def read_block(block_id: str) -> Generator[Union[bytes, buffer_pb2.Buffer.Block], None, None]:
     b, d = block_exists(block_id=block_id, is_dir=True)
     if b and not d:
         yield from read_file_by_chunks(filename=Enviroment.block_dir + block_id)
@@ -256,7 +265,7 @@ def read_from_registry(filename: str, signal: Signal = None) -> Generator[buffer
                 filename=filename,
                 signal=signal
             ):
-        yield buffer_pb2.Buffer(chunk=c)
+        yield buffer_pb2.Buffer(chunk=c) if type(c) is bytes else buffer_pb2.Buffer(block=c)
 
 
 def save_chunks_to_block(
@@ -526,7 +535,7 @@ def parse_from_buffer(
 
                 elif not in_block and block_exists(block_id=id):
                     in_block: str = id
-                    all_buffer += b''.join([c for c in read_block(block_id=id)])
+                    all_buffer += b''.join([c for c in read_block(block_id=id) if type(c) is bytes])
                     continue
 
             if not in_block:
