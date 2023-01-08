@@ -42,6 +42,7 @@ class MemManager(object):
 
 ## Block driver ##
 def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
+    # TODO support copy of multiblocks blocks. Now it will create a single file block.
     try:
         block = buffer_pb2.Buffer.Block()
         with warnings.catch_warnings():
@@ -58,7 +59,8 @@ def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
         for data in read_block(
                 block_id=block_id
         ):
-            file.write(data)
+            if type(data) is bytes:
+                file.write(data)
 
 
 def move_to_block_dir(file_hash: str, file_path: str) -> bool:
@@ -217,25 +219,31 @@ def read_file_by_chunks(filename: str, signal: Signal = None) -> Generator[bytes
         gc.collect()
 
 
-def read_multiblock_directory(directory: str, delete_directory: bool = False) -> Generator[bytes, None, None]:
-    if not os.path.isdir(directory):
-        raise Exception("gRPCbb error reading multiblock directory. It's not directory")
+def read_multiblock_directory(directory: str, delete_directory: bool = False) \
+        -> Generator[Union[bytes, buffer_pb2.Buffer.Block], None, None]:
 
     for e in json.load(open(
             directory + METADATA_FILE_NAME,
     )):
+        print('reading block -> ', e)
         if type(e) == int:
             yield from read_file_by_chunks(filename=directory + str(e))
         else:
             block_id: str = e[0]
-            if type(block_id) != str: raise Exception('gRPCbb error on block metadata file ( _.json ).')
+            block = buffer_pb2.Buffer.Block(
+                hashes=[buffer_pb2.Buffer.Block.Hash(type=Enviroment.hash_type, value=bytes.fromhex(block_id))]
+            )
+            if type(block_id) != str:
+                raise Exception('gRPCbb error on block metadata file ( _.json ).')
+            yield block
             yield from read_block(block_id=block_id)
+            yield block
 
     if delete_directory:
         shutil.rmtree(directory)
 
 
-def read_block(block_id: str) -> Generator[bytes, None, None]:
+def read_block(block_id: str) -> Generator[Union[bytes, buffer_pb2.Buffer.Block], None, None]:
     b, d = block_exists(block_id=block_id, is_dir=True)
     if b and not d:
         yield from read_file_by_chunks(filename=Enviroment.block_dir + block_id)
@@ -257,7 +265,7 @@ def read_from_registry(filename: str, signal: Signal = None) -> Generator[buffer
                 filename=filename,
                 signal=signal
             ):
-        yield buffer_pb2.Buffer(chunk=c)
+        yield buffer_pb2.Buffer(chunk=c) if type(c) is bytes else buffer_pb2.Buffer(block=c)
 
 
 def save_chunks_to_block(
@@ -444,7 +452,8 @@ def parse_from_buffer(
                                        partitions_model.items()}  # The same mode for all index and partitions.
         if type(partitions_message_mode) is list: partitions_message_mode = {
             1: partitions_message_mode}  # Only've one index.
-        for i, l in partitions_message_mode.items():  # If an index in the partitions message mode have a boolean, it applies for all partitions of this index.
+        for i, l in partitions_message_mode.items():  # If an index in the partitions message mode have a boolean,
+            # it applies for all partitions of this index.
             if type(l) is bool:
                 partitions_message_mode[i] = [l for m in partitions_model[i]]
             elif type(l) is not list:
@@ -452,7 +461,8 @@ def parse_from_buffer(
         partitions_message_mode.update(
             {i: [False] for i in indices if i not in partitions_message_mode})  # Check that it've all indices.
 
-        if partitions_message_mode.keys() != indices.keys(): raise Exception  # Check that partition modes' index're correct.
+        if partitions_message_mode.keys() != indices.keys(): raise Exception  # Check that partition modes' index're
+        # correct.
         for i in indices.keys():  # Check if partitions modes and partitions have the same lenght in all indices.
             if len(partitions_message_mode[i]) != len(partitions_model[i]):
                 raise Exception
@@ -475,7 +485,7 @@ def parse_from_buffer(
             if buffer_obj.HasField('signal') and buffer_obj.signal:
                 signal_obj.change()
 
-            print('block -> ', buffer_obj.block, blocks)
+            if buffer_obj.block: print('block -> ', buffer_obj.block, blocks)
             if not blocks and buffer_obj.HasField('block') or \
                     blocks and buffer_obj.HasField('block') and len(blocks) < Enviroment.block_depth:
 
@@ -511,12 +521,12 @@ def parse_from_buffer(
             if buffer_obj.HasField('separator') and buffer_obj.separator:
                 break
 
-    def parse_message(message_field, request_iterator, signal: Signal):
+    def parse_message(message_field, _request_iterator, _signal: Signal):
         all_buffer: bytes = b''
         in_block: typing.Optional[str] = None
         for b in parser_iterator(
-                request_iterator_obj=request_iterator,
-                signal_obj=signal,
+                request_iterator_obj=_request_iterator,
+                signal_obj=_signal,
         ):
             if b.HasField('block'):
                 id: str = get_hash_from_block(block=b.block)
@@ -525,13 +535,14 @@ def parse_from_buffer(
 
                 elif not in_block and block_exists(block_id=id):
                     in_block: str = id
-                    all_buffer += b''.join([c for c in read_block(block_id=id)])
+                    all_buffer += b''.join([c for c in read_block(block_id=id) if type(c) is bytes])
                     continue
 
             if not in_block:
                 all_buffer += b.chunk
 
-        if len(all_buffer) == 0: raise EmptyBufferException()
+        if len(all_buffer) == 0:
+            raise EmptyBufferException()
         if message_field is str:
             return all_buffer.decode('utf-8')
         elif type(message_field) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
@@ -548,26 +559,26 @@ def parse_from_buffer(
                     'gRPCbb error -> Parse message error: some primitive type message not suported for contain partition ' + str(
                         message_field) + str(e))
 
-    def save_to_dir(request_iterator, signal) -> str:
+    def save_to_dir(_request_iterator, _signal) -> str:
         dirname = generate_random_dir()
-        i: int = 1
+        _i: int = 1
         _json: List[Union[
             int,
             typing.Tuple[str, List[int]]
         ]] = []
         try:
             while True:
-                _json.append(i)
+                _json.append(_i)
                 if save_chunks_to_file(
-                        filename=dirname + '/' + str(i),
+                        filename=dirname + '/' + str(_i),
                         buffer_iterator=parser_iterator(
-                            request_iterator_obj=request_iterator,
-                            signal_obj=signal
+                            request_iterator_obj=_request_iterator,
+                            signal_obj=_signal
                         ),
-                        signal=signal,
+                        signal=_signal,
                         _json=_json
                 ): break
-                i += 1
+                _i += 1
 
         except StopIteration:
             pass
@@ -594,28 +605,28 @@ def parse_from_buffer(
 
             return dirname  # separator break.
 
-    def iterate_partition(message_field_or_route, signal: Signal, request_iterator):
+    def iterate_partition(message_field_or_route, _signal: Signal, _request_iterator):
         if message_field_or_route and type(message_field_or_route) is not str:
             return parse_message(
                 message_field=message_field_or_route,
-                request_iterator=request_iterator,
-                signal=signal,
+                _request_iterator=_request_iterator,
+                _signal=_signal,
             )
 
         else:
             return save_to_dir(
-                request_iterator=request_iterator,
-                signal=signal
+                _request_iterator=_request_iterator,
+                _signal=_signal
             )
 
-    def iterate_partitions(signal: Signal, request_iterator, partitions: list = None):
+    def iterate_partitions(_signal: Signal, _request_iterator, partitions: list = None):
         if not partitions: partitions = [None]
-        for i, partition in enumerate(partitions):
+        for _i, partition in enumerate(partitions):
             try:
                 yield iterate_partition(
                     message_field_or_route=partition,
-                    signal=signal,
-                    request_iterator=request_iterator,
+                    _signal=_signal,
+                    _request_iterator=_request_iterator,
                 )
             except EmptyBufferException:
                 continue
@@ -625,27 +636,28 @@ def parse_from_buffer(
             pf_object: object = None,
             local_partitions_model: list = None,
             remote_partitions_model: list = None,
-            mem_manager=Enviroment.mem_manager,
-            yield_remote_partition_dir: bool = False,
-            partitions_message_mode: list = None,
+            _mem_manager=Enviroment.mem_manager,
+            _yield_remote_partition_dir: bool = False,
+            _partitions_message_mode: list = None,
     ):
         if not local_partitions_model: local_partitions_model = []
         if not remote_partitions_model: remote_partitions_model = []
-        if not partitions_message_mode: partitions_message_mode = []
+        if not _partitions_message_mode: _partitions_message_mode = []
         yield pf_object
         dirs: List[str] = []
         # 1. Save the remote partitions on cache.
         try:
             for d in iterator:
                 # 2. yield remote partitions directory.
-                if yield_remote_partition_dir: yield d
+                if _yield_remote_partition_dir:
+                    yield d
                 dirs.append(d)
         except EmptyBufferException:
             pass
         if not pf_object or 0 < len(remote_partitions_model) != len(dirs): return None
         # 3. Parse to the local partitions from the remote partitions using mem_manager.
         # TODO: check the limit memory formula.
-        with mem_manager(len=3 * sum([os.path.getsize(dir) for dir in dirs[:-1]]) + 2 * os.path.getsize(dirs[-1])):
+        with _mem_manager(len=3 * sum([os.path.getsize(_dir) for _dir in dirs[:-1]]) + 2 * os.path.getsize(dirs[-1])):
             if (len(remote_partitions_model) == 0 or len(remote_partitions_model) == 1) and len(dirs) == 1:
                 main_object = pf_object()
                 d: str = dirs[0]
@@ -676,7 +688,7 @@ def parse_from_buffer(
                     aux_object = pf_object()
                     aux_object.CopyFrom(main_object)
                 aux_object = get_submessage(partition=partition, obj=aux_object)
-                message_mode = partitions_message_mode[i]
+                message_mode = _partitions_message_mode[i]
                 if not message_mode:
                     filename = generate_random_file()
                     with open(filename, 'wb') as f:
@@ -695,7 +707,8 @@ def parse_from_buffer(
                         del aux_object
                     else:
                         yield aux_object
-        yield last  # Necesario para evitar realizar una última iteración del conversor para salir del mem_manager, y en su uso no es necesario esa última iteración porque se conoce local_partitions.
+        yield last  # Necesario para evitar realizar una última iteración del conversor para salir del mem_manager,
+        # y en su uso no es necesario esa última iteración porque se conoce local_partitions.
 
     for buffer in request_iterator:
         # The order of conditions is important.
@@ -710,26 +723,28 @@ def parse_from_buffer(
                         iterator=iterate_partitions(
                             partitions=[None for i in buffer.head.partitions] if len(buffer.head.partitions) > 0 else [
                                 None],
-                            signal=signal,
-                            request_iterator=itertools.chain([buffer], request_iterator),
+                            _signal=signal,
+                            _request_iterator=itertools.chain([buffer], request_iterator),
                         ),
                         local_partitions_model=partitions_model[buffer.head.index],
                         remote_partitions_model=buffer.head.partitions,
-                        mem_manager=mem_manager,
-                        yield_remote_partition_dir=yield_remote_partition_dir,
+                        _mem_manager=mem_manager,
+                        _yield_remote_partition_dir=yield_remote_partition_dir,
                         pf_object=indices[buffer.head.index],
-                        partitions_message_mode=partitions_message_mode[buffer.head.index],
+                        _partitions_message_mode=partitions_message_mode[buffer.head.index],
                 ): yield b
 
             elif len(partitions_model[buffer.head.index]) > 1:
                 yield indices[buffer.head.index]
                 for b in iterate_partitions(
-                        partitions=[get_subclass(object_cls=indices[buffer.head.index], partition=partition) \
-                                            if partitions_message_mode[buffer.head.index][part_i] else None for
-                                    part_i, partition in enumerate(partitions_model[buffer.head.index])],
+                        partitions=[
+                            get_subclass(object_cls=indices[buffer.head.index], partition=partition)
+                            if partitions_message_mode[buffer.head.index][part_i] else None for
+                            part_i, partition in enumerate(partitions_model[buffer.head.index])
+                        ],
                         # TODO performance
-                        signal=signal,
-                        request_iterator=itertools.chain([buffer], request_iterator),
+                        _signal=signal,
+                        _request_iterator=itertools.chain([buffer], request_iterator),
                 ):
                     yield b
 
@@ -742,8 +757,8 @@ def parse_from_buffer(
                     yield iterate_partition(
                         message_field_or_route=indices[buffer.head.index] if partitions_message_mode[buffer.head.index][
                             0] else None,
-                        signal=signal,
-                        request_iterator=itertools.chain([buffer], request_iterator),
+                        _signal=signal,
+                        _request_iterator=itertools.chain([buffer], request_iterator),
                     )
 
                 except EmptyBufferException:
@@ -753,22 +768,23 @@ def parse_from_buffer(
             if len(partitions_model[1]) > 1:
                 for b in conversor(
                         iterator=iterate_partitions(
-                            signal=signal,
-                            request_iterator=itertools.chain([buffer], request_iterator),
+                            _signal=signal,
+                            _request_iterator=itertools.chain([buffer], request_iterator),
                         ),
                         remote_partitions_model=[buffer_pb2.Buffer.Head.Partition()],
                         local_partitions_model=partitions_model[1],
-                        mem_manager=mem_manager,
-                        yield_remote_partition_dir=yield_remote_partition_dir,
+                        _mem_manager=mem_manager,
+                        _yield_remote_partition_dir=yield_remote_partition_dir,
                         pf_object=indices[1],
-                        partitions_message_mode=partitions_message_mode[1],
-                ): yield b
+                        _partitions_message_mode=partitions_message_mode[1],
+                ):
+                    yield b
             else:
                 try:
                     yield iterate_partition(
                         message_field_or_route=indices[1] if partitions_message_mode[1][0] else None,
-                        signal=signal,
-                        request_iterator=itertools.chain([buffer], request_iterator),
+                        _signal=signal,
+                        _request_iterator=itertools.chain([buffer], request_iterator),
                     )
                 except EmptyBufferException:
                     continue
@@ -816,59 +832,60 @@ def serialize_to_buffer(
     except:
         raise Exception('Serialzie to buffer error: Indices are not correct ' + str(indices) + str(partitions_model))
 
-    def send_file(filedir: Dir, signal: Signal) -> Generator[buffer_pb2.Buffer, None, None]:
-        for b in read_from_registry(
+    def send_file(filedir: Dir, _signal: Signal) -> Generator[buffer_pb2.Buffer, None, None]:
+        for _b in read_from_registry(
                 filename=filedir.name,
-                signal=signal
+                signal=_signal
         ):
-            signal.wait()
+            _signal.wait()
             try:
-                yield b
+                yield _b
             finally:
-                signal.wait()
+                _signal.wait()
         yield buffer_pb2.Buffer(
             separator=True
         )
 
     def send_message(
-            signal: Signal,
-            message: object,
-            head: buffer_pb2.Buffer.Head = None,
-            mem_manager=Enviroment.mem_manager,
+            _signal: Signal,
+            _message: object,
+            _head: buffer_pb2.Buffer.Head = None,
+            _mem_manager=Enviroment.mem_manager,
     ) -> Generator[buffer_pb2.Buffer, None, None]:
 
-        message_bytes = message_to_bytes(message=message)
+        message_bytes = message_to_bytes(message=_message)
         if len(message_bytes) < CHUNK_SIZE:
-            signal.wait()
+            _signal.wait()
             try:
                 yield buffer_pb2.Buffer(
                     chunk=bytes(message_bytes),
-                    head=head,
+                    head=_head,
                     separator=True
-                ) if head else buffer_pb2.Buffer(
+                ) if _head else buffer_pb2.Buffer(
                     chunk=bytes(message_bytes),
                     separator=True
                 )
             finally:
-                signal.wait()
+                _signal.wait()
 
         else:
             try:
-                if head: yield buffer_pb2.Buffer(
-                    head=head
+                if _head: yield buffer_pb2.Buffer(
+                    head=_head
                 )
             finally:
-                signal.wait()
+                _signal.wait()
 
-            signal.wait()
+            _signal.wait()
             file = generate_random_file()
-            with open(file, 'wb') as f, mem_manager(len=len(message_bytes)):
+            with open(file, 'wb') as f, _mem_manager(len=len(message_bytes)):
                 f.write(message_bytes)
             try:
-                for b in read_from_registry(
+                for c in read_from_registry(
                         filename=file,
-                        signal=signal
-                ): yield b
+                        signal=_signal
+                ):
+                    yield c
             finally:
                 remove_file(file)
 
@@ -877,7 +894,7 @@ def serialize_to_buffer(
                     separator=True
                 )
             finally:
-                signal.wait()
+                _signal.wait()
 
     for message in message_iterator:
         if type(message) is tuple:  # If is partitioned
@@ -892,14 +909,15 @@ def serialize_to_buffer(
                 if type(partition) is Dir:
                     for b in send_file(
                             filedir=partition,
-                            signal=signal
+                            _signal=signal
                     ): yield b
                 else:
                     for b in send_message(
-                            signal=signal,
-                            message=partition,
-                            mem_manager=mem_manager,
-                    ): yield b
+                            _signal=signal,
+                            _message=partition,
+                            _mem_manager=mem_manager,
+                    ):
+                        yield b
 
         else:  # If message is a protobuf object.
             head = buffer_pb2.Buffer.Head(
@@ -907,11 +925,12 @@ def serialize_to_buffer(
                 partitions=partitions_model[indices[type(message)]]
             )
             for b in send_message(
-                    signal=signal,
-                    message=message,
-                    head=head,
-                    mem_manager=mem_manager,
-            ): yield b
+                    _signal=signal,
+                    _message=message,
+                    _head=head,
+                    _mem_manager=mem_manager,
+            ):
+                yield b
 
 
 def client_grpc(
