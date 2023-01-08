@@ -485,7 +485,7 @@ def parse_from_buffer(
             if buffer_obj.HasField('signal') and buffer_obj.signal:
                 signal_obj.change()
 
-            if buffer_obj.block: print('block -> ', buffer_obj.block, blocks)
+            if buffer_obj.HasField('block'): print('block -> ', buffer_obj.block, blocks)
             if not blocks and buffer_obj.HasField('block') or \
                     blocks and buffer_obj.HasField('block') and len(blocks) < Enviroment.block_depth:
 
