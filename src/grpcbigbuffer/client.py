@@ -823,16 +823,16 @@ def serialize_to_buffer(
     except:
         raise Exception('Serialzie to buffer error: Indices are not correct ' + str(indices) + str(partitions_model))
 
-    def send_file(filedir: Dir, signal: Signal) -> Generator[buffer_pb2.Buffer, None, None]:
-        for b in read_from_registry(
+    def send_file(filedir: Dir, _signal: Signal) -> Generator[buffer_pb2.Buffer, None, None]:
+        for _b in read_from_registry(
                 filename=filedir.name,
-                signal=signal
+                signal=_signal
         ):
-            signal.wait()
+            _signal.wait()
             try:
-                yield b
+                yield _b
             finally:
-                signal.wait()
+                _signal.wait()
         yield buffer_pb2.Buffer(
             separator=True
         )
@@ -900,7 +900,7 @@ def serialize_to_buffer(
                 if type(partition) is Dir:
                     for b in send_file(
                             filedir=partition,
-                            signal=signal
+                            _signal=signal
                     ): yield b
                 else:
                     for b in send_message(
