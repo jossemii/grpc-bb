@@ -218,17 +218,16 @@ def read_file_by_chunks(filename: str, signal: Signal = None) -> Generator[bytes
 
 
 def read_multiblock_directory(directory: str, delete_directory: bool = False) -> Generator[bytes, None, None]:
-    if not os.path.isdir(directory):
-        raise Exception("gRPCbb error reading multiblock directory. It's not directory")
-
     for e in json.load(open(
             directory + METADATA_FILE_NAME,
     )):
+        print('reading block -> ', e)
         if type(e) == int:
             yield from read_file_by_chunks(filename=directory + str(e))
         else:
             block_id: str = e[0]
-            if type(block_id) != str: raise Exception('gRPCbb error on block metadata file ( _.json ).')
+            if type(block_id) != str:
+                raise Exception('gRPCbb error on block metadata file ( _.json ).')
             yield from read_block(block_id=block_id)
 
     if delete_directory:
@@ -475,7 +474,7 @@ def parse_from_buffer(
             if buffer_obj.HasField('signal') and buffer_obj.signal:
                 signal_obj.change()
 
-            print('block -> ', buffer_obj.block, blocks)
+            if buffer_obj.block: print('block -> ', buffer_obj.block, blocks)
             if not blocks and buffer_obj.HasField('block') or \
                     blocks and buffer_obj.HasField('block') and len(blocks) < Enviroment.block_depth:
 
@@ -831,44 +830,45 @@ def serialize_to_buffer(
         )
 
     def send_message(
-            signal: Signal,
-            message: object,
-            head: buffer_pb2.Buffer.Head = None,
-            mem_manager=Enviroment.mem_manager,
+            _signal: Signal,
+            _message: object,
+            _head: buffer_pb2.Buffer.Head = None,
+            _mem_manager=Enviroment.mem_manager,
     ) -> Generator[buffer_pb2.Buffer, None, None]:
 
-        message_bytes = message_to_bytes(message=message)
+        message_bytes = message_to_bytes(message=_message)
         if len(message_bytes) < CHUNK_SIZE:
-            signal.wait()
+            _signal.wait()
             try:
                 yield buffer_pb2.Buffer(
                     chunk=bytes(message_bytes),
-                    head=head,
+                    head=_head,
                     separator=True
-                ) if head else buffer_pb2.Buffer(
+                ) if _head else buffer_pb2.Buffer(
                     chunk=bytes(message_bytes),
                     separator=True
                 )
             finally:
-                signal.wait()
+                _signal.wait()
 
         else:
             try:
-                if head: yield buffer_pb2.Buffer(
-                    head=head
+                if _head: yield buffer_pb2.Buffer(
+                    head=_head
                 )
             finally:
-                signal.wait()
+                _signal.wait()
 
-            signal.wait()
+            _signal.wait()
             file = generate_random_file()
-            with open(file, 'wb') as f, mem_manager(len=len(message_bytes)):
+            with open(file, 'wb') as f, _mem_manager(len=len(message_bytes)):
                 f.write(message_bytes)
             try:
-                for b in read_from_registry(
+                for c in read_from_registry(
                         filename=file,
-                        signal=signal
-                ): yield b
+                        signal=_signal
+                ):
+                    yield c
             finally:
                 remove_file(file)
 
@@ -877,7 +877,7 @@ def serialize_to_buffer(
                     separator=True
                 )
             finally:
-                signal.wait()
+                _signal.wait()
 
     for message in message_iterator:
         if type(message) is tuple:  # If is partitioned
@@ -896,10 +896,11 @@ def serialize_to_buffer(
                     ): yield b
                 else:
                     for b in send_message(
-                            signal=signal,
-                            message=partition,
-                            mem_manager=mem_manager,
-                    ): yield b
+                            _signal=signal,
+                            _message=partition,
+                            _mem_manager=mem_manager,
+                    ):
+                        yield b
 
         else:  # If message is a protobuf object.
             head = buffer_pb2.Buffer.Head(
@@ -907,11 +908,12 @@ def serialize_to_buffer(
                 partitions=partitions_model[indices[type(message)]]
             )
             for b in send_message(
-                    signal=signal,
-                    message=message,
-                    head=head,
-                    mem_manager=mem_manager,
-            ): yield b
+                    _signal=signal,
+                    _message=message,
+                    _head=head,
+                    _mem_manager=mem_manager,
+            ):
+                yield b
 
 
 def client_grpc(
