@@ -286,7 +286,9 @@ def save_chunks_to_block(
         _json.append(
             (block_id, list(block.previous_lengths_position))
         )
+    print('         \nblock save?')
     if not block_exists(block_id):  # Second com probation of that.
+        print('         block save becouse not exists\n')
         save_chunks_to_file(
             buffer_iterator=buffer_iterator,
             filename=Enviroment.block_dir + block_id,
@@ -316,6 +318,7 @@ def save_chunks_to_file(
                     _json=_json
                 )
                 return False
+            print('         write to file')
             f.write(buffer.chunk)
         return True
 
@@ -496,12 +499,14 @@ def parse_from_buffer(
                 block_hash: str = get_hash_from_block(buffer_obj.block)
                 if block_hash:
                     if blocks and block_hash in blocks:
+                        print('delete block '+block_hash)
                         while True:  # Delete all blocks on <block_hash> (<block_hash> included.).
                             c = blocks.pop()
                             if c == block_hash:
                                 break
 
                     else:
+                        print('add block -> '+block_hash)
                         if not blocks:
                             blocks = [block_hash]
                         else:
@@ -516,6 +521,7 @@ def parse_from_buffer(
                                 signal_obj=signal_obj,
                                 blocks=blocks
                         ):
+                            print('        block content')
                             yield block_chunk
 
             if buffer_obj.HasField('chunk'):
@@ -560,7 +566,8 @@ def parse_from_buffer(
                 return message_field(all_buffer)
             except Exception as e:
                 raise Exception(
-                    'gRPCbb error -> Parse message error: some primitive type message not suported for contain partition ' + str(
+                    'gRPCbb error -> Parse message error: some primitive type message not suported for contain '
+                    'partition ' + str(
                         message_field) + str(e))
 
     def save_to_dir(_request_iterator, _signal) -> str:
@@ -581,7 +588,8 @@ def parse_from_buffer(
                         ),
                         signal=_signal,
                         _json=_json
-                ): break
+                ):
+                    break
                 _i += 1
 
         except StopIteration:
