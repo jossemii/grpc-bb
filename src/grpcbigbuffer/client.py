@@ -478,22 +478,22 @@ def parse_from_buffer(
             if not blocks and buffer_obj.HasField('block') or \
                     blocks and buffer_obj.HasField('block') and len(blocks) < Enviroment.block_depth:
 
-                hash: str = get_hash_from_block(buffer_obj.block)
-                if hash:
-                    if blocks and hash in blocks:
-                        while True:  # Delete all blocks on <hash> (<hash> included.).
+                block_hash: str = get_hash_from_block(buffer_obj.block)
+                if block_hash:
+                    if blocks and block_hash in blocks:
+                        while True:  # Delete all blocks on <block_hash> (<block_hash> included.).
                             c = blocks.pop()
-                            if c == hash:
+                            if c == block_hash:
                                 break
 
                     else:
                         if not blocks:
-                            blocks = [hash]
+                            blocks = [block_hash]
                         else:
-                            blocks.append(hash)
+                            blocks.append(block_hash)
 
-                        if block_exists(hash):
-                            signal_block_buffer_stream(hash)  # Send the sub-buffer stop signal
+                        if block_exists(block_hash):
+                            signal_block_buffer_stream(block_hash)  # Send the sub-buffer stop signal
 
                         yield buffer_obj
                         for block_chunk in parser_iterator(
