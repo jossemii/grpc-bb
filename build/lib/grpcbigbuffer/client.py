@@ -219,7 +219,7 @@ def read_file_by_chunks(filename: str, signal: Signal = None) -> Generator[bytes
         gc.collect()
 
 
-def read_multiblock_directory(directory: str, delete_directory: bool = False) \
+def read_multiblock_directory(directory: str, delete_directory: bool = False, ignore_blocks: bool = True) \
         -> Generator[Union[bytes, buffer_pb2.Buffer.Block], None, None]:
 
     for e in json.load(open(
@@ -235,9 +235,11 @@ def read_multiblock_directory(directory: str, delete_directory: bool = False) \
             )
             if type(block_id) != str:
                 raise Exception('gRPCbb error on block metadata file ( _.json ).')
-            yield block
+            if not ignore_blocks:
+                yield block
             yield from read_block(block_id=block_id)
-            yield block
+            if not ignore_blocks:
+                yield block
 
     if delete_directory:
         shutil.rmtree(directory)
@@ -250,7 +252,8 @@ def read_block(block_id: str) -> Generator[Union[bytes, buffer_pb2.Buffer.Block]
 
     elif d:
         yield from read_multiblock_directory(
-            directory=Enviroment.block_dir + block_id
+            directory=Enviroment.block_dir + block_id,
+            ignore_blocks=False
         )
 
     else:
@@ -259,7 +262,8 @@ def read_block(block_id: str) -> Generator[Union[bytes, buffer_pb2.Buffer.Block]
 
 def read_from_registry(filename: str, signal: Signal = None) -> Generator[buffer_pb2.Buffer, None, None]:
     for c in read_multiblock_directory(
-            directory=filename
+        directory=filename,
+        ignore_blocks=False
     ) if os.path.isdir(filename) else \
             read_file_by_chunks(
                 filename=filename,
