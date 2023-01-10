@@ -78,13 +78,19 @@ def move_to_block_dir(file_hash: str, file_path: str) -> bool:
 
 def block_exists(block_id: str, is_dir: bool = False) -> bool:
     try:
+        print('     block is a file?')
         f: bool = os.path.isfile(Enviroment.block_dir + block_id)
+        print('           the result .< ', f)
+        print('     block is a directory')
         d: bool = os.path.isdir(Enviroment.block_dir + block_id)
+        print('           the result .< ', d)
     except Exception as e:
         raise Exception(
             'gRPCbb error checking block: ' + str(e) + " " + str(Enviroment.block_dir) + " " + str(
                 block_id) + " " + str(is_dir)
         )
+    print('      aalll seems to be ok .')
+    print('      ths -> ', f or d if not is_dir else (f or d, d))
     return f or d if not is_dir else (f or d, d)
 
 
@@ -294,6 +300,7 @@ def save_chunks_to_block(
             filename=Enviroment.block_dir + block_id,
             signal=signal
         )
+    print('        dont block save.')
 
 
 def save_chunks_to_file(
@@ -318,7 +325,6 @@ def save_chunks_to_file(
                     _json=_json
                 )
                 return False
-            print('         write to file')
             f.write(buffer.chunk)
         return True
 
