@@ -339,7 +339,7 @@ def save_chunks_to_file(
         signal.wait()
         if prev:
             f.write(prev)
-            del prev # TODO check
+            del prev
 
         for buffer in buffer_iterator:
             if buffer.HasField('block'):
@@ -534,11 +534,10 @@ def parse_from_buffer(
                 if block_hash:
                     if blocks and block_hash in blocks:
                         print('delete block '+block_hash)
-                        while _break:  # Delete all blocks on <block_hash> (<block_hash> included.).
-                            # TODO si realiza mas de una vuelta raise Exception()
-                            c = blocks.pop()
-                            if c == block_hash:
-                                _break = False
+                        if blocks.pop() == block_hash:
+                            break
+                        else:
+                            raise Exception('gRPCbb: IntersectionError: Intersections between blocks are not allowed.')
 
                     else:
                         print('add block -> '+block_hash)
@@ -582,8 +581,8 @@ def parse_from_buffer(
                     in_block = None
 
                 elif not in_block and block_exists(block_id=id):
-                    # TODO debe gastar todo el buffer hasta que le vuelva ha salir el bloque.
-                    #  (puede hacerlo en paralelo con la lectura.)
+                    # TODO performance  could be on Thread or asnyc. with the read_block task.
+                    #    for b in parse_iterator: if b.HasField('block') and get_hash..(b) == id: break
                     in_block: str = id
                     all_buffer += b''.join([c for c in read_block(block_id=id) if type(c) is bytes])
                     continue
