@@ -535,6 +535,7 @@ def parse_from_buffer(
                     if blocks and block_hash in blocks:
                         print('delete block '+block_hash)
                         while _break:  # Delete all blocks on <block_hash> (<block_hash> included.).
+                            # TODO si realiza mas de una vuelta raise Exception()
                             c = blocks.pop()
                             if c == block_hash:
                                 _break = False
@@ -581,6 +582,8 @@ def parse_from_buffer(
                     in_block = None
 
                 elif not in_block and block_exists(block_id=id):
+                    # TODO debe gastar todo el buffer hasta que le vuelva ha salir el bloque.
+                    #  (puede hacerlo en paralelo con la lectura.)
                     in_block: str = id
                     all_buffer += b''.join([c for c in read_block(block_id=id) if type(c) is bytes])
                     continue
