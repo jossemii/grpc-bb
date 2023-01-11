@@ -279,7 +279,7 @@ def read_from_registry(filename: str, signal: Signal = None) -> Generator[buffer
 
 
 def save_chunks_to_block(
-        block: buffer_pb2.Buffer.Block,
+        block_buffer: buffer_pb2.Buffer,
         buffer_iterator,
         signal: Signal = None,
         _json: List[Union[
@@ -287,15 +287,16 @@ def save_chunks_to_block(
             typing.Tuple[str, List[int]]
         ]] = None
 ):
-    block_id: str = get_hash_from_block(block)
+    block_id: str = get_hash_from_block(block_buffer.block)
     if _json:
         _json.append(
-            (block_id, list(block.previous_lengths_position))
+            (block_id, list(block_buffer.block.previous_lengths_position))
         )
     print('         \nblock save?')
     if not block_exists(block_id):  # Second com probation of that.
         print('         block save becouse not exists\n')
         save_chunks_to_file(
+            prev=block_buffer.chunk if block_buffer.HasField('chunk') else None,
             buffer_iterator=buffer_iterator,
             filename=Enviroment.block_dir + block_id,
             signal=signal
@@ -315,7 +316,8 @@ def save_chunks_to_file(
         _json: List[Union[
             int,
             typing.Tuple[str, List[int]]
-        ]] = None
+        ]] = None,
+        prev: typing.Optional[bytes] = None
 ) -> bool:
     import psutil
     if not signal: signal = Signal(exist=False)
@@ -324,11 +326,15 @@ def save_chunks_to_file(
     with open(filename, 'wb') as f:
         print('2RAM memory % used:', psutil.virtual_memory()[2])
         signal.wait()
+        if prev:
+            f.write(prev)
+            del prev # TODO check
+
         for buffer in buffer_iterator:
             if buffer.HasField('block'):
                 save_chunks_to_block(
-                    block=buffer.block,
-                    buffer_iterator=itertools.chain([buffer], buffer_iterator),
+                    block_buffer=buffer,
+                    buffer_iterator=buffer_iterator,
                     signal=signal,
                     _json=_json
                 )
