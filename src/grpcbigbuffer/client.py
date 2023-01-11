@@ -237,7 +237,8 @@ def read_multiblock_directory(directory: str, delete_directory: bool = False, ig
         else:
             block_id: str = e[0]
             block = buffer_pb2.Buffer.Block(
-                hashes=[buffer_pb2.Buffer.Block.Hash(type=Enviroment.hash_type, value=bytes.fromhex(block_id))]
+                hashes=[buffer_pb2.Buffer.Block.Hash(type=Enviroment.hash_type, value=bytes.fromhex(block_id))],
+                previous_lengths_position=e[1]
             )
             if type(block_id) != str:
                 raise Exception('gRPCbb error on block metadata file ( _.json ).')
