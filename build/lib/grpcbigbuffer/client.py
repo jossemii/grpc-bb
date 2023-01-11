@@ -301,6 +301,11 @@ def save_chunks_to_block(
             signal=signal
         )
     print('        dont block save.')
+    for buffer in buffer_iterator:
+        if buffer.HasField('block') and \
+                get_hash_from_block(buffer.block) == block_id:
+            break
+
 
 
 def save_chunks_to_file(
@@ -312,9 +317,12 @@ def save_chunks_to_file(
             typing.Tuple[str, List[int]]
         ]] = None
 ) -> bool:
+    import psutil
     if not signal: signal = Signal(exist=False)
     signal.wait()
+    print('1RAM memory % used:', psutil.virtual_memory()[2])
     with open(filename, 'wb') as f:
+        print('2RAM memory % used:', psutil.virtual_memory()[2])
         signal.wait()
         for buffer in buffer_iterator:
             if buffer.HasField('block'):
@@ -325,8 +333,6 @@ def save_chunks_to_file(
                     _json=_json
                 )
                 return False
-            import psutil
-            print('RAM memory % used:', psutil.virtual_memory()[2])
             f.write(buffer.chunk)
         return True
 
@@ -491,7 +497,8 @@ def parse_from_buffer(
             blocks: List[str] = None
     ) -> Generator[buffer_pb2.Buffer, None, None]:
         if not signal_obj: signal_obj = Signal(exist=False)
-        while True:
+        _break: bool = True
+        while _break:
             try:
                 buffer_obj = next(request_iterator_obj)
             except StopIteration:
@@ -510,10 +517,10 @@ def parse_from_buffer(
                 if block_hash:
                     if blocks and block_hash in blocks:
                         print('delete block '+block_hash)
-                        while True:  # Delete all blocks on <block_hash> (<block_hash> included.).
+                        while _break:  # Delete all blocks on <block_hash> (<block_hash> included.).
                             c = blocks.pop()
                             if c == block_hash:
-                                break
+                                _break = False
 
                     else:
                         print('add block -> '+block_hash)
@@ -613,6 +620,7 @@ def parse_from_buffer(
             remove_dir(dir=dirname)
             raise e
 
+        print('\n\n SAVING ALL _json -> ', _json)
         if len(_json) < 2:
             filename: str = generate_random_file()
             try:
