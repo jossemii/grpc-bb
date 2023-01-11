@@ -311,11 +311,12 @@ def save_chunks_to_block(
             filename=Enviroment.block_dir + block_id,
             signal=signal
         )
-    print('        dont block save.')
-    for buffer in buffer_iterator:
-        if buffer.HasField('block') and \
-                get_hash_from_block(buffer.block) == block_id:
-            break
+    else:
+        print('        dont block save.')
+        for buffer in buffer_iterator:
+            if buffer.HasField('block') and \
+                    get_hash_from_block(buffer.block) == block_id:
+                break
 
 
 
