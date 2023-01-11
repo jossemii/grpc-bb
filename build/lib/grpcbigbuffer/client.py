@@ -278,6 +278,16 @@ def read_from_registry(filename: str, signal: Signal = None) -> Generator[buffer
         yield buffer_pb2.Buffer(chunk=c) if type(c) is bytes else buffer_pb2.Buffer(block=c)
 
 
+def stop_generator(iterator, block_id):
+    for b in iterator:
+        if b.HasField('block') and get_hash_from_block(b.block) == block_id:
+            b.ClearField('block')
+            yield b
+            break
+        else:
+            yield b
+
+
 def save_chunks_to_block(
         block_buffer: buffer_pb2.Buffer,
         buffer_iterator,
@@ -297,7 +307,7 @@ def save_chunks_to_block(
         print('         block save becouse not exists\n')
         save_chunks_to_file(
             prev=block_buffer.chunk if block_buffer.HasField('chunk') else None,
-            buffer_iterator=buffer_iterator,
+            buffer_iterator=stop_generator(buffer_iterator, block_id),
             filename=Enviroment.block_dir + block_id,
             signal=signal
         )
