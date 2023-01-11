@@ -302,7 +302,7 @@ def save_chunks_to_block(
         _json.append(
             (block_id, list(block_buffer.block.previous_lengths_position))
         )
-    print('         \nblock save?')
+    print('         \nblock save -> lengths positions list -> ', list(block_buffer.block.previous_lengths_position))
     if not block_exists(block_id):  # Second com probation of that.
         print('         block save becouse not exists\n')
         save_chunks_to_file(
