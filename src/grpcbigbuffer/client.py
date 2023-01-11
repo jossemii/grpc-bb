@@ -327,7 +327,7 @@ def save_chunks_to_file(
                 return False
             import psutil
             print('RAM memory % used:', psutil.virtual_memory()[2])
-            f.write(buffer.chunk)
+            #f.write(buffer.chunk)
         return True
 
 
