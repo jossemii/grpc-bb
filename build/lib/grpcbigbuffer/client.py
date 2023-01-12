@@ -4,6 +4,8 @@ from io import BufferedReader
 import warnings
 import shutil
 
+from google.protobuf.pyext._message import RepeatedCompositeContainer
+
 from grpcbigbuffer.block_driver import generate_wbp_file, WITHOUT_BLOCK_POINTERS_FILE_NAME, METADATA_FILE_NAME
 
 # GrpcBigBuffer.
@@ -14,7 +16,7 @@ import os, gc, itertools, sys, shutil
 
 from google import protobuf
 from grpcbigbuffer import buffer_pb2
-from google.protobuf.message import DecodeError
+from google.protobuf.message import DecodeError, Message
 from random import randint
 from typing import Generator, Union, List
 from threading import Condition
@@ -41,6 +43,29 @@ class MemManager(object):
 
 
 ## Block driver ##
+def contain_blocks(message: Message) -> bool:
+    for field, value in message.ListFields():
+        if isinstance(value, RepeatedCompositeContainer):
+            for element in value:
+                if contain_blocks(element):
+                    return True
+
+        elif isinstance(value, Message) and contain_blocks(value):
+            return True
+
+        elif type(value) == bytes:
+            try:
+                block = buffer_pb2.Buffer.Block()
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=RuntimeWarning)
+                    block.ParseFromString(value)
+                    return True
+            except DecodeError:
+                pass
+
+    return False
+
+
 def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
     # TODO support copy of multiblocks blocks. Now it will create a single file block.
     try:
@@ -227,7 +252,6 @@ def read_file_by_chunks(filename: str, signal: Signal = None) -> Generator[bytes
 
 def read_multiblock_directory(directory: str, delete_directory: bool = False, ignore_blocks: bool = True) \
         -> Generator[Union[bytes, buffer_pb2.Buffer.Block], None, None]:
-
     for e in json.load(open(
             directory + METADATA_FILE_NAME,
     )):
@@ -269,8 +293,8 @@ def read_block(block_id: str) -> Generator[Union[bytes, buffer_pb2.Buffer.Block]
 
 def read_from_registry(filename: str, signal: Signal = None) -> Generator[buffer_pb2.Buffer, None, None]:
     for c in read_multiblock_directory(
-        directory=filename,
-        ignore_blocks=False
+            directory=filename,
+            ignore_blocks=False
     ) if os.path.isdir(filename) else \
             read_file_by_chunks(
                 filename=filename,
@@ -318,7 +342,6 @@ def save_chunks_to_block(
             if buffer.HasField('block') and \
                     get_hash_from_block(buffer.block) == block_id:
                 break
-
 
 
 def save_chunks_to_file(
@@ -534,14 +557,14 @@ def parse_from_buffer(
                 block_hash: str = get_hash_from_block(buffer_obj.block)
                 if block_hash:
                     if blocks and block_hash in blocks:
-                        print('delete block '+block_hash)
+                        print('delete block ' + block_hash)
                         if blocks.pop() == block_hash:
                             break
                         else:
                             raise Exception('gRPCbb: IntersectionError: Intersections between blocks are not allowed.')
 
                     else:
-                        print('add block -> '+block_hash)
+                        print('add block -> ' + block_hash)
                         if not blocks:
                             blocks = [block_hash]
                         else:
@@ -902,13 +925,17 @@ def serialize_to_buffer(
 
     def send_message(
             _signal: Signal,
-            _message: object,
+            _message: Message,
+            _contain_blocks_proved: typing.Optional[bool],
             _head: buffer_pb2.Buffer.Head = None,
             _mem_manager=Enviroment.mem_manager,
     ) -> Generator[buffer_pb2.Buffer, None, None]:
 
         message_bytes = message_to_bytes(message=_message)
-        if len(message_bytes) < CHUNK_SIZE:
+        _contain_blocks: bool = _contain_blocks_proved or \
+                                (_contain_blocks_proved is None and contain_blocks(message=_message))
+
+        if len(message_bytes) < CHUNK_SIZE and not _contain_blocks:
             _signal.wait()
             try:
                 yield buffer_pb2.Buffer(
@@ -964,7 +991,9 @@ def serialize_to_buffer(
                     for b in send_file(
                             filedir=partition,
                             _signal=signal
-                    ): yield b
+                    ):
+                        yield b
+
                 else:
                     for b in send_message(
                             _signal=signal,
@@ -989,7 +1018,7 @@ def serialize_to_buffer(
 
 def client_grpc(
         method,
-        input=None,
+        _input=None,
         timeout=None,
         indices_parser: Union[protobuf.pyext.cpp_message.GeneratedProtocolMessageType, dict] = None,
         partitions_parser: Union[list, dict] = None,
@@ -1011,7 +1040,7 @@ def client_grpc(
     for b in parse_from_buffer(
             request_iterator=method(
                 serialize_to_buffer(
-                    message_iterator=input if input else buffer_pb2.Empty(),
+                    message_iterator=_input if _input else buffer_pb2.Empty(),
                     signal=signal,
                     indices=indices_serializer,
                     partitions_model=partitions_serializer,
