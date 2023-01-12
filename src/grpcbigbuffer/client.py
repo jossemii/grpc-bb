@@ -47,7 +47,7 @@ def contain_blocks(message: Message) -> bool:
     for field, value in message.ListFields():
         if isinstance(value, RepeatedCompositeContainer):
             for element in value:
-                if contain_blocks(element):
+                if isinstance(element, Message) and contain_blocks(element):
                     return True
 
         elif isinstance(value, Message) and contain_blocks(value):
@@ -189,8 +189,8 @@ def modify_env(
     if block_dir: Enviroment.block_dir = block_dir
 
 
-def message_to_bytes(message) -> bytes:
-    if type(type(message)) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
+def message_to_bytes(message: Union[Message, str, bytes, object]) -> bytes:
+    if type(message) is Message:
         return message.SerializeToString()
     elif type(message) is str:
         return bytes(message, 'utf-8')
@@ -925,13 +925,16 @@ def serialize_to_buffer(
 
     def send_message(
             _signal: Signal,
-            _message: Message,
+            _message: Union[Message, str, bytes, object],
             _head: buffer_pb2.Buffer.Head = None,
             _mem_manager=Enviroment.mem_manager,
     ) -> Generator[buffer_pb2.Buffer, None, None]:
 
         message_bytes = message_to_bytes(message=_message)
-        if len(message_bytes) < CHUNK_SIZE and not contain_blocks(message=_message):
+        if len(message_bytes) < CHUNK_SIZE and (
+            not isinstance(_message, Message) or
+            isinstance(_message, Message) and not contain_blocks(message=_message)
+        ):
             _signal.wait()
             try:
                 yield buffer_pb2.Buffer(
