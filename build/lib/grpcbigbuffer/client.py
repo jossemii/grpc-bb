@@ -926,16 +926,12 @@ def serialize_to_buffer(
     def send_message(
             _signal: Signal,
             _message: Message,
-            _contain_blocks_proved: typing.Optional[bool],
             _head: buffer_pb2.Buffer.Head = None,
             _mem_manager=Enviroment.mem_manager,
     ) -> Generator[buffer_pb2.Buffer, None, None]:
 
         message_bytes = message_to_bytes(message=_message)
-        _contain_blocks: bool = _contain_blocks_proved or \
-                                (_contain_blocks_proved is None and contain_blocks(message=_message))
-
-        if len(message_bytes) < CHUNK_SIZE and not _contain_blocks:
+        if len(message_bytes) < CHUNK_SIZE and not contain_blocks(message=_message):
             _signal.wait()
             try:
                 yield buffer_pb2.Buffer(
