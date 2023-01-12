@@ -931,7 +931,10 @@ def serialize_to_buffer(
     ) -> Generator[buffer_pb2.Buffer, None, None]:
 
         message_bytes = message_to_bytes(message=_message)
-        if len(message_bytes) < CHUNK_SIZE and not contain_blocks(message=_message):
+        if len(message_bytes) < CHUNK_SIZE and (
+                not isinstance(_message, Message) or
+                isinstance(_message, Message) and not contain_blocks(message=_message)
+        ):
             _signal.wait()
             try:
                 yield buffer_pb2.Buffer(
