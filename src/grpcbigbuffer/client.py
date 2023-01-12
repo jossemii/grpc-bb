@@ -1018,7 +1018,7 @@ def serialize_to_buffer(
 
 def client_grpc(
         method,
-        _input=None,
+        input=None,
         timeout=None,
         indices_parser: Union[protobuf.pyext.cpp_message.GeneratedProtocolMessageType, dict] = None,
         partitions_parser: Union[list, dict] = None,
@@ -1040,7 +1040,7 @@ def client_grpc(
     for b in parse_from_buffer(
             request_iterator=method(
                 serialize_to_buffer(
-                    message_iterator=_input if _input else buffer_pb2.Empty(),
+                    message_iterator=input if input else buffer_pb2.Empty(),
                     signal=signal,
                     indices=indices_serializer,
                     partitions_model=partitions_serializer,
