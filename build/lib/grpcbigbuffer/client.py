@@ -103,19 +103,13 @@ def move_to_block_dir(file_hash: str, file_path: str) -> bool:
 
 def block_exists(block_id: str, is_dir: bool = False) -> bool:
     try:
-        print('     block is a file?')
         f: bool = os.path.isfile(Enviroment.block_dir + block_id)
-        print('           the result .< ', f)
-        print('     block is a directory')
         d: bool = os.path.isdir(Enviroment.block_dir + block_id)
-        print('           the result .< ', d)
     except Exception as e:
         raise Exception(
             'gRPCbb error checking block: ' + str(e) + " " + str(Enviroment.block_dir) + " " + str(
                 block_id) + " " + str(is_dir)
         )
-    print('      aalll seems to be ok .')
-    print('      ths -> ', f or d if not is_dir else (f or d, d))
     return f or d if not is_dir else (f or d, d)
 
 
@@ -255,7 +249,6 @@ def read_multiblock_directory(directory: str, delete_directory: bool = False, ig
     for e in json.load(open(
             directory + METADATA_FILE_NAME,
     )):
-        print('reading block -> ', e)
         if type(e) == int:
             yield from read_file_by_chunks(filename=directory + str(e))
         else:
@@ -327,9 +320,7 @@ def save_chunks_to_block(
         _json.append(
             (block_id, list(block_buffer.block.previous_lengths_position))
         )
-    print('         \nblock save -> lengths positions list -> ', list(block_buffer.block.previous_lengths_position))
     if not block_exists(block_id):  # Second com probation of that.
-        print('         block save becouse not exists\n')
         save_chunks_to_file(
             prev=block_buffer.chunk if block_buffer.HasField('chunk') else None,
             buffer_iterator=stop_generator(buffer_iterator, block_id),
@@ -337,7 +328,6 @@ def save_chunks_to_block(
             signal=signal
         )
     else:
-        print('        dont block save.')
         for buffer in buffer_iterator:
             if buffer.HasField('block') and \
                     get_hash_from_block(buffer.block) == block_id:
@@ -357,9 +347,7 @@ def save_chunks_to_file(
     import psutil
     if not signal: signal = Signal(exist=False)
     signal.wait()
-    print('1RAM memory % used:', psutil.virtual_memory()[2])
     with open(filename, 'wb') as f:
-        print('2RAM memory % used:', psutil.virtual_memory()[2])
         signal.wait()
         if prev:
             f.write(prev)
@@ -548,23 +536,18 @@ def parse_from_buffer(
             if buffer_obj.HasField('signal') and buffer_obj.signal:
                 signal_obj.change()
 
-            if buffer_obj.HasField('block'):
-                print('block -> ', buffer_obj.block, blocks)
-
             if not blocks and buffer_obj.HasField('block') or \
                     blocks and buffer_obj.HasField('block') and len(blocks) < Enviroment.block_depth:
 
                 block_hash: str = get_hash_from_block(buffer_obj.block)
                 if block_hash:
                     if blocks and block_hash in blocks:
-                        print('delete block ' + block_hash)
                         if blocks.pop() == block_hash:
                             break
                         else:
                             raise Exception('gRPCbb: IntersectionError: Intersections between blocks are not allowed.')
 
                     else:
-                        print('add block -> ' + block_hash)
                         if not blocks:
                             blocks = [block_hash]
                         else:
@@ -573,17 +556,13 @@ def parse_from_buffer(
                         if block_exists(block_hash):
                             signal_block_buffer_stream(block_hash)  # Send the sub-buffer stop signal
 
-                        print('    yield buffer object')
                         yield buffer_obj
-                        print('     yielded buffer obj.')
                         for block_chunk in parser_iterator(
                                 request_iterator_obj=request_iterator_obj,
                                 signal_obj=signal_obj,
                                 blocks=blocks
                         ):
-                            print('        block content')
                             yield block_chunk
-                        print('    closed block parsed iteration.\n')
 
             if buffer_obj.HasField('chunk'):
                 yield buffer_obj
@@ -654,7 +633,6 @@ def parse_from_buffer(
                 ):
                     break
                 _i += 1
-                print(' _json index ->  ', _i)
 
         except StopIteration:
             pass
@@ -663,7 +641,6 @@ def parse_from_buffer(
             remove_dir(dir=dirname)
             raise e
 
-        print('\n\n SAVING ALL _json -> ', _json)
         if len(_json) < 2:
             filename: str = generate_random_file()
             try:
