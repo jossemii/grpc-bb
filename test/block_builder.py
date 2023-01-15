@@ -122,6 +122,29 @@ class TestBlockBuilder(unittest.TestCase):
             correct_object
         )
 
+
+        # Test generate_wbp_file
+
+        generated = Test()
+        generated.ParseFromString(
+            open(cache_dir+'/wbp.bin', 'rb').read()
+        )
+
+        print('First generated -> ', generated)
+
+        from grpcbigbuffer.block_driver import generate_wbp_file
+        os.system('rm '+cache_dir+'/wbp.bin')
+        generate_wbp_file(cache_dir)
+
+        generated = Test()
+        generated.ParseFromString(
+            open(cache_dir+'/wbp.bin', 'rb').read()
+        )
+
+
+
+
 if __name__ == '__main__':
+    os.system('rm -rf __cache__/*')
     unittest.main()
 

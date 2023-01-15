@@ -81,9 +81,11 @@ def generate_wbp_file(dirname: str):
             Tuple[str, List[int]]
         ]] = json.load(f)
 
-    buffer: bytes = b''.join([
-        open(dirname + '/' + str(e), 'rb').read() for e in _json if type(e) == int
-    ])
+    buffer = b''
+    for e in _json:
+        if type(e) == int:
+            with open(dirname + '/' + str(e), 'rb') as file:
+                buffer += file.read()
 
     blocks: Dict[str, List[int]] = {t[0]: t[1] for t in _json if type(t) == tuple}
 
