@@ -36,6 +36,7 @@ class TestGetVarintValue(unittest.TestCase):
 
 
     def test_generate_wbp_file(self):
+        # Assuming that the build_multiblock_directory() function works correctly (tests/block_builder.py is OK)
         from grpcbigbuffer.test_pb2 import Test
 
         block = buffer_pb2.Buffer.Block()
