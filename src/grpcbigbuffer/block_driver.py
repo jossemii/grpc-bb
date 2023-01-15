@@ -2,6 +2,7 @@ import json
 import os.path
 from typing import Union, List, Tuple, Dict
 
+from grpcbigbuffer.client import read_multiblock_directory
 from grpcbigbuffer.disk_stream import encode_bytes
 
 WITHOUT_BLOCK_POINTERS_FILE_NAME = 'wbp.bin'
@@ -81,13 +82,9 @@ def generate_wbp_file(dirname: str):
             Tuple[str, List[int]]
         ]] = json.load(f)
 
-    buffer = b''
-    for e in _json:
-        if type(e) == int:
-            with open(dirname + '/' + str(e), 'rb') as file:
-                buffer += file.read()
+    buffer = b''.join([i for i in read_multiblock_directory(dirname)])
 
-    blocks: Dict[str, List[int]] = {t[0]: t[1] for t in _json if type(t) == tuple}
+    blocks: Dict[str, List[int]] = {t[0]: t[1] for t in _json if type(t) == list}
 
     lengths_with_pointers: Dict[int, List[str]] = transform_dictionary_format(blocks)
 
@@ -95,6 +92,12 @@ def generate_wbp_file(dirname: str):
         length_position: recalculate_block_length(length_position, blocks_names, buffer)
         for length_position, blocks_names in lengths_with_pointers.items()
     }
+
+    print('\n_json -> ', _json)
+    print('\nbuffer wihtout blocks -< ', buffer)
+    print('\nblocks -< ', blocks)
+    print('\nlengths_wth pointers -> ', lengths_with_pointers)
+    print('\nrecalculated lengths -> ', recalculated_lengths)
 
     with open(dirname + '/' + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
         f.write(
