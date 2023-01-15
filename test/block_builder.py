@@ -113,6 +113,14 @@ class TestBlockBuilder(unittest.TestCase):
             correct_buffer
         )
 
+        correct_object = Test()
+        correct_object.ParseFromString(correct_buffer)
+
+        self.assertEqual(
+            object,
+            correct_object
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
