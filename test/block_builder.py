@@ -2,12 +2,13 @@ import json
 import os
 import sys, unittest, json
 
-
 sys.path.append('../src/')
 
-from grpcbigbuffer.client import Enviroment
 from grpcbigbuffer import buffer_pb2
-from grpcbigbuffer.block_builder import build_multiblock, create_lengths_tree
+from grpcbigbuffer.block_builder import create_lengths_tree, build_multiblock
+from grpcbigbuffer.utils import Enviroment
+
+
 class TestCreateLengthsTree(unittest.TestCase):
     def test_create_lengths_tree(self):
         # Test with a single element

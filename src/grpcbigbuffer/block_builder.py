@@ -9,10 +9,11 @@ from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
 from google.protobuf.pyext._message import RepeatedCompositeContainer
 
-from grpcbigbuffer.block_driver import WITHOUT_BLOCK_POINTERS_FILE_NAME, get_position_length, METADATA_FILE_NAME
-from grpcbigbuffer.client import Enviroment, CHUNK_SIZE, generate_random_dir, block_exists, move_to_block_dir
+from grpcbigbuffer.block_driver import get_position_length
+from grpcbigbuffer.client import generate_random_dir, block_exists, move_to_block_dir
 from grpcbigbuffer.disk_stream import encode_bytes
-from grpcbigbuffer.utils import get_file_hash
+from grpcbigbuffer.utils import Enviroment, CHUNK_SIZE, METADATA_FILE_NAME, WITHOUT_BLOCK_POINTERS_FILE_NAME, \
+    get_file_hash
 
 
 def is_block(bytes_obj: bytes, blocks: List[bytes]):

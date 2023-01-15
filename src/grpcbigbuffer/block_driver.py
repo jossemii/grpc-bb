@@ -2,12 +2,9 @@ import json
 import os.path
 from typing import Union, List, Tuple, Dict
 
-from grpcbigbuffer.client import read_multiblock_directory
 from grpcbigbuffer.disk_stream import encode_bytes
-
-WITHOUT_BLOCK_POINTERS_FILE_NAME = 'wbp.bin'
-METADATA_FILE_NAME = '_.json'
-BLOCK_LENGTH = 36
+from grpcbigbuffer.reader import read_multiblock_directory
+from grpcbigbuffer.utils import BLOCK_LENGTH, METADATA_FILE_NAME, WITHOUT_BLOCK_POINTERS_FILE_NAME
 
 
 def transform_dictionary_format(d: Dict[str, List[int]]) -> Dict[int, List[str]]:

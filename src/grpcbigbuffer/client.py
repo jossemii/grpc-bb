@@ -1,45 +1,21 @@
+import itertools
 import json
-import typing
-from io import BufferedReader
-import warnings
+import os
 import shutil
-
-from google.protobuf.pyext._message import RepeatedCompositeContainer
-
-from grpcbigbuffer.block_driver import generate_wbp_file, WITHOUT_BLOCK_POINTERS_FILE_NAME, METADATA_FILE_NAME
-
-# GrpcBigBuffer.
-CHUNK_SIZE = 1024 * 1024  # 1MB
-MAX_DIR = 999999999
-
-import os, gc, itertools, sys, shutil
-
-from google import protobuf
-from grpcbigbuffer import buffer_pb2
-from google.protobuf.message import DecodeError, Message
+import sys
+import typing
+import warnings
 from random import randint
 from typing import Generator, Union, List
-from threading import Condition
 
+from google import protobuf
+from google.protobuf.message import DecodeError, Message
+from google.protobuf.pyext._message import RepeatedCompositeContainer
 
-class EmptyBufferException(Exception):
-    pass
-
-
-class Dir(object):
-    def __init__(self, dir: str):
-        self.name = dir
-
-
-class MemManager(object):
-    def __init__(self, len):
-        pass
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, trace):
-        pass
+from grpcbigbuffer import buffer_pb2
+from grpcbigbuffer.block_driver import generate_wbp_file, WITHOUT_BLOCK_POINTERS_FILE_NAME, METADATA_FILE_NAME
+from grpcbigbuffer.reader import read_block, read_multiblock_directory, read_from_registry, block_exists
+from grpcbigbuffer.utils import Enviroment, MAX_DIR, Signal, EmptyBufferException, Dir, CHUNK_SIZE
 
 
 ## Block driver ##
@@ -101,18 +77,6 @@ def move_to_block_dir(file_hash: str, file_path: str) -> bool:
     return False
 
 
-def block_exists(block_id: str, is_dir: bool = False) -> bool:
-    try:
-        f: bool = os.path.isfile(Enviroment.block_dir + block_id)
-        d: bool = os.path.isdir(Enviroment.block_dir + block_id)
-    except Exception as e:
-        raise Exception(
-            'gRPCbb error checking block: ' + str(e) + " " + str(Enviroment.block_dir) + " " + str(
-                block_id) + " " + str(is_dir)
-        )
-    return f or d if not is_dir else (f or d, d)
-
-
 def signal_block_buffer_stream(hash: str):
     # Receiver sends the Buffer with block attr. for stops the block buffer stream.
     pass  # Sends Buffer(block=Block())
@@ -151,37 +115,6 @@ def generate_random_file() -> str:
         if not os.path.isfile(file): return file
 
 
-## Enviroment ##
-
-class Enviroment(type):
-    # Using singleton pattern
-    _instances = {}
-    cache_dir = os.path.abspath(os.curdir) + '/__cache__/grpcbigbuffer/'
-    block_dir = os.path.abspath(os.curdir) + '/__block__/'
-    block_depth = 1
-    mem_manager = lambda len: MemManager(len=len)
-    # SHA3_256
-    hash_type: bytes = bytes.fromhex("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a")
-
-    def __call__(cls):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Enviroment, cls).__call__()
-        return cls._instances[cls]
-
-
-def modify_env(
-        cache_dir: typing.Optional[str] = None,
-        mem_manager: typing.Optional[MemManager] = None,
-        hash_type: typing.Optional[bytes] = None,
-        block_depth: typing.Optional[int] = None,
-        block_dir: typing.Optional[str] = None
-):
-    if cache_dir: Enviroment.cache_dir = cache_dir + 'grpcbigbuffer/'
-    if mem_manager: Enviroment.mem_manager = mem_manager
-    if hash_type: Enviroment.hash_type = hash_type
-    if block_depth: Enviroment.block_depth = block_depth
-    if block_dir: Enviroment.block_dir = block_dir
-
 
 def message_to_bytes(message) -> bytes:
     if type(type(message)) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
@@ -205,97 +138,13 @@ def remove_dir(dir: str):
     shutil.rmtree(dir)
 
 
-class Signal():
-    # The parser use change() when reads a signal on the buffer.
-    # The serializer use wait() for stop to send the buffer if it've to do it.
-    # It's thread safe because the open var is only used by one thread (the parser) with the change method.
-    def __init__(self, exist: bool = True) -> None:
-        self.exist = exist
-        if exist: self.open = True
-        if exist: self.condition = Condition()
-
-    def change(self):
-        if self.exist:
-            if self.open:
-                self.open = False  # Stop the input buffer.
-            else:
-                with self.condition:
-                    self.condition.notify_all()
-                self.open = True  # Continue the input buffer.
-
-    def wait(self):
-        if self.exist and not self.open:
-            with self.condition:
-                self.condition.wait()
 
 
-def read_file_by_chunks(filename: str, signal: Signal = None) -> Generator[bytes, None, None]:
-    if not signal: signal = Signal(exist=False)
-    signal.wait()
-    try:
-        with BufferedReader(open(filename, 'rb')) as f:
-            while True:
-                f.flush()
-                signal.wait()
-                piece: bytes = f.read(CHUNK_SIZE)
-                if len(piece) == 0: return
-                yield piece
-    finally:
-        gc.collect()
 
-
-def read_multiblock_directory(directory: str, delete_directory: bool = False, ignore_blocks: bool = True) \
+def i_read_multiblock_directory(directory: str, delete_directory: bool = False, ignore_blocks: bool = True) \
         -> Generator[Union[bytes, buffer_pb2.Buffer.Block], None, None]:
-    if directory[-1] != '/':
-        directory = directory+'/'
-    for e in json.load(open(
-            directory + METADATA_FILE_NAME,
-    )):
-        if type(e) == int:
-            yield from read_file_by_chunks(filename=directory + str(e))
-        else:
-            block_id: str = e[0]
-            block = buffer_pb2.Buffer.Block(
-                hashes=[buffer_pb2.Buffer.Block.Hash(type=Enviroment.hash_type, value=bytes.fromhex(block_id))],
-                previous_lengths_position=e[1]
-            )
-            if type(block_id) != str:
-                raise Exception('gRPCbb error on block metadata file ( _.json ).')
-            if not ignore_blocks:
-                yield block
-            yield from read_block(block_id=block_id)
-            if not ignore_blocks:
-                yield block
-
-    if delete_directory:
-        shutil.rmtree(directory)
-
-
-def read_block(block_id: str) -> Generator[Union[bytes, buffer_pb2.Buffer.Block], None, None]:
-    b, d = block_exists(block_id=block_id, is_dir=True)
-    if b and not d:
-        yield from read_file_by_chunks(filename=Enviroment.block_dir + block_id)
-
-    elif d:
-        yield from read_multiblock_directory(
-            directory=Enviroment.block_dir + block_id,
-            ignore_blocks=False
-        )
-
-    else:
-        raise Exception('gRPCbb: Error reading block.')
-
-
-def read_from_registry(filename: str, signal: Signal = None) -> Generator[buffer_pb2.Buffer, None, None]:
-    for c in read_multiblock_directory(
-            directory=filename,
-            ignore_blocks=False
-    ) if os.path.isdir(filename) else \
-            read_file_by_chunks(
-                filename=filename,
-                signal=signal
-            ):
-        yield buffer_pb2.Buffer(chunk=c) if type(c) is bytes else buffer_pb2.Buffer(block=c)
+    for i in read_multiblock_directory(directory, delete_directory, ignore_blocks):
+        yield i
 
 
 def stop_generator(iterator, block_id):
@@ -346,7 +195,6 @@ def save_chunks_to_file(
         ]] = None,
         prev: typing.Optional[bytes] = None
 ) -> bool:
-    import psutil
     if not signal: signal = Signal(exist=False)
     signal.wait()
     with open(filename, 'wb') as f:
