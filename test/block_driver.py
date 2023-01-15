@@ -97,9 +97,10 @@ class TestGetVarintValue(unittest.TestCase):
         generate_wbp_file(cache_dir)
 
         generated = Test()
-        generated.ParseFromString(
-            open(cache_dir+'/wbp.bin', 'rb').read()
-        )
+        with open(cache_dir+'/wbp.bin', 'rb') as f:
+            generated.ParseFromString(
+                f.read()
+            )
 
         self.assertEqual(
             ultra_complex,
