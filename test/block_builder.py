@@ -1,6 +1,6 @@
 import json
 import os
-import sys, unittest
+import sys, unittest, json
 
 
 sys.path.append('../src/')
@@ -122,16 +122,7 @@ class TestBlockBuilder(unittest.TestCase):
             correct_object
         )
 
-
         # Test generate_wbp_file
-
-        generated = Test()
-        generated.ParseFromString(
-            open(cache_dir+'/wbp.bin', 'rb').read()
-        )
-
-        print('First generated -> ', generated)
-
         from grpcbigbuffer.block_driver import generate_wbp_file
         os.system('rm '+cache_dir+'/wbp.bin')
         generate_wbp_file(cache_dir)
@@ -140,8 +131,6 @@ class TestBlockBuilder(unittest.TestCase):
         generated.ParseFromString(
             open(cache_dir+'/wbp.bin', 'rb').read()
         )
-
-
 
 
 if __name__ == '__main__':
