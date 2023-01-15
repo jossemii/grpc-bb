@@ -132,6 +132,11 @@ class TestBlockBuilder(unittest.TestCase):
             open(cache_dir+'/wbp.bin', 'rb').read()
         )
 
+        self.assertEqual(
+            ultra_complex,
+            generated
+        )
+
 
 if __name__ == '__main__':
     os.system('rm -rf __cache__/*')
