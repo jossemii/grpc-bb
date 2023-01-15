@@ -3,8 +3,7 @@ import os.path
 from typing import Union, List, Tuple, Dict
 
 from grpcbigbuffer.disk_stream import encode_bytes
-from grpcbigbuffer.reader import read_multiblock_directory
-from grpcbigbuffer.utils import BLOCK_LENGTH, METADATA_FILE_NAME, WITHOUT_BLOCK_POINTERS_FILE_NAME
+from grpcbigbuffer.utils import BLOCK_LENGTH, METADATA_FILE_NAME, WITHOUT_BLOCK_POINTERS_FILE_NAME, Enviroment
 
 
 def transform_dictionary_format(d: Dict[str, List[int]]) -> Dict[int, List[str]]:
@@ -13,7 +12,7 @@ def transform_dictionary_format(d: Dict[str, List[int]]) -> Dict[int, List[str]]
 
 
 def get_pruned_block_length(block_name: str) -> int:
-    block_size: int = os.path.getsize(block_name)
+    block_size: int = os.path.getsize(Enviroment.block_dir + block_name)
     return block_size + len(encode_bytes(block_size)) - BLOCK_LENGTH - len(encode_bytes(BLOCK_LENGTH))
 
 
@@ -35,9 +34,14 @@ def get_position_length(varint_pos: int, buffer: bytes) -> int:
 
 
 def recalculate_block_length(position: int, blocks_names: List[str], buffer: bytes) -> int:
-    return get_position_length(position, buffer) - sum([
+    print('\nposition -> ', position)
+    position_length: int = get_position_length(position, buffer) # TODO
+    print('position length -> ', position_length)
+    pruned_length: int = sum([
         get_pruned_block_length(block_name) for block_name in blocks_names
     ])
+    print('pruned length -> ', pruned_length)
+    return position_length - pruned_length
 
 
 def set_varint_value(varint_pos: int, buffer: bytes, new_value: int) -> bytes:
@@ -79,7 +83,12 @@ def generate_wbp_file(dirname: str):
             Tuple[str, List[int]]
         ]] = json.load(f)
 
-    buffer = b''.join([i for i in read_multiblock_directory(dirname)])
+   # buffer = b''.join([i for i in read_multiblock_directory(dirname)]) FOR ALL THE BUFFER
+    buffer = b''
+    for e in _json:
+        if type(e) == int:
+            with open(dirname + '/' + str(e), 'rb') as file:
+                buffer += file.read()
 
     blocks: Dict[str, List[int]] = {t[0]: t[1] for t in _json if type(t) == list}
 
@@ -91,7 +100,7 @@ def generate_wbp_file(dirname: str):
     }
 
     print('\n_json -> ', _json)
-    print('\nbuffer wihtout blocks -< ', buffer)
+    print('\nbuffer without blocks -< ', buffer)
     print('\nblocks -< ', blocks)
     print('\nlengths_wth pointers -> ', lengths_with_pointers)
     print('\nrecalculated lengths -> ', recalculated_lengths)
