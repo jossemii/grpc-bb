@@ -246,6 +246,8 @@ def read_file_by_chunks(filename: str, signal: Signal = None) -> Generator[bytes
 
 def read_multiblock_directory(directory: str, delete_directory: bool = False, ignore_blocks: bool = True) \
         -> Generator[Union[bytes, buffer_pb2.Buffer.Block], None, None]:
+    if directory[-1] != '/':
+        directory = directory+'/'
     for e in json.load(open(
             directory + METADATA_FILE_NAME,
     )):
