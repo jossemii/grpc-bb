@@ -16,26 +16,33 @@ def get_pruned_block_length(block_name: str) -> int:
     return block_size + len(encode_bytes(block_size)) - BLOCK_LENGTH - len(encode_bytes(BLOCK_LENGTH))
 
 
-def get_position_length(varint_pos: int, buffer: bytes) -> int:
-    """
-    Returns the value of the varint at the given position in the Protobuf buffer.
-    """
-    value = 0
-    shift = 0
-    index = varint_pos
-    while True:
-        byte = buffer[index]
-        value |= (byte & 0x7F) << shift
-        if (byte & 0x80) == 0:
-            break
-        shift += 7
-        index += 1
-    return value
+def get_varint_at_position(position, file_list):
+    file_size = sum(os.path.getsize(f) for f in file_list)
+    if position > file_size:
+        raise ValueError(f"Position {position} is out of buffer range.")
+    file_index = 0
+    while position > os.path.getsize(file_list[file_index]):
+        position -= os.path.getsize(file_list[file_index])
+        file_index += 1
+    with open(file_list[file_index], "rb") as file:
+        file.seek(position)
+        result = 0
+        shift = 0
+        while True:
+            byte = file.read(1)
+            if not byte:
+                break
+            byte = ord(byte)
+            result |= (byte & 0x7F) << shift
+            if not byte & 0x80:
+                break
+            shift += 7
+        return result
 
 
-def recalculate_block_length(position: int, blocks_names: List[str], buffer: bytes) -> int:
+def recalculate_block_length(position: int, blocks_names: List[str], file_list: List[str]) -> int:
     print('\nposition -> ', position)
-    position_length: int = get_position_length(position, buffer) # TODO
+    position_length: int = get_varint_at_position(position, file_list)
     print('position length -> ', position_length)
     pruned_length: int = sum([
         get_pruned_block_length(block_name) for block_name in blocks_names
@@ -83,19 +90,25 @@ def generate_wbp_file(dirname: str):
             Tuple[str, List[int]]
         ]] = json.load(f)
 
-   # buffer = b''.join([i for i in read_multiblock_directory(dirname)]) FOR ALL THE BUFFER
+    # buffer = b''.join([i for i in read_multiblock_directory(dirname)]) FOR ALL THE BUFFER
     buffer = b''
+    file_list: List[str] = []
     for e in _json:
         if type(e) == int:
+            file_list.append(str(e))
             with open(dirname + '/' + str(e), 'rb') as file:
                 buffer += file.read()
+        else:
+            if type(e) != list or type(e[0]) != str:
+                raise Exception('gRPCbb: Invalid block on _.json file.')
+            file_list.append(e[0])
 
     blocks: Dict[str, List[int]] = {t[0]: t[1] for t in _json if type(t) == list}
 
     lengths_with_pointers: Dict[int, List[str]] = transform_dictionary_format(blocks)
 
     recalculated_lengths: Dict[int, int] = {
-        length_position: recalculate_block_length(length_position, blocks_names, buffer)
+        length_position: recalculate_block_length(length_position, blocks_names, file_list)
         for length_position, blocks_names in lengths_with_pointers.items()
     }
 
