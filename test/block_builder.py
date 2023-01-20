@@ -108,7 +108,6 @@ class TestBlockBuilder(unittest.TestCase):
         object.ParseFromString(buffer)
 
         print('4485 -> ', buffer[4485:])
-        print(object)
 
 
 if __name__ == '__main__':

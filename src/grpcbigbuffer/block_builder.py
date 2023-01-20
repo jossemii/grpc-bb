@@ -287,14 +287,14 @@ def build_multiblock(
         Tuple[str, List[int]]
     ]] = []
 
-    container = search_on_message_real(
+    container_real_lengths = search_on_message_real(
         message=pf_object_with_block_pointers,
         pointers=[],
         initial_position=0,
         blocks=blocks
     )
-    print('container -< ', container)
-    for i, (b1, b2) in enumerate(zip_longest(new_buff, container.keys())):
+    print('container real lengths -< ', container_real_lengths)
+    for i, (b1, b2) in enumerate(zip_longest(new_buff, container_real_lengths.keys())):
         _json.append(i + 1)
         with open(cache_dir + str(i + 1), 'wb') as f:
             f.write(b1)
@@ -302,7 +302,7 @@ def build_multiblock(
         if b2:
             _json.append((
                 b2,
-                container[b2]
+                container_real_lengths[b2]
             ))
 
     with open(cache_dir + METADATA_FILE_NAME, 'w') as f:
