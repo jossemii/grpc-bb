@@ -113,13 +113,13 @@ def generate_wbp_file(dirname: str):
     file_list: List[str] = []
     for e in _json:
         if type(e) == int:
-            file_list.append(str(e))
+            file_list.append(dirname + '/' + str(e))
             with open(dirname + '/' + str(e), 'rb') as file:
                 buffer += file.read()
         else:
             if type(e) != list or type(e[0]) != str:
                 raise Exception('gRPCbb: Invalid block on _.json file.')
-            file_list.append(e[0])
+            file_list.append(Enviroment.block_dir+e[0])
 
     blocks: Dict[str, List[int]] = {t[0]: t[1] for t in _json if type(t) == list}
 
