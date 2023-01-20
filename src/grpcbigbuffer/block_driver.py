@@ -40,6 +40,23 @@ def get_varint_at_position(position, file_list):
         return result
 
 
+def get_position_length(varint_pos: int, buffer: bytes) -> int:
+    """
+    Returns the value of the varint at the given position in the Protobuf buffer.
+    """
+    value = 0
+    shift = 0
+    index = varint_pos
+    while True:
+        byte = buffer[index]
+        value |= (byte & 0x7F) << shift
+        if (byte & 0x80) == 0:
+            break
+        shift += 7
+        index += 1
+    return value
+
+
 def recalculate_block_length(position: int, blocks_names: List[str], file_list: List[str]) -> int:
     print('\nposition -> ', position)
     position_length: int = get_varint_at_position(position, file_list)
@@ -84,6 +101,7 @@ def generate_new_buffer(lengths: Dict[int, int], buffer: bytes) -> bytes:
 
 
 def generate_wbp_file(dirname: str):
+    print('GENERATE ' + dirname)
     with open(dirname + '/' + METADATA_FILE_NAME, 'r') as f:
         _json: List[Union[
             int,
