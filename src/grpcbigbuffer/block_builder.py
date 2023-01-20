@@ -35,6 +35,68 @@ def get_hash(block: buffer_pb2.Buffer.Block) -> str:
             return hash.value.hex()
     raise Exception('gRPCbb: any hash of type ' + Enviroment.hash_type.hex())
 
+def get_block_length(block_id: str) -> int:
+    if os.path.isfile(Enviroment.block_dir + block_id):
+        return os.path.getsize(Enviroment.block_dir + block_id)
+    else:
+        raise Exception('gRPCbb: error on compute_real_lengths, multiblock blocks dont supported.')
+def search_on_message_real(
+        message: Message,
+        pointers: List[int],
+        initial_position: int,
+        blocks: List[bytes]
+) -> Dict[str, List[int]]:
+    container: Dict[str, List[int]] = {}
+    position: int = initial_position
+    for field, value in message.ListFields():
+        if isinstance(value, RepeatedCompositeContainer):
+            for element in value:
+                container.update(
+                    search_on_message_real(
+                        message=element,
+                        pointers=pointers + [position + 1],
+                        initial_position=position + 1 + len(encode_bytes(element.ByteSize())),
+                        blocks=blocks
+                    )
+                )
+                position += 1 + len(encode_bytes(element.ByteSize())) + element.ByteSize()
+
+        elif isinstance(value, Message):
+            container.update(
+                search_on_message_real(
+                    message=value,
+                    pointers=pointers + [position + 1],
+                    initial_position=position + 1 + len(encode_bytes(value.ByteSize())),
+                    blocks=blocks
+                )
+            )
+            position += 1 + len(encode_bytes(value.ByteSize())) + value.ByteSize()
+
+        elif type(value) == bytes and is_block(value, blocks):
+            block = buffer_pb2.Buffer.Block()
+            block.ParseFromString(value)
+            container[
+                get_hash(block)
+            ] = pointers + [position + 1]
+            block_size_length: int = get_block_length(get_hash(block))
+            position += 1 + len(encode_bytes(block_size_length)) + block_size_length
+
+        elif type(value) == bytes or type(value) == str:
+            position += 1 + len(encode_bytes(len(value))) + len(value)
+
+        else:
+            try:
+                temp_message = type(message)()
+                temp_message.CopyFrom(message)
+                for field_name, _ in temp_message.ListFields():
+                    if field_name.index != field.index:
+                        temp_message.ClearField(field_name.name)
+                position += temp_message.ByteSize()
+            except Exception as e:
+                raise Exception('gRPCbb block builder error obtaining the length of a primitive value :'+str(e))
+
+    return container
+
 
 def search_on_message(
         message: Message,
@@ -225,6 +287,13 @@ def build_multiblock(
         Tuple[str, List[int]]
     ]] = []
 
+    container = search_on_message_real(
+        message=pf_object_with_block_pointers,
+        pointers=[],
+        initial_position=0,
+        blocks=blocks
+    )
+    print('container -< ', container)
     for i, (b1, b2) in enumerate(zip_longest(new_buff, container.keys())):
         _json.append(i + 1)
         with open(cache_dir + str(i + 1), 'wb') as f:
