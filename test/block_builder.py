@@ -50,37 +50,27 @@ class TestBlockBuilder(unittest.TestCase):
         h.value = b'sha3256'
         block3.hashes.append(h)
 
+        a = Test()
+        a.t1 = b''.join([b'bt1' for i in range(100)])
+        a.t2 = block.SerializeToString()
+
         b = Test()
         b.t1 = block2.SerializeToString()
-        b.t2 = block.SerializeToString()
+        b.t2 = b''.join([b'bt2' for i in range(100)])
+        b.t3.CopyFrom(a)
 
         c = Test()
-        c.t1 = block3.SerializeToString()
-        c.t2 = b''.join([b'ja' for i in range(100)])
-        c.t3.CopyFrom(b)
+        c.t1 = b''.join([b'ct1' for i in range(100)])
+        c.t2 = block3.SerializeToString()
 
-        more_complex = Test()
-        more_complex.t1 = b''.join([b'ho' for i in range(100)])
-        more_complex.t3.CopyFrom(c)
-
-        more_more_complex = Test()
-        more_more_complex.t1 = b''.join([b'la' for i in range(100)])
-        more_more_complex.t2 = b''.join([b'abc' for i in range(100)])
-        more_more_complex.t3.CopyFrom(more_complex)
-        more_more_complex.t4.append(b)
-        more_more_complex.t4.append(c)
-
-        ultra_complex = Test()
-        ultra_complex.t1 = b''.join([b'jo' for i in range(100)])
-        ultra_complex.t2 = b''.join([b'hi' for i in range(100)])
-        ultra_complex.t3.CopyFrom(more_more_complex)
-        ultra_complex.t4.append(b)
-        ultra_complex.t4.append(c)
-        ultra_complex.t4.append(more_complex)
-        ultra_complex.t4.append(more_more_complex)
+        object = Test()
+        object.t1 = b''.join([b'mc1' for i in range(100)])
+        object.t2 = b''.join([b'mc2' for i in range(100)])
+        object.t4.append(b)
+        object.t4.append(c)
 
         object_id, cache_dir = build_multiblock(
-            pf_object_with_block_pointers=more_complex,
+            pf_object_with_block_pointers=object,
             blocks=[b'sha256', b'sha512', b'sha3256']
         )
 
@@ -104,10 +94,9 @@ class TestBlockBuilder(unittest.TestCase):
                             break
                         buffer += block
 
-        object = Test()
-        object.ParseFromString(buffer)
-
-        print(object)
+        buff_object = Test()
+        buff_object.ParseFromString(buffer)
+        print(buff_object)
 
 
 if __name__ == '__main__':
