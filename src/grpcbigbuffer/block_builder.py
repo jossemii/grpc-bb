@@ -102,37 +102,37 @@ def search_on_message(
         message: Message,
         pointers: List[int],
         initial_position: int,
-        blocks: List[bytes]
-) -> Dict[str, List[int]]:
-    container: Dict[str, List[int]] = {}
+        blocks: List[bytes],
+        container: Dict[str, List[int]]
+):
     position: int = initial_position
     for field, value in message.ListFields():
         if isinstance(value, RepeatedCompositeContainer):
             for element in value:
-                container.update(
-                    search_on_message(
-                        message=element,
-                        pointers=pointers + [position + 1],
-                        initial_position=position + 1 + len(encode_bytes(element.ByteSize())),
-                        blocks=blocks
-                    )
+                search_on_message(
+                    message=element,
+                    pointers=pointers + [position + 1],
+                    initial_position=position + 1 + len(encode_bytes(element.ByteSize())),
+                    blocks=blocks,
+                    container=container
                 )
                 position += 1 + len(encode_bytes(element.ByteSize())) + element.ByteSize()
 
         elif isinstance(value, Message):
-            container.update(
-                search_on_message(
-                    message=value,
-                    pointers=pointers + [position + 1],
-                    initial_position=position + 1 + len(encode_bytes(value.ByteSize())),
-                    blocks=blocks
-                )
+            search_on_message(
+                message=value,
+                pointers=pointers + [position + 1],
+                initial_position=position + 1 + len(encode_bytes(value.ByteSize())),
+                blocks=blocks,
+                container=container
             )
             position += 1 + len(encode_bytes(value.ByteSize())) + value.ByteSize()
 
         elif type(value) == bytes and is_block(value, blocks):
             block = buffer_pb2.Buffer.Block()
             block.ParseFromString(value)
+            if get_hash(block) in container:
+                raise Exception('gRPCbb block builder error, duplicated blocks not supported.')
             container[
                 get_hash(block)
             ] = pointers + [position + 1]
@@ -151,8 +151,6 @@ def search_on_message(
                 position += temp_message.ByteSize()
             except Exception as e:
                 raise Exception('gRPCbb block builder error obtaining the length of a primitive value :'+str(e))
-
-    return container
 
 
 def create_lengths_tree(
@@ -256,21 +254,26 @@ def build_multiblock(
         pf_object_with_block_pointers: Any,
         blocks: List[bytes]
 ) -> Tuple[bytes, str]:
-    container: Dict[str, List[int]] = search_on_message(
+    container: Dict[str, List[int]] = {}
+    search_on_message(
         message=pf_object_with_block_pointers,
         pointers=[],
         initial_position=0,
-        blocks=blocks
+        blocks=blocks,
+        container=container
     )
+    print('containter -> ', container)
 
     tree: Dict[int, Union[Dict, str]] = create_lengths_tree(
         pointer_container=container
     )
+    print('tree -< ', tree)
 
     real_lengths: Dict[int, Tuple[int, int]] = compute_real_lengths(
         tree=tree,
         buffer=pf_object_with_block_pointers.SerializeToString()
     )
+    print('real lengths -< ', real_lengths)
 
     new_buff: List[bytes] = generate_buffer(
         buffer=pf_object_with_block_pointers.SerializeToString(),

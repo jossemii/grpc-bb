@@ -80,7 +80,7 @@ class TestBlockBuilder(unittest.TestCase):
         ultra_complex.t4.append(more_more_complex)
 
         object_id, cache_dir = build_multiblock(
-            pf_object_with_block_pointers=ultra_complex,
+            pf_object_with_block_pointers=more_complex,
             blocks=[b'sha256', b'sha512', b'sha3256']
         )
 
@@ -107,7 +107,7 @@ class TestBlockBuilder(unittest.TestCase):
         object = Test()
         object.ParseFromString(buffer)
 
-        print('4485 -> ', buffer[4485:])
+        print(object)
 
 
 if __name__ == '__main__':
