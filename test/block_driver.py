@@ -2,10 +2,8 @@ import os
 import sys, unittest
 
 sys.path.append('../src/')
-from grpcbigbuffer.block_driver import get_position_length
-
 from grpcbigbuffer import buffer_pb2
-from grpcbigbuffer.block_builder import build_multiblock
+from grpcbigbuffer.block_builder import build_multiblock, get_position_length
 from grpcbigbuffer.client import Enviroment
 
 
