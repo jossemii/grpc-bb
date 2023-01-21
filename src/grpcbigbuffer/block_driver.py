@@ -37,7 +37,7 @@ def get_varint_at_position(position, file_list):
 
 def compute_wbp_lengths(tree: Dict[int, Union[Dict, str]], file_list: List[str]) -> Dict[int, int]:
     def __rec_compute_wbp_lengths(_tree: Dict[int, Union[Dict, str]], _file_list: List[str]) \
-            -> Dict[int, Tuple[int, int]]:
+            -> Dict[int, Tuple[int, int]]:  # Tuple is wbp length and augmented pruned length.
         lengths: Dict[int, Tuple[int, int]] = {}
         for key, value in _tree.items():
             position_length: int = get_varint_at_position(key, _file_list)
@@ -52,10 +52,18 @@ def compute_wbp_lengths(tree: Dict[int, Union[Dict, str]], file_list: List[str])
 
             else:
                 pruned_length: int = get_pruned_block_length(value)
+
+            print('\n position ', key)
+            print('position length ', position_length)
+            print('pruned_length ', pruned_length)
+            print('position length size ', len(encode_bytes(position_length)))
+            print('pruned length size ', len(encode_bytes(pruned_length)))
+            print('wbp length ', position_length - pruned_length)
+            print('aumented wbp length ', position_length + len(encode_bytes(position_length))
+                    - pruned_length - len(encode_bytes(pruned_length)))
             lengths[key] = (
                     position_length - pruned_length,
-                    position_length + len(encode_bytes(position_length))
-                    - pruned_length - len(encode_bytes(pruned_length))
+                    pruned_length + len(encode_bytes(pruned_length))
                 )
         return lengths
 
