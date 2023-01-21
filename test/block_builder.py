@@ -63,12 +63,12 @@ class TestBlockBuilder(unittest.TestCase):
         c = Test()
         c.t1 = b''.join([b'ct1' for i in range(100)])
         c.t2 = block3.SerializeToString()
-        c.t3.CopyFrom(b)
 
         object = Test()
         object.t1 = b''.join([b'mc1' for i in range(100)])
         object.t2 = b''.join([b'mc2' for i in range(100)])
-        object.t3.CopyFrom(c)
+        object.t4.append(b)
+        object.t4.append(c)
 
         object_id, cache_dir = build_multiblock(
             pf_object_with_block_pointers=object,
