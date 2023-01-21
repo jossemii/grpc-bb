@@ -42,25 +42,21 @@ def compute_wbp_lengths(tree: Dict[int, Union[Dict, str]], file_list: List[str])
         for key, value in _tree.items():
             position_length: int = get_varint_at_position(key, _file_list)
             if isinstance(value, Dict):
-                content: Dict[int, Tuple[int, int]] = __rec_compute_wbp_lengths(
+                pruned_length: int = 0
+                for k, v in __rec_compute_wbp_lengths(
                     _tree=value,
                     _file_list=_file_list
-                )
-
-                pruned_length: int = 0
-                for k, v in content.items():
+                ).items():
                     pruned_length += v[1]
                     lengths[k] = (v[0], 0)
 
             else:
                 pruned_length: int = get_pruned_block_length(value)
-            lengths.update({
-                key: (
+            lengths[key] = (
                     position_length - pruned_length,
                     position_length + len(encode_bytes(position_length))
                     - pruned_length - len(encode_bytes(pruned_length))
                 )
-            })
         return lengths
 
     return {k: v[0] for k, v in __rec_compute_wbp_lengths(_tree=tree, _file_list=file_list).items()}
