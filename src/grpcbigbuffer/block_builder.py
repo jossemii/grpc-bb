@@ -79,7 +79,10 @@ def search_on_message_real(
                 get_hash(block)
             ] = pointers + [position + 1]
             block_size_length: int = get_block_length(get_hash(block))
+            print('\n real position -< ', position)
+            print('   block length -> ', block_size_length)
             position += 1 + len(encode_bytes(block_size_length)) + block_size_length
+            print(get_hash(block),' real positon nn -> ', position)
 
         elif type(value) == bytes or type(value) == str:
             position += 1 + len(encode_bytes(len(value))) + len(value)
@@ -136,7 +139,10 @@ def search_on_message(
             container[
                 get_hash(block)
             ] = pointers + [position + 1]
+            print('\n position ->', position)
+            print('   block byte size -> ', block.ByteSize())
             position += 1 + len(encode_bytes(block.ByteSize())) + block.ByteSize()
+            print(get_hash(block), ' positon nn -> ', position)
 
         elif type(value) == bytes or type(value) == str:
             position += 1 + len(encode_bytes(len(value))) + len(value)
@@ -290,13 +296,16 @@ def build_multiblock(
         Tuple[str, List[int]]
     ]] = []
 
+
+    print('\n\n\n')
     container_real_lengths = search_on_message_real(
         message=pf_object_with_block_pointers,
         pointers=[],
         initial_position=0,
         blocks=blocks
     )
-    print('container real lengths -< ', container_real_lengths)
+    print('\ncontainer real lengths -< ', container_real_lengths)
+    print('\n\n\n')
     for i, (b1, b2) in enumerate(zip_longest(new_buff, container_real_lengths.keys())):
         _json.append(i + 1)
         with open(cache_dir + str(i + 1), 'wb') as f:

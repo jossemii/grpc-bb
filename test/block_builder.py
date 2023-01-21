@@ -97,6 +97,8 @@ class TestBlockBuilder(unittest.TestCase):
         buff_object = Test()
         buff_object.ParseFromString(buffer)
         print(buff_object)
+        print(_json)
+        print('1617 ', buffer[1617:])
 
 
 if __name__ == '__main__':
