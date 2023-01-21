@@ -58,13 +58,10 @@ def get_position_length(varint_pos: int, buffer: bytes) -> int:
 
 
 def recalculate_block_length(position: int, blocks_names: List[str], file_list: List[str]) -> int:
-    print('\nposition -> ', position)
     position_length: int = get_varint_at_position(position, file_list)
-    print('position length -> ', position_length)
     pruned_length: int = sum([
         get_pruned_block_length(block_name) for block_name in blocks_names
     ])
-    print('pruned length -> ', pruned_length)
     return position_length - pruned_length
 
 
@@ -108,7 +105,6 @@ def generate_wbp_file(dirname: str):
             Tuple[str, List[int]]
         ]] = json.load(f)
 
-    # buffer = b''.join([i for i in read_multiblock_directory(dirname)]) FOR ALL THE BUFFER
     buffer = b''
     file_list: List[str] = []
     for e in _json:
