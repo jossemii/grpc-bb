@@ -7,6 +7,7 @@ sys.path.append('../src/')
 from grpcbigbuffer import buffer_pb2
 from grpcbigbuffer.block_builder import create_lengths_tree, build_multiblock
 from grpcbigbuffer.utils import Enviroment
+from grpcbigbuffer.disk_stream import encode_bytes
 
 
 class TestCreateLengthsTree(unittest.TestCase):
@@ -62,12 +63,12 @@ class TestBlockBuilder(unittest.TestCase):
         c = Test()
         c.t1 = b''.join([b'ct1' for i in range(100)])
         c.t2 = block3.SerializeToString()
+        c.t3.CopyFrom(b)
 
         object = Test()
         object.t1 = b''.join([b'mc1' for i in range(100)])
         object.t2 = b''.join([b'mc2' for i in range(100)])
-        object.t4.append(b)
-        object.t4.append(c)
+        object.t3.CopyFrom(c)
 
         object_id, cache_dir = build_multiblock(
             pf_object_with_block_pointers=object,
@@ -97,11 +98,25 @@ class TestBlockBuilder(unittest.TestCase):
         buff_object = Test()
         buff_object.ParseFromString(buffer)
         print(buff_object)
+
+        def extract_last_elements(json_obj):
+            result = []
+            for _element in json_obj:
+                if type(_element) == list and len(_element) == 2 and type(_element[0]) == str and type(
+                        _element[1]) == list:
+                    result.append(_element[1][-1])
+            return result
+
         print(_json)
-        print('1617 ', buffer[1617:])
+        from block_driver import get_position_length
+        for _e in extract_last_elements(_json):
+            print(
+                str(_e) + ' ', get_position_length(_e, buffer),
+                encode_bytes(get_position_length(_e, buffer)),
+                buffer[_e:_e+get_position_length(_e, buffer)+len(encode_bytes(get_position_length(_e, buffer)))]
+            )
 
 
 if __name__ == '__main__':
     os.system('rm -rf __cache__/*')
     unittest.main()
-
