@@ -68,14 +68,14 @@ class TestGetVarintValue(unittest.TestCase):
         c.t1 = b''.join([b'ct1' for i in range(100)])
         c.t2 = block3.SerializeToString()
 
-        object = Test()
-        object.t1 = b''.join([b'mc1' for i in range(100)])
-        object.t2 = b''.join([b'mc2' for i in range(100)])
-        object.t4.append(b)
-        object.t4.append(c)
+        _object = Test()
+        _object.t1 = b''.join([b'mc1' for i in range(100)])
+        _object.t2 = b''.join([b'mc2' for i in range(100)])
+        _object.t4.append(b)
+        _object.t4.append(c)
 
         object_id, cache_dir = build_multiblock(
-            pf_object_with_block_pointers=object,
+            pf_object_with_block_pointers=_object,
             blocks=[b'sha256', b'sha512', b'sha3256']
         )
 
@@ -91,7 +91,7 @@ class TestGetVarintValue(unittest.TestCase):
             )
 
         self.assertEqual(
-            object,
+            _object,
             generated
         )
 
