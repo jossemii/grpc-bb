@@ -2,13 +2,8 @@ import json
 import os.path
 from typing import Union, List, Tuple, Dict
 
-from grpcbigbuffer.disk_stream import encode_bytes
-from grpcbigbuffer.utils import BLOCK_LENGTH, METADATA_FILE_NAME, WITHOUT_BLOCK_POINTERS_FILE_NAME, Enviroment
-
-
-def transform_dictionary_format(d: Dict[str, List[int]]) -> Dict[int, List[str]]:
-    return {valor: [clave for clave in d if valor in d[clave]] for valor in
-            set([valor for clave in d for valor in d[clave]])}
+from grpcbigbuffer.utils import BLOCK_LENGTH, METADATA_FILE_NAME, WITHOUT_BLOCK_POINTERS_FILE_NAME, Enviroment, \
+    create_lengths_tree, encode_bytes
 
 
 def get_pruned_block_length(block_name: str) -> int:
@@ -40,29 +35,35 @@ def get_varint_at_position(position, file_list):
         return result
 
 
-def get_position_length(varint_pos: int, buffer: bytes) -> int:
-    """
-    Returns the value of the varint at the given position in the Protobuf buffer.
-    """
-    value = 0
-    shift = 0
-    index = varint_pos
-    while True:
-        byte = buffer[index]
-        value |= (byte & 0x7F) << shift
-        if (byte & 0x80) == 0:
-            break
-        shift += 7
-        index += 1
-    return value
+def compute_wbp_lengths(tree: Dict[int, Union[Dict, str]], file_list: List[str]) -> Dict[int, int]:
+    def __rec_compute_wbp_lengths(_tree: Dict[int, Union[Dict, str]], _file_list: List[str]) \
+            -> Dict[int, Tuple[int, int]]:
+        lengths: Dict[int, Tuple[int, int]] = {}
+        for key, value in _tree.items():
+            position_length: int = get_varint_at_position(key, _file_list)
+            if isinstance(value, Dict):
+                content: Dict[int, Tuple[int, int]] = __rec_compute_wbp_lengths(
+                    _tree=value,
+                    _file_list=_file_list
+                )
 
+                pruned_length: int = 0
+                for k, v in content.items():
+                    pruned_length += v[1]
+                    lengths[k] = (v[0], 0)
 
-def recalculate_block_length(position: int, blocks_names: List[str], file_list: List[str]) -> int:
-    position_length: int = get_varint_at_position(position, file_list)
-    pruned_length: int = sum([
-        get_pruned_block_length(block_name) for block_name in blocks_names
-    ])
-    return position_length - pruned_length
+            else:
+                pruned_length: int = get_pruned_block_length(value)
+            lengths.update({
+                key: (
+                    position_length - pruned_length,
+                    position_length + len(encode_bytes(position_length))
+                    - pruned_length - len(encode_bytes(pruned_length))
+                )
+            })
+        return lengths
+
+    return {k: v[0] for k, v in __rec_compute_wbp_lengths(_tree=tree, _file_list=file_list).items()}
 
 
 def set_varint_value(varint_pos: int, buffer: bytes, new_value: int) -> bytes:
@@ -115,21 +116,18 @@ def generate_wbp_file(dirname: str):
         else:
             if type(e) != list or type(e[0]) != str:
                 raise Exception('gRPCbb: Invalid block on _.json file.')
-            file_list.append(Enviroment.block_dir+e[0])
+            file_list.append(Enviroment.block_dir + e[0])
 
     blocks: Dict[str, List[int]] = {t[0]: t[1] for t in _json if type(t) == list}
 
-    lengths_with_pointers: Dict[int, List[str]] = transform_dictionary_format(blocks)
+    tree: Dict[int, Union[Dict, str]] = create_lengths_tree(blocks)
 
-    recalculated_lengths: Dict[int, int] = {
-        length_position: recalculate_block_length(length_position, blocks_names, file_list)
-        for length_position, blocks_names in lengths_with_pointers.items()
-    }
+    recalculated_lengths: Dict[int, int] = compute_wbp_lengths(tree=tree, file_list=file_list)
 
     print('\n_json -> ', _json)
     print('\nbuffer without blocks -< ', buffer)
     print('\nblocks -< ', blocks)
-    print('\nlengths_wth pointers -> ', lengths_with_pointers)
+    print('\ntree -> ', tree)
     print('\nrecalculated lengths -> ', recalculated_lengths)
 
     with open(dirname + '/' + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:

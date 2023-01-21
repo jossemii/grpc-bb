@@ -5,9 +5,9 @@ import sys, unittest, json
 sys.path.append('../src/')
 
 from grpcbigbuffer import buffer_pb2
-from grpcbigbuffer.block_builder import create_lengths_tree, build_multiblock
+from grpcbigbuffer.block_builder import build_multiblock, get_position_length
 from grpcbigbuffer.utils import Enviroment
-from grpcbigbuffer.disk_stream import encode_bytes
+from grpcbigbuffer.utils import encode_bytes, create_lengths_tree
 
 
 class TestCreateLengthsTree(unittest.TestCase):
@@ -108,7 +108,6 @@ class TestBlockBuilder(unittest.TestCase):
             return result
 
         print(_json)
-        from block_driver import get_position_length
         for _e in extract_last_elements(_json):
             print(
                 str(_e) + ' ', get_position_length(_e, buffer),

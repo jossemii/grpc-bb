@@ -9,11 +9,9 @@ from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
 from google.protobuf.pyext._message import RepeatedCompositeContainer
 
-from grpcbigbuffer.block_driver import get_position_length
 from grpcbigbuffer.client import generate_random_dir, block_exists, move_to_block_dir
-from grpcbigbuffer.disk_stream import encode_bytes
 from grpcbigbuffer.utils import Enviroment, CHUNK_SIZE, METADATA_FILE_NAME, WITHOUT_BLOCK_POINTERS_FILE_NAME, \
-    get_file_hash
+    get_file_hash, create_lengths_tree, encode_bytes
 
 
 def is_block(bytes_obj: bytes, blocks: List[bytes]):
@@ -27,6 +25,23 @@ def is_block(bytes_obj: bytes, blocks: List[bytes]):
     except DecodeError:
         pass
     return False
+
+
+def get_position_length(varint_pos: int, buffer: bytes) -> int:
+    """
+    Returns the value of the varint at the given position in the Protobuf buffer.
+    """
+    value = 0
+    shift = 0
+    index = varint_pos
+    while True:
+        byte = buffer[index]
+        value |= (byte & 0x7F) << shift
+        if (byte & 0x80) == 0:
+            break
+        shift += 7
+        index += 1
+    return value
 
 
 def get_hash(block: buffer_pb2.Buffer.Block) -> str:
@@ -155,26 +170,7 @@ def search_on_message(
                 raise Exception('gRPCbb block builder error obtaining the length of a primitive value :' + str(e))
 
 
-def create_lengths_tree(
-        pointer_container: Dict[str, List[int]]
-) -> Dict[int, Union[Dict, str]]:
-    tree = {}
-    for key, pointers in pointer_container.items():
-        current_level = tree
-        for pointer in pointers[:-1]:
-            if pointer not in current_level:
-                current_level[pointer] = {}
-            current_level = current_level[pointer]
-        current_level[pointers[-1]] = key
-    return tree
-
-
 def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Dict[int, Tuple[int, int]]:
-    def get_block_length(block_id: str) -> int:
-        if os.path.isfile(Enviroment.block_dir + block_id):
-            return os.path.getsize(Enviroment.block_dir + block_id)
-        else:
-            raise Exception('gRPCbb: error on compute_real_lengths, multiblock blocks dont supported.')
 
     def traverse_tree(internal_tree: Dict, internal_buffer: bytes, initial_total_length: int) \
             -> Tuple[int, Dict[int, Tuple[int, int]]]:

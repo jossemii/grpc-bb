@@ -4,7 +4,6 @@ from threading import Condition
 
 import typing
 
-
 # GrpcBigBuffer.
 CHUNK_SIZE = 1024 * 1024  # 1MB
 MAX_DIR = 999999999
@@ -105,3 +104,34 @@ def modify_env(
     if hash_type: Enviroment.hash_type = hash_type
     if block_depth: Enviroment.block_depth = block_depth
     if block_dir: Enviroment.block_dir = block_dir
+
+
+def create_lengths_tree(
+        pointer_container: typing.Dict[str, typing.List[int]]
+) -> typing.Dict[int, typing.Union[typing.Dict, str]]:
+    tree = {}
+    for key, pointers in pointer_container.items():
+        current_level = tree
+        for pointer in pointers[:-1]:
+            if pointer not in current_level:
+                current_level[pointer] = {}
+            current_level = current_level[pointer]
+        current_level[pointers[-1]] = key
+    return tree
+
+
+def encode_bytes(n: int) -> bytes:
+    # https://github.com/fmoo/python-varint/blob/master/varint.py
+    def _byte(b):
+        return bytes((b,))
+
+    buf = b''
+    while True:
+        towrite = n & 0x7f
+        n >>= 7
+        if n:
+            buf += _byte(towrite | 0x80)
+        else:
+            buf += _byte(towrite)
+            break
+    return buf

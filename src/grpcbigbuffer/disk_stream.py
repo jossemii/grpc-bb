@@ -6,6 +6,7 @@ import os
 
 from grpcbigbuffer import buffer_pb2
 import numpy as np
+from grpcbigbuffer.utils import encode_bytes
 
 
 ################
@@ -184,23 +185,6 @@ def decode_bytes(buf):
         return result
 
     return decode_stream(BytesIO(buf))
-
-
-def encode_bytes(n: int) -> bytes:
-    # https://github.com/fmoo/python-varint/blob/master/varint.py
-    def _byte(b):
-        return bytes((b,))
-
-    buf = b''
-    while True:
-        towrite = n & 0x7f
-        n >>= 7
-        if n:
-            buf += _byte(towrite | 0x80)
-        else:
-            buf += _byte(towrite)
-            break
-    return buf
 
 
 class Partition:
