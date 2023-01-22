@@ -54,9 +54,10 @@ def get_hash(block: buffer_pb2.Buffer.Block) -> str:
 def get_block_length(block_id: str) -> int:
     if os.path.isfile(Enviroment.block_dir + block_id):
         return os.path.getsize(Enviroment.block_dir + block_id)
-    else:
+    elif os.path.isdir(Enviroment.block_dir + block_id):
         raise Exception('gRPCbb: error on compute_real_lengths, multiblock blocks dont supported.')
-
+    else:
+        raise Exception('gRPCbb: error on compute_real_lengths, block does not in block registry.')
 
 def search_on_message_real(
         message: Message,
