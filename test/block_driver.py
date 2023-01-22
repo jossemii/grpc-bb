@@ -32,7 +32,6 @@ class TestGetVarintValue(unittest.TestCase):
         value = get_position_length(2, buffer)
         self.assertEqual(value, 448)
 
-
     def test_generate_wbp_file(self):
         # Assuming that the build_multiblock_directory() function works correctly (tests/block_builder.py is OK)
         from grpcbigbuffer.test_pb2 import Test
@@ -81,11 +80,11 @@ class TestGetVarintValue(unittest.TestCase):
 
         # Test generate_wbp_file
         from grpcbigbuffer.block_driver import generate_wbp_file
-        os.system('rm '+cache_dir+'/wbp.bin')
+        os.system('rm ' + cache_dir + '/wbp.bin')
         generate_wbp_file(cache_dir)
 
         generated = Test()
-        with open(cache_dir+'/wbp.bin', 'rb') as f:
+        with open(cache_dir + '/wbp.bin', 'rb') as f:
             generated.ParseFromString(
                 f.read()
             )

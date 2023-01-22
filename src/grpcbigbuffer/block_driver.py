@@ -2,6 +2,7 @@ import json
 import os.path
 from typing import Union, List, Tuple, Dict
 
+from grpcbigbuffer.buffer_pb2 import Buffer
 from grpcbigbuffer.utils import BLOCK_LENGTH, METADATA_FILE_NAME, WITHOUT_BLOCK_POINTERS_FILE_NAME, Enviroment, \
     create_lengths_tree, encode_bytes
 
@@ -105,14 +106,16 @@ def set_varint_value(varint_pos: int, buffer: List[Union[bytes, str]], new_value
                     )
                 return
             offset += obj_size
-
-        elif type(value) == str:
+        else:
             offset += os.path.getsize(value)
 
     raise Exception('gRPCbb block driver error on set varint value')
 
 
-def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) -> List[Union[bytes, str]]:
+def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) -> bytes:
+    """
+    Replace real lengths with wbp lengths.
+    """
     for varint_pos, new_value in sorted(lengths.items(), key=lambda x: x[0], reverse=True):
         set_varint_value(
                 varint_pos=varint_pos,
@@ -120,7 +123,23 @@ def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) 
                 new_value=new_value,
             )
 
-    return buffer
+    buff: bytes = b''
+    for b in buffer:
+        if type(b) == bytes:
+            buff += b
+        else:
+            block_buff = Buffer.Block(
+                hashes=[
+                    Buffer.Block.Hash(
+                        value=bytes.fromhex(str(b.split('/')[-1]))
+                    )
+                ]
+            ).SerializeToString()
+            if len(block_buff) != BLOCK_LENGTH:
+                raise Exception("gRPCbb regenerate buffer method, incorrect block format.")
+            buff += block_buff
+    return buff
+
 
 
 def generate_wbp_file(dirname: str):
@@ -156,10 +175,8 @@ def generate_wbp_file(dirname: str):
     print('\ntree -> ', tree)
     print('\nrecalculated lengths -> ', recalculated_lengths)
 
-    regenerate_buffer(recalculated_lengths, buffer)
+    buff:  bytes = regenerate_buffer(recalculated_lengths, buffer)
     print('\ngenerated buffer -> ', buffer)
 
     with open(dirname + '/' + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
-        f.write(
-            b''
-        )
+        f.write(buff)
