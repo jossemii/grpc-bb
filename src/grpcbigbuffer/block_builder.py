@@ -45,9 +45,9 @@ def get_position_length(varint_pos: int, buffer: bytes) -> int:
 
 
 def get_hash(block: buffer_pb2.Buffer.Block) -> str:
-    for hash in block.hashes:
-        if hash.type == Enviroment.hash_type:
-            return hash.value.hex()
+    for _hash in block.hashes:
+        if _hash.type == Enviroment.hash_type:
+            return _hash.value.hex()
     raise Exception('gRPCbb: any hash of type ' + Enviroment.hash_type.hex())
 
 

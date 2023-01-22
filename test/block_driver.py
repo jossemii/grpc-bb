@@ -1,5 +1,6 @@
 import os
 import sys, unittest
+from hashlib import sha3_256
 
 sys.path.append('../src/')
 from grpcbigbuffer import buffer_pb2
@@ -39,19 +40,19 @@ class TestGetVarintValue(unittest.TestCase):
         block = buffer_pb2.Buffer.Block()
         h = buffer_pb2.Buffer.Block.Hash()
         h.type = Enviroment.hash_type
-        h.value = b'sha512'
+        h.value = sha3_256(b"block").digest()
         block.hashes.append(h)
 
         block2 = buffer_pb2.Buffer.Block()
         h = buffer_pb2.Buffer.Block.Hash()
         h.type = Enviroment.hash_type
-        h.value = b'sha256'
+        h.value = sha3_256(b"block2").digest()
         block2.hashes.append(h)
 
         block3 = buffer_pb2.Buffer.Block()
         h = buffer_pb2.Buffer.Block.Hash()
         h.type = Enviroment.hash_type
-        h.value = b'sha3256'
+        h.value = sha3_256(b"block3").digest()
         block3.hashes.append(h)
 
         a = Test()
@@ -75,7 +76,11 @@ class TestGetVarintValue(unittest.TestCase):
 
         object_id, cache_dir = build_multiblock(
             pf_object_with_block_pointers=_object,
-            blocks=[b'sha256', b'sha512', b'sha3256']
+            blocks=[
+                sha3_256(b"block").digest(),
+                sha3_256(b"block2").digest(),
+                sha3_256(b"block3").digest()
+            ]
         )
 
         # Test generate_wbp_file
