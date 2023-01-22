@@ -70,8 +70,8 @@ def compute_wbp_lengths(tree: Dict[int, Union[Dict, str]], file_list: List[str])
     return {k: v[0] for k, v in __rec_compute_wbp_lengths(_tree=tree, _file_list=file_list).items()}
 
 
-def set_varint_value(varint_pos: int, buffer: List[Union[bytes, str]], new_value: int):
-    def __set_varint_value(_varint_pos: int, _buffer: bytes, _new_value: int) -> bytes:
+def set_varint_value(varint_pos: int, buffer: List[Union[bytes, str]], new_value: int) -> int:
+    def __set_varint_value(_varint_pos: int, _buffer: bytes, _new_value: int) -> Tuple[bytes, int]:
         """
         Sets the value of the varint at the given position in the Protobuf buffer to the given value and returns the modified buffer.
         """
@@ -93,24 +93,30 @@ def set_varint_value(varint_pos: int, buffer: List[Union[bytes, str]], new_value
         original_varint_length += 1
 
         # Remove the original varint and append the new one
-        return _buffer[:_varint_pos] + varint_bytes + _buffer[_varint_pos + original_varint_length:]
+        return _buffer[:_varint_pos] + varint_bytes + _buffer[_varint_pos + original_varint_length:], \
+            original_varint_length - len(varint_bytes)
 
     """
     Modify the varint at the given position in the buffer which is composed by a list of bytes and binary files. 
     The position is based on the concatenation of all the bytes and binary files in the buffer.
-    The function returns the modified buffer as a list of bytes and binary files
+    The function modify the buffer.
+    The function returns the aggregated position offset (the difference between the real varint and the new value).
     """
     offset: int = 0
     for index, obj in enumerate(buffer):
         if type(obj) == bytes:
             obj_size = len(obj)
             if offset >= varint_pos and varint_pos < offset + obj_size:
-                buffer[index] = __set_varint_value(
-                    _varint_pos=varint_pos-offset,
-                    _buffer=obj,
-                    _new_value=new_value
-                )
-                return
+                _new_obj_buf, aggregated_pos_offset = __set_varint_value(
+                        _varint_pos=varint_pos-offset,
+                        _buffer=obj,
+                        _new_value=new_value
+                    )
+                if aggregated_pos_offset < 0:
+                    raise Exception("gRPCbb block driver error on set varint value, the new varint value can't be "
+                                    "greater than the real varint")
+                buffer[index] = _new_obj_buf
+                return aggregated_pos_offset
             offset += obj_size
         elif type(obj) == str:
             offset += os.path.getsize(obj)
@@ -118,8 +124,13 @@ def set_varint_value(varint_pos: int, buffer: List[Union[bytes, str]], new_value
 
 
 def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) -> List[Union[bytes, str]]:
+    position_offset: int = 0
     for varint_pos, new_value in lengths.items():
-        set_varint_value(varint_pos, buffer, new_value)
+        position_offset += set_varint_value(
+                varint_pos=varint_pos-position_offset,
+                buffer=buffer,
+                new_value=new_value,
+            )
 
     return buffer
 
