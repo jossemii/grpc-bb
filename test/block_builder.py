@@ -42,7 +42,9 @@ class TestBlockBuilder(unittest.TestCase):
 
         if not os.path.isfile(Enviroment.block_dir+sha3_256(b"block").hexdigest()):
             with open(Enviroment.block_dir+sha3_256(b"block").hexdigest(), 'wb') as file:
-                file.write(block.SerializeToString())
+                file.write(
+                    b''.join([b'block' for i in range(100)])
+                )
 
         block2 = buffer_pb2.Buffer.Block()
         h = buffer_pb2.Buffer.Block.Hash()
@@ -52,7 +54,9 @@ class TestBlockBuilder(unittest.TestCase):
 
         if not os.path.isfile(Enviroment.block_dir+sha3_256(b"block2").hexdigest()):
             with open(Enviroment.block_dir+sha3_256(b"block2").hexdigest(), 'wb') as file:
-                file.write(block2.SerializeToString())
+                file.write(
+                    b''.join([b'block2' for i in range(100)])
+                )
 
         block3 = buffer_pb2.Buffer.Block()
         h = buffer_pb2.Buffer.Block.Hash()
@@ -62,7 +66,9 @@ class TestBlockBuilder(unittest.TestCase):
 
         if not os.path.isfile(Enviroment.block_dir+sha3_256(b"block3").hexdigest()):
             with open(Enviroment.block_dir+sha3_256(b"block3").hexdigest(), 'wb') as file:
-                file.write(block3.SerializeToString())
+                file.write(
+                    b''.join([b'block3' for i in range(100)])
+                )
 
         a = Test()
         a.t1 = b''.join([b'bt1' for i in range(100)])
