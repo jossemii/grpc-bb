@@ -55,17 +55,11 @@ def compute_wbp_lengths(tree: Dict[int, Union[Dict, str]], file_list: List[str])
             else:
                 pruned_length: int = get_pruned_block_length(value)
 
-            print('\n position ', key)
-            print('position length ', position_length)
-            print('pruned_length ', pruned_length)
-            print('position length size ', len(encode_bytes(position_length)))
-            print('pruned length size ', len(encode_bytes(pruned_length)))
-            print('wbp length ', position_length - pruned_length)
-            print('aumented wbp length ', position_length + len(encode_bytes(position_length))
-                  - pruned_length - len(encode_bytes(pruned_length)))
+            print('\n position ', key, position_length)
+
             lengths[key] = (
                 position_length - pruned_length,
-                pruned_length + len(encode_bytes(pruned_length))
+                pruned_length + len(encode_bytes(position_length)) - len(encode_bytes(position_length - pruned_length))
             )
         return lengths
 
@@ -94,7 +88,7 @@ def set_varint_value(varint_pos: int, buffer: List[Union[bytes, str]], new_value
             original_varint_length += 1
         original_varint_length += 1
 
-        print('relative varint position ', varint_pos)
+        print('relative varint position ', _varint_pos)
         print('original varint length ', original_varint_length)
         print('content ', _buffer[_varint_pos:])
         print('varint bytes ', varint_bytes, len(varint_bytes))
