@@ -119,6 +119,12 @@ class TestBlockBuilder(unittest.TestCase):
                         buffer += block
 
         buff_object = Test()
+        print('\n\n')
+        for element in _json:
+            if type(element) == list:
+                for _e in element[1]:
+                    print(_e, '   ', get_position_length(_e, buffer), buffer[_e])
+        print('\n\n')
         buff_object.ParseFromString(buffer)
         print(buff_object)
 
@@ -131,12 +137,16 @@ class TestBlockBuilder(unittest.TestCase):
             return result
 
         print(_json)
-        for _e in extract_last_elements(_json):
-            print(
-                str(_e) + ' ', get_position_length(_e, buffer),
-                encode_bytes(get_position_length(_e, buffer)),
-                buffer[_e:_e+get_position_length(_e, buffer)+len(encode_bytes(get_position_length(_e, buffer)))]
-            )
+        print('\n')
+        for element in _json:
+            if type(element) == list:
+                for _e in element[1]:
+                    print(
+                        '\n\n',
+                        str(_e) + ' ', get_position_length(_e, buffer),
+                        encode_bytes(get_position_length(_e, buffer)),
+                        buffer[_e:_e+get_position_length(_e, buffer)+len(encode_bytes(get_position_length(_e, buffer)))]
+                    )
 
 
 if __name__ == '__main__':
