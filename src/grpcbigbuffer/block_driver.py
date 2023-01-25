@@ -176,7 +176,7 @@ def generate_wbp_file(dirname: str):
     print('\nrecalculated lengths -> ', recalculated_lengths)
 
     buff:  bytes = regenerate_buffer(recalculated_lengths, buffer)
-    print('\ngenerated buffer -> ', buffer)
+    print('\ngenerated buffer -> ', buff)
 
     with open(dirname + '/' + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
         f.write(buff)
