@@ -141,9 +141,7 @@ def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) 
     return buff
 
 
-
 def generate_wbp_file(dirname: str):
-    print('GENERATE ' + dirname)
     with open(dirname + '/' + METADATA_FILE_NAME, 'r') as f:
         _json: List[Union[
             int,
@@ -169,14 +167,7 @@ def generate_wbp_file(dirname: str):
 
     recalculated_lengths: Dict[int, int] = compute_wbp_lengths(tree=tree, file_list=file_list)
 
-    print('\n_json -> ', _json)
-    print('\nbuffer without blocks -< ', buffer)
-    print('\nblocks -< ', blocks)
-    print('\ntree -> ', tree)
-    print('\nrecalculated lengths -> ', recalculated_lengths)
-
-    buff:  bytes = regenerate_buffer(recalculated_lengths, buffer)
-    print('\ngenerated buffer -> ', buff)
-
     with open(dirname + '/' + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
-        f.write(buff)
+        f.write(
+            regenerate_buffer(recalculated_lengths, buffer)
+        )
