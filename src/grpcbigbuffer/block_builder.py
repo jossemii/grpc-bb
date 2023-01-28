@@ -55,9 +55,12 @@ def get_block_length(block_id: str) -> int:
     if os.path.isfile(Enviroment.block_dir + block_id):
         return os.path.getsize(Enviroment.block_dir + block_id)
     elif os.path.isdir(Enviroment.block_dir + block_id):
-        raise Exception('gRPCbb: error on compute_real_lengths, multiblock blocks dont supported.')
+        raise Exception('gRPCbb: error on compute_real_lengths, multiblock blocks dont supported.'
+                        + Enviroment.block_dir + block_id)
     else:
-        raise Exception('gRPCbb: error on compute_real_lengths, block does not in block registry.')
+        raise Exception('gRPCbb: error on compute_real_lengths, block does not in block registry. '
+                        + Enviroment.block_dir + block_id)
+
 
 def search_on_message_real(
         message: Message,
@@ -172,7 +175,6 @@ def search_on_message(
 
 
 def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Dict[int, Tuple[int, int]]:
-
     def traverse_tree(internal_tree: Dict, internal_buffer: bytes, initial_total_length: int) \
             -> Tuple[int, Dict[int, Tuple[int, int]]]:
 
