@@ -94,11 +94,43 @@ class TestGetVarintValue(unittest.TestCase):
                 f.read()
             )
 
-        self.assertEqual(
-            _object,
-            generated
-        )
+        # Ahora se realiza el assertEqual entre generated y el _object sin especificar el tipo de hash.
 
+        block = buffer_pb2.Buffer.Block()
+        h = buffer_pb2.Buffer.Block.Hash()
+        h.value = sha3_256(b"block").digest()
+        block.hashes.append(h)
+
+        block2 = buffer_pb2.Buffer.Block()
+        h = buffer_pb2.Buffer.Block.Hash()
+        h.value = sha3_256(b"block2").digest()
+        block2.hashes.append(h)
+
+        block3 = buffer_pb2.Buffer.Block()
+        h = buffer_pb2.Buffer.Block.Hash()
+        h.value = sha3_256(b"block3").digest()
+        block3.hashes.append(h)
+
+        a = Test()
+        a.t1 = b''.join([b'bt1' for i in range(100)])
+        a.t2 = block.SerializeToString()
+
+        b = Test()
+        b.t1 = block2.SerializeToString()
+        b.t2 = b''.join([b'bt2' for i in range(100)])
+        b.t3.CopyFrom(a)
+
+        c = Test()
+        c.t1 = b''.join([b'ct1' for i in range(100)])
+        c.t2 = block3.SerializeToString()
+
+        _object = Test()
+        _object.t1 = b''.join([b'mc1' for i in range(100)])
+        _object.t2 = b''.join([b'mc2' for i in range(100)])
+        _object.t4.append(b)
+        _object.t4.append(c)
+
+        self.assertEqual(_object, generated)
 
 if __name__ == "__main__":
     os.system('rm -rf __cache__/*')

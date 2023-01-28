@@ -9,7 +9,7 @@ from grpcbigbuffer.utils import BLOCK_LENGTH, METADATA_FILE_NAME, WITHOUT_BLOCK_
 
 def get_pruned_block_length(block_name: str) -> int:
     block_size: int = os.path.getsize(Enviroment.block_dir + block_name)
-    return block_size + len(encode_bytes(block_size)) - BLOCK_LENGTH - len(encode_bytes(BLOCK_LENGTH))
+    return block_size + len(encode_bytes(block_size)) - BLOCK_LENGTH - 2*len(encode_bytes(BLOCK_LENGTH))
 
 
 def get_varint_at_position(position, file_list) -> int:
