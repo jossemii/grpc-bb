@@ -54,6 +54,9 @@ def compute_wbp_lengths(tree: Dict[int, Union[Dict, str]], file_list: List[str])
             else:
                 pruned_length: int = get_pruned_block_length(value)
 
+            if pruned_length > position_length:
+                raise Exception("gRPCbb on block_driver compute_wbp_lengths method, "
+                                "the pruned_length can't be greater than the real length.")
             lengths[key] = (
                 position_length - pruned_length,
                 pruned_length + len(encode_bytes(position_length)) - len(encode_bytes(position_length - pruned_length))
