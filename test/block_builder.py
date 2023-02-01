@@ -30,20 +30,20 @@ class TestCreateLengthsTree(unittest.TestCase):
 
 
 class TestBlockBuilder(unittest.TestCase):
-    def test_typical_complex_object(self):
+    def test_filesystem(self):
 
-        from grpcbigbuffer.test_pb2 import Test
+        from grpcbigbuffer.test_pb2 import Filesystem
 
-        block = buffer_pb2.Buffer.Block()
+        block1 = buffer_pb2.Buffer.Block()
         h = buffer_pb2.Buffer.Block.Hash()
         h.type = Enviroment.hash_type
-        h.value = sha3_256(b"block").digest()
-        block.hashes.append(h)
+        h.value = sha3_256(b"block1").digest()
+        block1.hashes.append(h)
 
-        if not os.path.isfile(Enviroment.block_dir+sha3_256(b"block").hexdigest()):
-            with open(Enviroment.block_dir+sha3_256(b"block").hexdigest(), 'wb') as file:
+        if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block1").hexdigest()):
+            with open(Enviroment.block_dir + sha3_256(b"block1").hexdigest(), 'wb') as file:
                 file.write(
-                    b''.join([b'block' for i in range(100)])
+                    b''.join([b'block1' for i in range(100)])
                 )
 
         block2 = buffer_pb2.Buffer.Block()
@@ -52,8 +52,8 @@ class TestBlockBuilder(unittest.TestCase):
         h.value = sha3_256(b"block2").digest()
         block2.hashes.append(h)
 
-        if not os.path.isfile(Enviroment.block_dir+sha3_256(b"block2").hexdigest()):
-            with open(Enviroment.block_dir+sha3_256(b"block2").hexdigest(), 'wb') as file:
+        if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block2").hexdigest()):
+            with open(Enviroment.block_dir + sha3_256(b"block2").hexdigest(), 'wb') as file:
                 file.write(
                     b''.join([b'block2' for i in range(100)])
                 )
@@ -64,15 +64,122 @@ class TestBlockBuilder(unittest.TestCase):
         h.value = sha3_256(b"block3").digest()
         block3.hashes.append(h)
 
-        if not os.path.isfile(Enviroment.block_dir+sha3_256(b"block3").hexdigest()):
-            with open(Enviroment.block_dir+sha3_256(b"block3").hexdigest(), 'wb') as file:
+        if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block3").hexdigest()):
+            with open(Enviroment.block_dir + sha3_256(b"block3").hexdigest(), 'wb') as file:
+                file.write(
+                    b''.join([b'block3' for i in range(100)])
+                )
+
+        item1 = Filesystem.ItemBranch()
+        item1.name = "item1"
+        item1.file = block1.SerializeToString()
+
+        filesystem: Filesystem = Filesystem()
+        filesystem.branch.append(item1)
+
+        object_id, cache_dir = build_multiblock(
+            pf_object_with_block_pointers=filesystem,
+            blocks=[
+                sha3_256(b"block1").digest(),
+                sha3_256(b"block2").digest(),
+                sha3_256(b"block3").digest()
+            ]
+        )
+
+        # Read the buffer.
+        buffer = b''
+        with open(os.path.join(cache_dir, '_.json'), 'r') as f:
+            _json = json.load(f)
+
+        for element in _json:
+            if type(element) == int:
+                with open(os.path.join(cache_dir, str(element)), 'rb') as f:
+                    block1 = f.read()
+                    buffer += block1
+
+            if type(element) == list:
+                with open(os.path.join(Enviroment.block_dir, element[0]), 'rb') as f:
+                    while True:
+                        block1 = f.read(1024)
+
+                        if not block1:
+                            break
+                        buffer += block1
+
+        buff_object = Filesystem()
+        print('\n\n')
+        for element in _json:
+            if type(element) == list:
+                for _e in element[1]:
+                    print(_e, '   ', get_position_length(_e, buffer), buffer[_e:])
+        print('\n\n')
+        buff_object.ParseFromString(buffer)
+        print(buff_object)
+
+        def extract_last_elements(json_obj):
+            result = []
+            for _element in json_obj:
+                if type(_element) == list and len(_element) == 2 and type(_element[0]) == str and type(
+                        _element[1]) == list:
+                    result.append(_element[1][-1])
+            return result
+
+        print(_json)
+        print('\n')
+        for element in _json:
+            if type(element) == list:
+                for _e in element[1]:
+                    print(
+                        '\n\n',
+                        str(_e) + ' ', get_position_length(_e, buffer),
+                        encode_bytes(get_position_length(_e, buffer)),
+                        buffer[
+                        _e:_e + get_position_length(_e, buffer) + len(encode_bytes(get_position_length(_e, buffer)))]
+                    )
+
+    def test_typical_complex_object(self):
+
+        from grpcbigbuffer.test_pb2 import Test
+
+        block1 = buffer_pb2.Buffer.Block()
+        h = buffer_pb2.Buffer.Block.Hash()
+        h.type = Enviroment.hash_type
+        h.value = sha3_256(b"block1").digest()
+        block1.hashes.append(h)
+
+        if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block1").hexdigest()):
+            with open(Enviroment.block_dir + sha3_256(b"block1").hexdigest(), 'wb') as file:
+                file.write(
+                    b''.join([b'block1' for i in range(100)])
+                )
+
+        block2 = buffer_pb2.Buffer.Block()
+        h = buffer_pb2.Buffer.Block.Hash()
+        h.type = Enviroment.hash_type
+        h.value = sha3_256(b"block2").digest()
+        block2.hashes.append(h)
+
+        if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block2").hexdigest()):
+            with open(Enviroment.block_dir + sha3_256(b"block2").hexdigest(), 'wb') as file:
+                file.write(
+                    b''.join([b'block2' for i in range(100)])
+                )
+
+        block3 = buffer_pb2.Buffer.Block()
+        h = buffer_pb2.Buffer.Block.Hash()
+        h.type = Enviroment.hash_type
+        h.value = sha3_256(b"block3").digest()
+        block3.hashes.append(h)
+
+        if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block3").hexdigest()):
+            with open(Enviroment.block_dir + sha3_256(b"block3").hexdigest(), 'wb') as file:
                 file.write(
                     b''.join([b'block3' for i in range(100)])
                 )
 
         a = Test()
         a.t1 = b''.join([b'bt1' for i in range(100)])
-        a.t2 = block.SerializeToString()
+        a.t2 = block1.SerializeToString()
 
         b = Test()
         b.t1 = block2.SerializeToString()
@@ -92,7 +199,7 @@ class TestBlockBuilder(unittest.TestCase):
         object_id, cache_dir = build_multiblock(
             pf_object_with_block_pointers=_object,
             blocks=[
-                sha3_256(b"block").digest(),
+                sha3_256(b"block1").digest(),
                 sha3_256(b"block2").digest(),
                 sha3_256(b"block3").digest()
             ]
@@ -145,7 +252,8 @@ class TestBlockBuilder(unittest.TestCase):
                         '\n\n',
                         str(_e) + ' ', get_position_length(_e, buffer),
                         encode_bytes(get_position_length(_e, buffer)),
-                        buffer[_e:_e+get_position_length(_e, buffer)+len(encode_bytes(get_position_length(_e, buffer)))]
+                        buffer[_e:_e + get_position_length(_e, buffer) + len(
+                            encode_bytes(get_position_length(_e, buffer)))]
                     )
 
 
