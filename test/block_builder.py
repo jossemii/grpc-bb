@@ -70,9 +70,11 @@ class TestBlockBuilder(unittest.TestCase):
                     b''.join([b'block3' for i in range(100)])
                 )
 
+        item_len: int = 54
         item1 = ItemBranch()
-        item1.name = b''.join([b'item1' for i in range(100)])
-        item1.file = block3.SerializeToString()
+        item1.name = ''.join(['i' for i in range(item_len)])
+        item1.file = block2.SerializeToString()
+        #item1.link = 'link1'        
 
         filesystem: Filesystem = Filesystem()
         filesystem.branch.append(item1)
@@ -116,7 +118,9 @@ class TestBlockBuilder(unittest.TestCase):
                     print(_e, '   ', get_position_length(_e, buffer), buffer[_e:])
         print('\n\n')
         buff_object.ParseFromString(buffer)
-        print(buff_object)
+        print('Objeto resultante -<\n ', buff_object)
+        
+        print('Parse ok.\n')
 
         def extract_last_elements(json_obj):
             result = []
@@ -126,7 +130,7 @@ class TestBlockBuilder(unittest.TestCase):
                     result.append(_element[1][-1])
             return result
 
-        print(_json)
+        print('Posiciones afectadas por el bloque -> ',_json)
         print('\n')
         for element in _json:
             if type(element) == list:
@@ -269,6 +273,6 @@ if __name__ == '__main__':
     os.system('rm -rf __cache__/*')
     #unittest.main()
     
-    #TestBlockBuilder().test_filesystem()
-    TestBlockBuilder().test_typical_complex_object()
+    TestBlockBuilder().test_filesystem()
+    #TestBlockBuilder().test_typical_complex_object()
 

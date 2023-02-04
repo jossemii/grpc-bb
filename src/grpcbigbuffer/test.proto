@@ -4,12 +4,12 @@ package test;
 
 
 message ItemBranch {
-    bytes name = 1; // id for path
-    oneof item {
+    string name = 1; // id for path
+    //oneof item {
         bytes file = 2;
         string link = 3;
         Filesystem filesystem = 4;
-    }
+    //}
 }
 
 message Filesystem {
