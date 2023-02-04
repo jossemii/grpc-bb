@@ -2,16 +2,18 @@ syntax = "proto3";
 
 package test;
 
-message Filesystem {
-    message ItemBranch {
-        string name = 1; // id for path
-        oneof item {
-            bytes file = 2;
-            string link = 3;
-            Filesystem filesystem = 4;
-        }
+
+message ItemBranch {
+    bytes name = 1; // id for path
+    oneof item {
+        bytes file = 2;
+        string link = 3;
+        Filesystem filesystem = 4;
     }
-    repeated ItemBranch branch = 1;
+}
+
+message Filesystem {
+    repeated ItemBranch branch = 2;
 }
 
 message Test {
@@ -19,5 +21,4 @@ message Test {
   bytes t2 = 2;
   optional Test t3 = 3;
   repeated Test t4 = 4;
-  Filesystem t5 = 5;
 }

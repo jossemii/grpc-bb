@@ -32,7 +32,7 @@ class TestCreateLengthsTree(unittest.TestCase):
 class TestBlockBuilder(unittest.TestCase):
     def test_filesystem(self):
 
-        from grpcbigbuffer.test_pb2 import Filesystem
+        from grpcbigbuffer.test_pb2 import Filesystem, ItemBranch
 
         block1 = buffer_pb2.Buffer.Block()
         h = buffer_pb2.Buffer.Block.Hash()
@@ -70,9 +70,9 @@ class TestBlockBuilder(unittest.TestCase):
                     b''.join([b'block3' for i in range(100)])
                 )
 
-        item1 = Filesystem.ItemBranch()
-        item1.name = "item1"
-        item1.file = block1.SerializeToString()
+        item1 = ItemBranch()
+        item1.name = b''.join([b'item1' for i in range(100)])
+        item1.file = block3.SerializeToString()
 
         filesystem: Filesystem = Filesystem()
         filesystem.branch.append(item1)
@@ -108,6 +108,8 @@ class TestBlockBuilder(unittest.TestCase):
 
         buff_object = Filesystem()
         print('\n\n')
+        print('buffer -> ', buffer)
+        print('\n\n')
         for element in _json:
             if type(element) == list:
                 for _e in element[1]:
@@ -134,8 +136,12 @@ class TestBlockBuilder(unittest.TestCase):
                         str(_e) + ' ', get_position_length(_e, buffer),
                         encode_bytes(get_position_length(_e, buffer)),
                         buffer[
-                        _e:_e + get_position_length(_e, buffer) + len(encode_bytes(get_position_length(_e, buffer)))]
+                            _e:_e + get_position_length(_e, buffer) + len(encode_bytes(get_position_length(_e, buffer)))
+                        ],
+                        buffer[_e:],
+                        '\n'
                     )
+
 
     def test_typical_complex_object(self):
 
@@ -178,7 +184,7 @@ class TestBlockBuilder(unittest.TestCase):
                 )
 
         a = Test()
-        a.t1 = b''.join([b'bt1' for i in range(100)])
+        a.t1 = b''.join([b'bt1' for i in range(1)])
         a.t2 = block1.SerializeToString()
 
         b = Test()
@@ -227,6 +233,8 @@ class TestBlockBuilder(unittest.TestCase):
 
         buff_object = Test()
         print('\n\n')
+        print('buffer -> ', buffer)
+        print('\n\n')
         for element in _json:
             if type(element) == list:
                 for _e in element[1]:
@@ -259,4 +267,8 @@ class TestBlockBuilder(unittest.TestCase):
 
 if __name__ == '__main__':
     os.system('rm -rf __cache__/*')
-    unittest.main()
+    #unittest.main()
+    
+    #TestBlockBuilder().test_filesystem()
+    TestBlockBuilder().test_typical_complex_object()
+
