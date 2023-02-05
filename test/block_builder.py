@@ -168,13 +168,30 @@ class TestBlockBuilder(unittest.TestCase):
                 file.write(
                     b''.join([b'block1' for i in range(100)])
                 )
+                
+        block2 = buffer_pb2.Buffer.Block()
+        h = buffer_pb2.Buffer.Block.Hash()
+        h.type = Enviroment.hash_type
+        h.value = sha3_256(b"block2").digest()
+        block2.hashes.append(h)
+
+        if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block2").hexdigest()):
+            with open(Enviroment.block_dir + sha3_256(b"block2").hexdigest(), 'wb') as file:
+                file.write(
+                    b''.join([b'block2' for i in range(100)])
+                )
 
         item1 = ItemBranch()
         item1.name = ''.join(['item1' for i in range(1)])
-        item1.file = block1.SerializeToString()    
+        item1.file = block1.SerializeToString()  
+        
+        item2 = ItemBranch()
+        item2.name = ''.join(['item2' for i in range(1)])
+        item2.file = block2.SerializeToString()    
         
         filesystem: Filesystem = Filesystem()
         filesystem.branch.append(item1)
+        filesystem.branch.append(item2)
         
         object_id, cache_dir = build_multiblock(
             pf_object_with_block_pointers=filesystem,
@@ -345,5 +362,4 @@ class TestBlockBuilder(unittest.TestCase):
 
 if __name__ == '__main__':
     os.system('rm -rf __cache__/*')
-    #unittest.main()
-    TestBlockBuilder().test_filesystem()
+    unittest.main()

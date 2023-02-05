@@ -75,12 +75,12 @@ def search_on_message_real(
     real_position: int = real_initial_position
     for field, value in message.ListFields():
         if isinstance(value, RepeatedCompositeContainer):
-            position += 1
-            try:
-                message_size = real_lengths[position][0]
-            except KeyError:
-                raise Exception('gRPCbb block builder error, real lengths not in '+str(position)+'. '+str(real_lengths))
             for element in value:
+                position += 1
+                try:
+                    message_size = real_lengths[position][0]
+                except KeyError:
+                    raise Exception('gRPCbb block builder error, real lengths not in '+str(position)+'. '+str(real_lengths))
                 search_on_message_real(
                     message=element,
                     pointers=pointers + [real_position + 1],
@@ -316,6 +316,7 @@ def build_multiblock(
     ]] = []
 
     container_real_lengths = {}
+    print('real lengths ', real_lengths)
     search_on_message_real(
         message=pf_object_with_block_pointers,
         pointers=[],
