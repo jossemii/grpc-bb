@@ -77,6 +77,10 @@ def search_on_message_real(
         if isinstance(value, RepeatedCompositeContainer):
             for element in value:
                 position += 1
+                if position not in real_lengths.keys():
+                    position += len(encode_bytes(element.ByteSize())) + element.ByteSize()
+                    real_position += len(encode_bytes(element.ByteSize())) + element.ByteSize()
+                    continue
                 try:
                     message_size = real_lengths[position][0]
                 except KeyError:
@@ -95,6 +99,10 @@ def search_on_message_real(
 
         elif isinstance(value, Message):
             position += 1
+            if position not in real_lengths.keys():
+                position += len(encode_bytes(value.ByteSize())) + value.ByteSize()
+                real_position += len(encode_bytes(value.ByteSize())) + value.ByteSize()
+                continue
             try:
                 message_size = real_lengths[position][0]
             except KeyError:
