@@ -150,6 +150,85 @@ class TestBlockBuilder(unittest.TestCase):
                         buffer[_e:],
                         '\n'
                     )
+                    
+                    
+                   
+    def test_simple_filesystem(self):
+
+        from grpcbigbuffer.test_pb2 import Filesystem, ItemBranch
+
+        block1 = buffer_pb2.Buffer.Block()
+        h = buffer_pb2.Buffer.Block.Hash()
+        h.type = Enviroment.hash_type
+        h.value = sha3_256(b"block1").digest()
+        block1.hashes.append(h)
+
+        if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block1").hexdigest()):
+            with open(Enviroment.block_dir + sha3_256(b"block1").hexdigest(), 'wb') as file:
+                file.write(
+                    b''.join([b'block1' for i in range(100)])
+                )
+
+        item1 = ItemBranch()
+        item1.name = ''.join(['item1' for i in range(1)])
+        item1.file = block1.SerializeToString()    
+        
+        filesystem: Filesystem = Filesystem()
+        filesystem.branch.append(item1)
+        
+        object_id, cache_dir = build_multiblock(
+            pf_object_with_block_pointers=filesystem,
+            blocks=[
+                sha3_256(b"block1").digest(),
+                sha3_256(b"block2").digest(),
+                sha3_256(b"block3").digest()
+            ]
+        )
+
+        # Read the buffer.
+        buffer = b''
+        with open(os.path.join(cache_dir, '_.json'), 'r') as f:
+            _json = json.load(f)
+
+        for element in _json:
+            if type(element) == int:
+                with open(os.path.join(cache_dir, str(element)), 'rb') as f:
+                    block1 = f.read()
+                    buffer += block1
+
+            if type(element) == list:
+                with open(os.path.join(Enviroment.block_dir, element[0]), 'rb') as f:
+                    while True:
+                        block1 = f.read(1024)
+
+                        if not block1:
+                            break
+                        buffer += block1
+
+        buff_object = Filesystem()
+        buff_object.ParseFromString(buffer)
+
+        def extract_last_elements(json_obj):
+            result = []
+            for _element in json_obj:
+                if type(_element) == list and len(_element) == 2 and type(_element[0]) == str and type(
+                        _element[1]) == list:
+                    result.append(_element[1][-1])
+            return result
+    
+        for element in _json:
+            if type(element) == list:
+                for _e in element[1]:
+                    print(
+                        '\n\n',
+                        str(_e) + ' ', get_position_length(_e, buffer),
+                        encode_bytes(get_position_length(_e, buffer)),
+                        buffer[
+                            _e:_e + get_position_length(_e, buffer) + len(encode_bytes(get_position_length(_e, buffer)))
+                        ],
+                        buffer[_e:],
+                        '\n'
+                    )
 
 
     def test_typical_complex_object(self):
@@ -266,4 +345,5 @@ class TestBlockBuilder(unittest.TestCase):
 
 if __name__ == '__main__':
     os.system('rm -rf __cache__/*')
-    unittest.main()
+    #unittest.main()
+    TestBlockBuilder().test_simple_filesystem()

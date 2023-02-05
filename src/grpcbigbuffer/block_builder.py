@@ -66,31 +66,44 @@ def search_on_message_real(
         message: Message,
         pointers: List[int],
         initial_position: int,
+        real_initial_position: int,
         blocks: List[bytes],
-        container: Dict[str, List[int]]
-) -> int:
+        container: Dict[str, List[int]],
+        real_lengths: Dict[int, Tuple[int, int, bool]],
+):
     position: int = initial_position
+    real_position: int = real_initial_position
     for field, value in message.ListFields():
         if isinstance(value, RepeatedCompositeContainer):
+            position += 1
+            message_size = real_lengths[position][0]
             for element in value:
-                message_size = search_on_message_real(
+                search_on_message_real(
                     message=element,
-                    pointers=pointers + [position + 1],
-                    initial_position=position + 1 + len(encode_bytes(element.ByteSize())),
+                    pointers=pointers + [real_position + 1],
+                    initial_position=position + len(encode_bytes(element.ByteSize())),
+                    real_initial_position=real_initial_position + 1 + len(encode_bytes(message_size)),
                     blocks=blocks,
-                    container=container
+                    container=container,
+                    real_lengths=real_lengths
                 )
-                position += 1 + len(encode_bytes(message_size)) + message_size
+                position += len(encode_bytes(element.ByteSize())) + element.ByteSize()
+                real_position += 1 + len(encode_bytes(message_size)) + message_size
 
         elif isinstance(value, Message):
-            message_size = search_on_message_real(
+            position += 1
+            message_size = real_lengths[position][0]
+            search_on_message_real(
                 message=value,
-                pointers=pointers + [position + 1],
-                initial_position=position + 1 + len(encode_bytes(value.ByteSize())),
+                pointers=pointers + [real_position + 1],
+                initial_position=position + len(encode_bytes(value.ByteSize())),
+                real_initial_position=real_initial_position + 1 + len(encode_bytes(message_size)),
                 blocks=blocks,
-                container=container
+                container=container,
+                real_lengths=real_lengths
             )
-            position += 1 + len(encode_bytes(message_size)) + message_size
+            position += len(encode_bytes(value.ByteSize())) + value.ByteSize()
+            real_position += 1 + len(encode_bytes(message_size)) + message_size
 
         elif type(value) == bytes and is_block(value, blocks):
             block = buffer_pb2.Buffer.Block()
@@ -99,13 +112,18 @@ def search_on_message_real(
                 raise Exception('gRPCbb block builder error, duplicated blocks not supported.')
             container[
                 get_hash(block)
-            ] = pointers + [position + 1]
+            ] = pointers + [real_position + 1]
             block_length: int = get_block_length(get_hash(block))
-            position += 1 + len(encode_bytes(block_length)) + block_length
-
-        elif type(value) == bytes or type(value) == str:
+            position += 1
+            if (real_lengths[position][0] != block_length):
+                raise Exception('Error on gRPCbb: block_builder method computing real message positions. ', position, real_lengths[position], block_length)
+            position += len(encode_bytes(block.ByteSize())) + block.ByteSize()
+            real_position += 1 + len(encode_bytes(block_length)) + block_length
+            
+        elif type(value) == bytes or type(value) == str:            
             position += 1 + len(encode_bytes(len(value))) + len(value)
-
+            real_position += 1 + len(encode_bytes(len(value))) + len(value)
+            
         else:
             try:
                 temp_message = type(message)()
@@ -114,9 +132,9 @@ def search_on_message_real(
                     if field_name.index != field.index:
                         temp_message.ClearField(field_name.name)
                 position += temp_message.ByteSize()
+                real_position += temp_message.ByteSize()
             except Exception as e:
                 raise Exception('gRPCbb block builder error obtaining the length of a primitive value :' + str(e))
-    return position - initial_position
 
 
 def search_on_message(
@@ -293,8 +311,10 @@ def build_multiblock(
         message=pf_object_with_block_pointers,
         pointers=[],
         initial_position=0,
+        real_initial_position=0,
         blocks=blocks,
-        container=container_real_lengths
+        container=container_real_lengths,
+        real_lengths=real_lengths
     )
     for i, (b1, b2) in enumerate(zip_longest(new_buff, container_real_lengths.keys())):
         _json.append(i + 1)
