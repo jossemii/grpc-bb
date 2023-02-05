@@ -232,7 +232,7 @@ def generate_buffer(buffer: bytes, lengths: Dict[int, Tuple[int, int, bool]]) ->
             list_of_bytes.append(new_buff)
             new_buff = b''
 
-    return list_of_bytes
+    return list_of_bytes + [buffer[i:]]
 
 
 def generate_id(buffers: List[bytes], blocks: List[bytes]) -> bytes:
