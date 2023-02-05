@@ -165,8 +165,12 @@ def generate_wbp_file(dirname: str):
             buffer.append(Enviroment.block_dir + e[0])
 
     blocks: Dict[str, List[int]] = {t[0]: t[1] for t in _json if type(t) == list}
+    
+    print('\nblocks -> ', blocks)
 
     tree: Dict[int, Union[Dict, str]] = create_lengths_tree(blocks)
+    
+    print('\ntree -< ', tree)
 
     recalculated_lengths: Dict[int, int] = compute_wbp_lengths(tree=tree, file_list=file_list)
 

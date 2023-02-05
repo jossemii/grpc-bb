@@ -37,11 +37,17 @@ class TestGetVarintValue(unittest.TestCase):
         # Assuming that the build_multiblock_directory() function works correctly (tests/block_builder.py is OK)
         from grpcbigbuffer.test_pb2 import Test
 
-        block = buffer_pb2.Buffer.Block()
+        block1 = buffer_pb2.Buffer.Block()
         h = buffer_pb2.Buffer.Block.Hash()
         h.type = Enviroment.hash_type
-        h.value = sha3_256(b"block").digest()
-        block.hashes.append(h)
+        h.value = sha3_256(b"block1").digest()
+        block1.hashes.append(h)
+
+        if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block1").hexdigest()):
+            with open(Enviroment.block_dir + sha3_256(b"block1").hexdigest(), 'wb') as file:
+                file.write(
+                    b''.join([b'block1' for i in range(100)])
+                )
 
         block2 = buffer_pb2.Buffer.Block()
         h = buffer_pb2.Buffer.Block.Hash()
@@ -49,15 +55,27 @@ class TestGetVarintValue(unittest.TestCase):
         h.value = sha3_256(b"block2").digest()
         block2.hashes.append(h)
 
+        if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block2").hexdigest()):
+            with open(Enviroment.block_dir + sha3_256(b"block2").hexdigest(), 'wb') as file:
+                file.write(
+                    b''.join([b'block2' for i in range(100)])
+                )
+
         block3 = buffer_pb2.Buffer.Block()
         h = buffer_pb2.Buffer.Block.Hash()
         h.type = Enviroment.hash_type
         h.value = sha3_256(b"block3").digest()
         block3.hashes.append(h)
 
+        if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block3").hexdigest()):
+            with open(Enviroment.block_dir + sha3_256(b"block3").hexdigest(), 'wb') as file:
+                file.write(
+                    b''.join([b'block3' for i in range(100)])
+                )
+
         a = Test()
-        a.t1 = b''.join([b'bt1' for i in range(100)])
-        a.t2 = block.SerializeToString()
+        a.t1 = b''.join([b'bt1' for i in range(1)])
+        a.t2 = block1.SerializeToString()
 
         b = Test()
         b.t1 = block2.SerializeToString()
@@ -73,11 +91,12 @@ class TestGetVarintValue(unittest.TestCase):
         _object.t2 = b''.join([b'mc2' for i in range(100)])
         _object.t4.append(b)
         _object.t4.append(c)
+        _object.t5 = b'final'
 
         object_id, cache_dir = build_multiblock(
-            pf_object_with_block_pointers=_object,
+            pf_object_with_block_pointers=b,
             blocks=[
-                sha3_256(b"block").digest(),
+                sha3_256(b"block1").digest(),
                 sha3_256(b"block2").digest(),
                 sha3_256(b"block3").digest()
             ]
