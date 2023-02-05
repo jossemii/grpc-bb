@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\ntest.proto\x12\x04test\"\\\n\nItemBranch\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04\x66ile\x18\x02 \x01(\x0c\x12\x0c\n\x04link\x18\x03 \x01(\t\x12$\n\nfilesystem\x18\x04 \x01(\x0b\x32\x10.test.Filesystem\".\n\nFilesystem\x12 \n\x06\x62ranch\x18\x02 \x03(\x0b\x32\x10.test.ItemBranch\"Z\n\x04Test\x12\n\n\x02t1\x18\x01 \x01(\x0c\x12\n\n\x02t2\x18\x02 \x01(\x0c\x12\x1b\n\x02t3\x18\x03 \x01(\x0b\x32\n.test.TestH\x00\x88\x01\x01\x12\x16\n\x02t4\x18\x04 \x03(\x0b\x32\n.test.TestB\x05\n\x03_t3b\x06proto3'
+  serialized_pb=b'\n\ntest.proto\x12\x04test\"j\n\nItemBranch\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x04\x66ile\x18\x02 \x01(\x0cH\x00\x12\x0e\n\x04link\x18\x03 \x01(\tH\x00\x12&\n\nfilesystem\x18\x04 \x01(\x0b\x32\x10.test.FilesystemH\x00\x42\x06\n\x04item\".\n\nFilesystem\x12 \n\x06\x62ranch\x18\x02 \x03(\x0b\x32\x10.test.ItemBranch\"f\n\x04Test\x12\n\n\x02t1\x18\x01 \x01(\x0c\x12\n\n\x02t2\x18\x02 \x01(\x0c\x12\x1b\n\x02t3\x18\x03 \x01(\x0b\x32\n.test.TestH\x00\x88\x01\x01\x12\x16\n\x02t4\x18\x04 \x03(\x0b\x32\n.test.Test\x12\n\n\x02t5\x18\x05 \x01(\x0c\x42\x05\n\x03_t3b\x06proto3'
 )
 
 
@@ -72,9 +72,14 @@ _ITEMBRANCH = _descriptor.Descriptor(
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
+    _descriptor.OneofDescriptor(
+      name='item', full_name='test.ItemBranch.item',
+      index=0, containing_type=None,
+      create_key=_descriptor._internal_create_key,
+    fields=[]),
   ],
   serialized_start=20,
-  serialized_end=112,
+  serialized_end=126,
 )
 
 
@@ -105,8 +110,8 @@ _FILESYSTEM = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=114,
-  serialized_end=160,
+  serialized_start=128,
+  serialized_end=174,
 )
 
 
@@ -146,6 +151,13 @@ _TEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='t5', full_name='test.Test.t5', index=4,
+      number=5, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"",
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -163,11 +175,20 @@ _TEST = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=162,
-  serialized_end=252,
+  serialized_start=176,
+  serialized_end=278,
 )
 
 _ITEMBRANCH.fields_by_name['filesystem'].message_type = _FILESYSTEM
+_ITEMBRANCH.oneofs_by_name['item'].fields.append(
+  _ITEMBRANCH.fields_by_name['file'])
+_ITEMBRANCH.fields_by_name['file'].containing_oneof = _ITEMBRANCH.oneofs_by_name['item']
+_ITEMBRANCH.oneofs_by_name['item'].fields.append(
+  _ITEMBRANCH.fields_by_name['link'])
+_ITEMBRANCH.fields_by_name['link'].containing_oneof = _ITEMBRANCH.oneofs_by_name['item']
+_ITEMBRANCH.oneofs_by_name['item'].fields.append(
+  _ITEMBRANCH.fields_by_name['filesystem'])
+_ITEMBRANCH.fields_by_name['filesystem'].containing_oneof = _ITEMBRANCH.oneofs_by_name['item']
 _FILESYSTEM.fields_by_name['branch'].message_type = _ITEMBRANCH
 _TEST.fields_by_name['t3'].message_type = _TEST
 _TEST.fields_by_name['t4'].message_type = _TEST

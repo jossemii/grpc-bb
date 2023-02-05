@@ -70,14 +70,31 @@ class TestBlockBuilder(unittest.TestCase):
                     b''.join([b'block3' for i in range(100)])
                 )
 
-        item_len: int = 54
         item1 = ItemBranch()
-        item1.name = ''.join(['i' for i in range(item_len)])
-        item1.file = block2.SerializeToString()
-        #item1.link = 'link1'        
+        item1.name = ''.join(['item1' for i in range(1)])
+        item1.file = block1.SerializeToString()    
+        
+        item2 = ItemBranch()
+        item2.name = ''.join(['item2' for i in range(100)])
+        item2.file = block2.SerializeToString()    
+        
+        item3 = ItemBranch()
+        item3.name = ''.join(['item3' for i in range(10)])
+        item3.file = block3.SerializeToString()   
+        
+        item4 = ItemBranch()
+        item4.name = "item4"
+        item4.link = "item4" 
+        
+        item5 = ItemBranch()
+        item5.name = "item5"
+        item5.filesystem.branch.append(item2)
+        item5.filesystem.branch.append(item4)
 
         filesystem: Filesystem = Filesystem()
         filesystem.branch.append(item1)
+        filesystem.branch.append(item3)
+        filesystem.branch.append(item5)
 
         object_id, cache_dir = build_multiblock(
             pf_object_with_block_pointers=filesystem,
@@ -109,18 +126,7 @@ class TestBlockBuilder(unittest.TestCase):
                         buffer += block1
 
         buff_object = Filesystem()
-        print('\n\n')
-        print('buffer -> ', buffer)
-        print('\n\n')
-        for element in _json:
-            if type(element) == list:
-                for _e in element[1]:
-                    print(_e, '   ', get_position_length(_e, buffer), buffer[_e:])
-        print('\n\n')
         buff_object.ParseFromString(buffer)
-        print('Objeto resultante -<\n ', buff_object)
-        
-        print('Parse ok.\n')
 
         def extract_last_elements(json_obj):
             result = []
@@ -129,8 +135,7 @@ class TestBlockBuilder(unittest.TestCase):
                         _element[1]) == list:
                     result.append(_element[1][-1])
             return result
-
-        print('Posiciones afectadas por el bloque -> ',_json)
+        
         print('\n')
         for element in _json:
             if type(element) == list:
@@ -205,6 +210,7 @@ class TestBlockBuilder(unittest.TestCase):
         _object.t2 = b''.join([b'mc2' for i in range(100)])
         _object.t4.append(b)
         _object.t4.append(c)
+        _object.t5 = b'final'
 
         object_id, cache_dir = build_multiblock(
             pf_object_with_block_pointers=_object,
@@ -236,16 +242,7 @@ class TestBlockBuilder(unittest.TestCase):
                         buffer += block
 
         buff_object = Test()
-        print('\n\n')
-        print('buffer -> ', buffer)
-        print('\n\n')
-        for element in _json:
-            if type(element) == list:
-                for _e in element[1]:
-                    print(_e, '   ', get_position_length(_e, buffer), buffer[_e])
-        print('\n\n')
         buff_object.ParseFromString(buffer)
-        print(buff_object)
 
         def extract_last_elements(json_obj):
             result = []
@@ -255,8 +252,6 @@ class TestBlockBuilder(unittest.TestCase):
                     result.append(_element[1][-1])
             return result
 
-        print(_json)
-        print('\n')
         for element in _json:
             if type(element) == list:
                 for _e in element[1]:
@@ -271,8 +266,4 @@ class TestBlockBuilder(unittest.TestCase):
 
 if __name__ == '__main__':
     os.system('rm -rf __cache__/*')
-    #unittest.main()
-    
-    TestBlockBuilder().test_filesystem()
-    #TestBlockBuilder().test_typical_complex_object()
-
+    unittest.main()
