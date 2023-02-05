@@ -316,7 +316,6 @@ def build_multiblock(
     ]] = []
 
     container_real_lengths = {}
-    print('real lengths ', real_lengths)
     search_on_message_real(
         message=pf_object_with_block_pointers,
         pointers=[],
