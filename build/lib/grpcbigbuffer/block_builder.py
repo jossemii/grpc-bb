@@ -174,11 +174,11 @@ def search_on_message(
                 raise Exception('gRPCbb block builder error obtaining the length of a primitive value :' + str(e))
 
 
-def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Dict[int, Tuple[int, int]]:
+def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Dict[int, Tuple[int, int, bool]]:
     def traverse_tree(internal_tree: Dict, internal_buffer: bytes, initial_total_length: int) \
-            -> Tuple[int, Dict[int, Tuple[int, int]]]:
+            -> Tuple[int, Dict[int, Tuple[int, int, bool]]]:
 
-        real_lengths: Dict[int, Tuple[int, int]] = {}
+        real_lengths: Dict[int, Tuple[int, int, bool]] = {}
         total_tree_length: int = 0
         total_block_length: int = 0
         for key, value in internal_tree.items():
@@ -187,7 +187,7 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
                 real_length, internal_lengths = traverse_tree(
                     value, internal_buffer, initial_length
                 )
-                real_lengths[key] = (real_length, 1)
+                real_lengths[key] = (real_length, initial_length, False)
                 real_lengths.update(internal_lengths)
                 total_tree_length += real_length + len(encode_bytes(real_length)) + 1
 
@@ -203,7 +203,7 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
                 b_length: int = len(b.SerializeToString())
 
                 real_length: int = get_block_length(value)
-                real_lengths[key] = (real_length, b_length)
+                real_lengths[key] = (real_length, b_length, True)
                 total_tree_length += real_length + len(encode_bytes(real_length)) + 1
 
                 block_length: int = b_length + len(encode_bytes(b_length)) + 1
@@ -220,20 +220,19 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
     return traverse_tree(tree, buffer, len(buffer))[1]
 
 
-def generate_buffer(buffer: bytes, lengths: Dict[int, Tuple[int, int]]) -> List[bytes]:
+def generate_buffer(buffer: bytes, lengths: Dict[int, Tuple[int, int, bool]]) -> List[bytes]:
     list_of_bytes: List[bytes] = []
     new_buff: bytes = b''
     i: int = 0
     for key, value in lengths.items():
-        if i == key:
-            i -= 1
         new_buff += buffer[i:key] + encode_bytes(value[0])
-        i = key + 1 + value[1]
-        if value[1] > 1:
+        i = key + len(encode_bytes(value[1]))
+        if value[2]:
+            i += value[1]
             list_of_bytes.append(new_buff)
             new_buff = b''
 
-    return list_of_bytes
+    return list_of_bytes + [buffer[i:]]
 
 
 def generate_id(buffers: List[bytes], blocks: List[bytes]) -> bytes:
@@ -269,7 +268,7 @@ def build_multiblock(
         pointer_container=container
     )
 
-    real_lengths: Dict[int, Tuple[int, int]] = compute_real_lengths(
+    real_lengths: Dict[int, Tuple[int, int, bool]] = compute_real_lengths(
         tree=tree,
         buffer=pf_object_with_block_pointers.SerializeToString()
     )
