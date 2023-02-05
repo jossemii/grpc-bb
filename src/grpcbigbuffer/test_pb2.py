@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\ntest.proto\x12\x04test\"\\\n\nItemBranch\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04\x66ile\x18\x02 \x01(\x0c\x12\x0c\n\x04link\x18\x03 \x01(\t\x12$\n\nfilesystem\x18\x04 \x01(\x0b\x32\x10.test.Filesystem\"?\n\nFilesystem\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\t\x12 \n\x06\x62ranch\x18\x02 \x03(\x0b\x32\x10.test.ItemBranch\"Z\n\x04Test\x12\n\n\x02t1\x18\x01 \x01(\x0c\x12\n\n\x02t2\x18\x02 \x01(\x0c\x12\x1b\n\x02t3\x18\x03 \x01(\x0b\x32\n.test.TestH\x00\x88\x01\x01\x12\x16\n\x02t4\x18\x04 \x03(\x0b\x32\n.test.TestB\x05\n\x03_t3b\x06proto3'
+  serialized_pb=b'\n\ntest.proto\x12\x04test\"\\\n\nItemBranch\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04\x66ile\x18\x02 \x01(\x0c\x12\x0c\n\x04link\x18\x03 \x01(\t\x12$\n\nfilesystem\x18\x04 \x01(\x0b\x32\x10.test.Filesystem\".\n\nFilesystem\x12 \n\x06\x62ranch\x18\x02 \x03(\x0b\x32\x10.test.ItemBranch\"Z\n\x04Test\x12\n\n\x02t1\x18\x01 \x01(\x0c\x12\n\n\x02t2\x18\x02 \x01(\x0c\x12\x1b\n\x02t3\x18\x03 \x01(\x0b\x32\n.test.TestH\x00\x88\x01\x01\x12\x16\n\x02t4\x18\x04 \x03(\x0b\x32\n.test.TestB\x05\n\x03_t3b\x06proto3'
 )
 
 
@@ -87,14 +87,7 @@ _FILESYSTEM = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='content', full_name='test.Filesystem.content', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='branch', full_name='test.Filesystem.branch', index=1,
+      name='branch', full_name='test.Filesystem.branch', index=0,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -113,7 +106,7 @@ _FILESYSTEM = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=114,
-  serialized_end=177,
+  serialized_end=160,
 )
 
 
@@ -170,8 +163,8 @@ _TEST = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=179,
-  serialized_end=269,
+  serialized_start=162,
+  serialized_end=252,
 )
 
 _ITEMBRANCH.fields_by_name['filesystem'].message_type = _FILESYSTEM
