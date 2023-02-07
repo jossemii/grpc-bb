@@ -75,14 +75,21 @@ def search_on_message_real(
     real_position: int = real_initial_position
     for field, value in message.ListFields():
         if isinstance(value, RepeatedCompositeContainer):
-            position += 1
-            message_size = real_lengths[position][0]
             for element in value:
+                position += 1
+                if position not in real_lengths.keys():
+                    position += len(encode_bytes(element.ByteSize())) + element.ByteSize()
+                    real_position += len(encode_bytes(element.ByteSize())) + element.ByteSize()
+                    continue
+                try:
+                    message_size = real_lengths[position][0]
+                except KeyError:
+                    raise Exception('gRPCbb block builder error, real lengths not in '+str(position)+'. '+str(real_lengths))
                 search_on_message_real(
                     message=element,
                     pointers=pointers + [real_position + 1],
                     initial_position=position + len(encode_bytes(element.ByteSize())),
-                    real_initial_position=real_initial_position + 1 + len(encode_bytes(message_size)),
+                    real_initial_position=real_position + 1 + len(encode_bytes(message_size)),
                     blocks=blocks,
                     container=container,
                     real_lengths=real_lengths
@@ -92,12 +99,19 @@ def search_on_message_real(
 
         elif isinstance(value, Message):
             position += 1
-            message_size = real_lengths[position][0]
+            if position not in real_lengths.keys():
+                position += len(encode_bytes(value.ByteSize())) + value.ByteSize()
+                real_position += len(encode_bytes(value.ByteSize())) + value.ByteSize()
+                continue
+            try:
+                message_size = real_lengths[position][0]
+            except KeyError:
+                raise Exception('gRPCbb block builder error, real lengths not in '+str(position)+'. '+str(real_lengths))
             search_on_message_real(
                 message=value,
                 pointers=pointers + [real_position + 1],
                 initial_position=position + len(encode_bytes(value.ByteSize())),
-                real_initial_position=real_initial_position + 1 + len(encode_bytes(message_size)),
+                real_initial_position=real_position + 1 + len(encode_bytes(message_size)),
                 blocks=blocks,
                 container=container,
                 real_lengths=real_lengths
@@ -115,8 +129,11 @@ def search_on_message_real(
             ] = pointers + [real_position + 1]
             block_length: int = get_block_length(get_hash(block))
             position += 1
-            if (real_lengths[position][0] != block_length):
-                raise Exception('Error on gRPCbb: block_builder method computing real message positions. ', position, real_lengths[position], block_length)
+            try:
+                if (real_lengths[position][0] != block_length):
+                    raise Exception('Error on gRPCbb: block_builder method computing real message positions. ', position, real_lengths[position], block_length)
+            except KeyError:
+                raise Exception('gRPCbb block builder error, real lengths not in '+str(position)+'. '+str(real_lengths))
             position += len(encode_bytes(block.ByteSize())) + block.ByteSize()
             real_position += 1 + len(encode_bytes(block_length)) + block_length
             
