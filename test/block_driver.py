@@ -1,4 +1,5 @@
 import os
+import random
 import sys, unittest
 from hashlib import sha3_256
 
@@ -33,7 +34,7 @@ class TestGetVarintValue(unittest.TestCase):
         value = get_position_length(2, buffer)
         self.assertEqual(value, 448)
 
-    def test_generate_wbp_file(self):
+    def test_object_generate_wbp_file(self):
         # Assuming that the build_multiblock_directory() function works correctly (tests/block_builder.py is OK)
         from grpcbigbuffer.test_pb2 import Test
 
@@ -118,6 +119,217 @@ class TestGetVarintValue(unittest.TestCase):
         # Ahora se realiza el assertEqual entre generated y el _object sin especificar el tipo de hash.
 
         self.assertEqual(generate_block(with_hash=False), generated)
+
+
+
+    def test_filesystem_generate_wbp_file(self):
+        # Assuming that the build_multiblock_directory() function works correctly (tests/block_builder.py is OK)
+        from grpcbigbuffer.test_pb2 import Filesystem, ItemBranch
+
+        def generate_block(with_hash=True):
+            block1 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block1").digest()
+            block1.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block1").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block1").hexdigest(), 'wb') as file:
+                    file.write(
+                        b''.join([b'block1' for i in range(100)])
+                    )
+
+            block2 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block2").digest()
+            block2.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block2").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block2").hexdigest(), 'wb') as file:
+                    file.write(
+                        b''.join([b'block2' for i in range(100)])
+                    )
+
+            block3 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block3").digest()
+            block3.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block3").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block3").hexdigest(), 'wb') as file:
+                    file.write(
+                        b''.join([b'block3' for i in range(100)])
+                    )
+
+
+            item1 = ItemBranch()
+            item1.name = ''.join(['item1' for i in range(1)])
+            item1.file = block1.SerializeToString()    
+            
+            item2 = ItemBranch()
+            item2.name = ''.join(['item2' for i in range(100)])
+            item2.file = block2.SerializeToString()    
+            
+            item3 = ItemBranch()
+            item3.name = ''.join(['item3' for i in range(10)])
+            item3.file = block3.SerializeToString()   
+            
+            item4 = ItemBranch()
+            item4.name = "item4"
+            item4.link = "item4" 
+            
+            item5 = ItemBranch()
+            item5.name = "item5"
+            item5.filesystem.branch.append(item2)
+            item5.filesystem.branch.append(item4)
+
+            filesystem: Filesystem = Filesystem()
+            filesystem.branch.append(item1)
+            filesystem.branch.append(item3)
+            filesystem.branch.append(item5)
+            return filesystem
+        
+
+        object_id, cache_dir = build_multiblock(
+            pf_object_with_block_pointers=generate_block(),
+            blocks=[
+                sha3_256(b"block1").digest(),
+                sha3_256(b"block2").digest(),
+                sha3_256(b"block3").digest()
+            ]
+        )
+
+        # Test generate_wbp_file
+        from grpcbigbuffer.block_driver import generate_wbp_file
+        os.system('rm ' + cache_dir + '/wbp.bin')
+        generate_wbp_file(cache_dir)
+
+        generated = Filesystem()
+        with open(cache_dir + '/wbp.bin', 'rb') as f:
+            generated.ParseFromString(
+                f.read()
+            )
+
+        # Ahora se realiza el assertEqual entre generated y el _object sin especificar el tipo de hash.
+
+        self.assertEqual(generate_block(with_hash=False), generated)
+
+
+    def test_complex_filesystem_generate_wbp_file(self):
+        # Assuming that the build_multiblock_directory() function works correctly (tests/block_builder.py is OK)
+        from grpcbigbuffer.test_pb2 import Filesystem, ItemBranch
+
+        def generate_block(with_hash=True):
+            block1 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block1").digest()
+            block1.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block1").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block1").hexdigest(), 'wb') as file:
+                    file.write(
+                        b''.join([b'block1' for i in range(100)])
+                    )
+
+            block2 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block2").digest()
+            block2.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block2").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block2").hexdigest(), 'wb') as file:
+                    file.write(
+                        b''.join([b'block2' for i in range(100)])
+                    )
+
+            block3 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block3").digest()
+            block3.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block3").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block3").hexdigest(), 'wb') as file:
+                    file.write(
+                        b''.join([b'block3' for i in range(100)])
+                    )
+
+
+            item1 = ItemBranch()
+            item1.name = ''.join(['item1' for i in range(1)])
+            item1.file = block1.SerializeToString()    
+            
+            item2 = ItemBranch()
+            item2.name = ''.join(['item2' for i in range(100)])
+            item2.file = block2.SerializeToString()    
+            
+            item3 = ItemBranch()
+            item3.name = ''.join(['item3' for i in range(10)])
+            item3.file = block3.SerializeToString()   
+            
+            def rec(i):
+                item = ItemBranch()
+                item.name = 'item4.'+str(i)
+                if i < 10:      
+                    for j in range(0, 4):
+                        item.filesystem.branch.append(
+                            rec(i+1)
+                        )
+                else:
+                    item.file = b"".join([ b"link4." for j in range(i*10000) ])
+                return item
+            
+            item4 = ItemBranch()
+            item4.filesystem.branch.append(rec(0))
+            
+            item5 = ItemBranch()
+            item5.name = "item5"
+            item5.filesystem.branch.append(item2)
+            item5.filesystem.branch.append(item4)
+            for i in range(100):
+                item5.filesystem.branch.append(
+                    ItemBranch(
+                        name = 'item5.'+str(i),
+                        link = 'link5.'+str(i)
+                    )
+                )
+
+            filesystem: Filesystem = Filesystem()
+            filesystem.branch.append(item1)
+            filesystem.branch.append(item3)
+            filesystem.branch.append(item5)
+            print(filesystem.ByteSize())
+            return filesystem
+        
+
+        object_id, cache_dir = build_multiblock(
+            pf_object_with_block_pointers=generate_block(),
+            blocks=[
+                sha3_256(b"block1").digest(),
+                sha3_256(b"block2").digest(),
+                sha3_256(b"block3").digest()
+            ]
+        )
+
+        # Test generate_wbp_file
+        from grpcbigbuffer.block_driver import generate_wbp_file
+        os.system('rm ' + cache_dir + '/wbp.bin')
+        generate_wbp_file(cache_dir)
+
+        generated = Filesystem()
+        with open(cache_dir + '/wbp.bin', 'rb') as f:
+            generated.ParseFromString(
+                f.read()
+            )
+
+        # Ahora se realiza el assertEqual entre generated y el _object sin especificar el tipo de hash.
+
+        self.assertEqual(generate_block(with_hash=False), generated)
+
 
 if __name__ == "__main__":
     os.system('rm -rf __cache__/*')
