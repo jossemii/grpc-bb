@@ -37,64 +37,66 @@ class TestGetVarintValue(unittest.TestCase):
         # Assuming that the build_multiblock_directory() function works correctly (tests/block_builder.py is OK)
         from grpcbigbuffer.test_pb2 import Test
 
-        block1 = buffer_pb2.Buffer.Block()
-        h = buffer_pb2.Buffer.Block.Hash()
-        h.type = Enviroment.hash_type
-        h.value = sha3_256(b"block1").digest()
-        block1.hashes.append(h)
+        def generate_block(with_hash=True):
+            block1 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block1").digest()
+            block1.hashes.append(h)
 
-        if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block1").hexdigest()):
-            with open(Enviroment.block_dir + sha3_256(b"block1").hexdigest(), 'wb') as file:
-                file.write(
-                    b''.join([b'block1' for i in range(100)])
-                )
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block1").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block1").hexdigest(), 'wb') as file:
+                    file.write(
+                        b''.join([b'block1' for i in range(100)])
+                    )
 
-        block2 = buffer_pb2.Buffer.Block()
-        h = buffer_pb2.Buffer.Block.Hash()
-        h.type = Enviroment.hash_type
-        h.value = sha3_256(b"block2").digest()
-        block2.hashes.append(h)
+            block2 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block2").digest()
+            block2.hashes.append(h)
 
-        if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block2").hexdigest()):
-            with open(Enviroment.block_dir + sha3_256(b"block2").hexdigest(), 'wb') as file:
-                file.write(
-                    b''.join([b'block2' for i in range(100)])
-                )
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block2").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block2").hexdigest(), 'wb') as file:
+                    file.write(
+                        b''.join([b'block2' for i in range(100)])
+                    )
 
-        block3 = buffer_pb2.Buffer.Block()
-        h = buffer_pb2.Buffer.Block.Hash()
-        h.type = Enviroment.hash_type
-        h.value = sha3_256(b"block3").digest()
-        block3.hashes.append(h)
+            block3 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block3").digest()
+            block3.hashes.append(h)
 
-        if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block3").hexdigest()):
-            with open(Enviroment.block_dir + sha3_256(b"block3").hexdigest(), 'wb') as file:
-                file.write(
-                    b''.join([b'block3' for i in range(100)])
-                )
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block3").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block3").hexdigest(), 'wb') as file:
+                    file.write(
+                        b''.join([b'block3' for i in range(100)])
+                    )
 
-        a = Test()
-        a.t1 = b''.join([b'bt1' for i in range(1)])
-        a.t2 = block1.SerializeToString()
+            a = Test()
+            a.t1 = b''.join([b'bt1' for i in range(1)])
+            a.t2 = block1.SerializeToString()
 
-        b = Test()
-        b.t1 = block2.SerializeToString()
-        b.t2 = b''.join([b'bt2' for i in range(100)])
-        b.t3.CopyFrom(a)
+            b = Test()
+            b.t1 = block2.SerializeToString()
+            b.t2 = b''.join([b'bt2' for i in range(100)])
+            b.t3.CopyFrom(a)
 
-        c = Test()
-        c.t1 = b''.join([b'ct1' for i in range(100)])
-        c.t2 = block3.SerializeToString()
+            c = Test()
+            c.t1 = b''.join([b'ct1' for i in range(100)])
+            c.t2 = block3.SerializeToString()
 
-        _object = Test()
-        _object.t1 = b''.join([b'mc1' for i in range(100)])
-        _object.t2 = b''.join([b'mc2' for i in range(100)])
-        _object.t4.append(b)
-        _object.t4.append(c)
-        _object.t5 = b'final'
+            _object = Test()
+            _object.t1 = b''.join([b'mc1' for i in range(100)])
+            _object.t2 = b''.join([b'mc2' for i in range(100)])
+            _object.t4.append(b)
+            _object.t4.append(c)
+            _object.t5 = b'final'
+            return _object
 
         object_id, cache_dir = build_multiblock(
-            pf_object_with_block_pointers=b,
+            pf_object_with_block_pointers=generate_block(),
             blocks=[
                 sha3_256(b"block1").digest(),
                 sha3_256(b"block2").digest(),
@@ -115,41 +117,7 @@ class TestGetVarintValue(unittest.TestCase):
 
         # Ahora se realiza el assertEqual entre generated y el _object sin especificar el tipo de hash.
 
-        block = buffer_pb2.Buffer.Block()
-        h = buffer_pb2.Buffer.Block.Hash()
-        h.value = sha3_256(b"block").digest()
-        block.hashes.append(h)
-
-        block2 = buffer_pb2.Buffer.Block()
-        h = buffer_pb2.Buffer.Block.Hash()
-        h.value = sha3_256(b"block2").digest()
-        block2.hashes.append(h)
-
-        block3 = buffer_pb2.Buffer.Block()
-        h = buffer_pb2.Buffer.Block.Hash()
-        h.value = sha3_256(b"block3").digest()
-        block3.hashes.append(h)
-
-        a = Test()
-        a.t1 = b''.join([b'bt1' for i in range(100)])
-        a.t2 = block.SerializeToString()
-
-        b = Test()
-        b.t1 = block2.SerializeToString()
-        b.t2 = b''.join([b'bt2' for i in range(100)])
-        b.t3.CopyFrom(a)
-
-        c = Test()
-        c.t1 = b''.join([b'ct1' for i in range(100)])
-        c.t2 = block3.SerializeToString()
-
-        _object = Test()
-        _object.t1 = b''.join([b'mc1' for i in range(100)])
-        _object.t2 = b''.join([b'mc2' for i in range(100)])
-        _object.t4.append(b)
-        _object.t4.append(c)
-
-        self.assertEqual(_object, generated)
+        self.assertEqual(generate_block(with_hash=False), generated)
 
 if __name__ == "__main__":
     os.system('rm -rf __cache__/*')
