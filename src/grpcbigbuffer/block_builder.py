@@ -89,7 +89,7 @@ def search_on_message_real(
                     message=element,
                     pointers=pointers + [real_position + 1],
                     initial_position=position + len(encode_bytes(element.ByteSize())),
-                    real_initial_position=real_initial_position + 1 + len(encode_bytes(message_size)),
+                    real_initial_position=real_position + 1 + len(encode_bytes(message_size)),
                     blocks=blocks,
                     container=container,
                     real_lengths=real_lengths
@@ -111,7 +111,7 @@ def search_on_message_real(
                 message=value,
                 pointers=pointers + [real_position + 1],
                 initial_position=position + len(encode_bytes(value.ByteSize())),
-                real_initial_position=real_initial_position + 1 + len(encode_bytes(message_size)),
+                real_initial_position=real_position + 1 + len(encode_bytes(message_size)),
                 blocks=blocks,
                 container=container,
                 real_lengths=real_lengths
