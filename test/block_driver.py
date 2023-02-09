@@ -271,20 +271,79 @@ class TestGetVarintValue(unittest.TestCase):
             item3.name = ''.join(['item3' for i in range(10)])
             item3.file = block3.SerializeToString()   
             
-            def rec(i):
+            def rec(i, j, _with_hash):
                 item = ItemBranch()
-                item.name = 'item4.'+str(i)
-                if i < 10:      
-                    for j in range(0, 4):
+                item.name = 'item4.'+str(i)+'.'+str(j)
+                if i < 4:      
+                    for _j in range(1, 5):
+                        for _z in range(0, 5):
+                            sub_item = ItemBranch()
+                            sub_item.name= "subitem-"+str(i)+'-'+str(j)+'-'+str(_z)
+                            sub_item.link=b''.join([b"link"+bytes(str(i), 'utf-8')+bytes(str(_j), 'utf-8')+bytes(str(_z), 'utf-8')  for z in range(0, i+_j+_z) ])
+                            item.filesystem.branch.append(sub_item)
+                            
                         item.filesystem.branch.append(
-                            rec(i+1)
+                            rec(i+1, _j, _with_hash)
                         )
+                        
+                        for _z in range(5, 10):
+                            sub_item = ItemBranch()
+                            sub_item.name= "subitem-"+str(i)+'-'+str(j)+'-'+str(_z)
+                            sub_item.link=b''.join([b"link"+bytes(str(i), 'utf-8')+bytes(str(_j), 'utf-8')+bytes(str(_z), 'utf-8')  for z in range(0, i+_j+_z) ])
+                            item.filesystem.branch.append(sub_item)
+                        
+                elif i < 5:
+                    
+                    block = buffer_pb2.Buffer.Block()
+                    h = buffer_pb2.Buffer.Block.Hash()
+                    if _with_hash: h.type = Enviroment.hash_type
+                    h.value = sha3_256(b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8')).digest()
+                    block1.hashes.append(h)
+
+                    if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8')).hexdigest()):
+                        with open(Enviroment.block_dir + sha3_256(b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8')).hexdigest(), 'wb') as file:
+                            file.write(
+                                b''.join([b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8') for z in range(10*j*pow(10, i)) ])
+                            )
+                    item.file = block.SerializeToString()
+                    
+                    for _j in range(1, 5):
+                        for _z in range(0, 5):
+                            sub_item = ItemBranch()
+                            sub_item.name= "subitem-"+str(i)+'-'+str(j)+'-'+str(_z)
+                            sub_item.link=b''.join([b"link"+bytes(str(i), 'utf-8')+bytes(str(_j), 'utf-8')+bytes(str(_z), 'utf-8')  for z in range(0, i+_j+_z) ])
+                            item.filesystem.branch.append(sub_item)
+                            
+                        item.filesystem.branch.append(
+                            rec(i+1, _j, _with_hash)
+                        )
+                        
+                        for _z in range(5, 10):
+                            sub_item = ItemBranch()
+                            sub_item.name= "subitem-"+str(i)+'-'+str(j)+'-'+str(_z)
+                            sub_item.link=b''.join([b"link"+bytes(str(i), 'utf-8')+bytes(str(_j), 'utf-8')+bytes(str(_z), 'utf-8')  for z in range(0, i+_j+_z) ])
+                            item.filesystem.branch.append(sub_item)
+                            
                 else:
-                    item.file = b"".join([ b"link4." for j in range(i*10000) ])
+                    
+                    block = buffer_pb2.Buffer.Block()
+                    h = buffer_pb2.Buffer.Block.Hash()
+                    if _with_hash: h.type = Enviroment.hash_type
+                    h.value = sha3_256(b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8')).digest()
+                    block1.hashes.append(h)
+
+                    if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8')).hexdigest()):
+                        with open(Enviroment.block_dir + sha3_256(b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8')).hexdigest(), 'wb') as file:
+                            file.write(
+                                b''.join([b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8') for z in range(10*j*pow(10, i)) ])
+                            )
+                    item.file = block.SerializeToString()
+                            
+                    
                 return item
             
             item4 = ItemBranch()
-            item4.filesystem.branch.append(rec(0))
+            item4.filesystem.branch.append(rec(0, 0, with_hash))
             
             item5 = ItemBranch()
             item5.name = "item5"
@@ -302,7 +361,6 @@ class TestGetVarintValue(unittest.TestCase):
             filesystem.branch.append(item1)
             filesystem.branch.append(item3)
             filesystem.branch.append(item5)
-            print(filesystem.ByteSize())
             return filesystem
         
 

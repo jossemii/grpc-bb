@@ -55,6 +55,9 @@ def compute_wbp_lengths(tree: Dict[int, Union[Dict, str]], file_list: List[str])
                 pruned_length: int = get_pruned_block_length(value)
 
             if pruned_length > position_length:
+                print('\ntree -> ', _tree)
+                print('\npruned length -> ', pruned_length)
+                print('\nposition length -> ', position_length)
                 raise Exception("gRPCbb on block_driver compute_wbp_lengths method, "
                                 "the pruned_length can't be greater than the real length.")
             lengths[key] = (
@@ -151,6 +154,7 @@ def generate_wbp_file(dirname: str):
             Tuple[str, List[int]]
         ]] = json.load(f)
 
+    print('_json -> ', _json)
     buffer: List[Union[bytes, str]] = []
     file_list: List[str] = []
     for e in _json:
