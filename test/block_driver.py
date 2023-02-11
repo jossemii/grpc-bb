@@ -120,8 +120,6 @@ class TestGetVarintValue(unittest.TestCase):
 
         self.assertEqual(generate_block(with_hash=False), generated)
 
-
-
     def test_filesystem_generate_wbp_file(self):
         # Assuming that the build_multiblock_directory() function works correctly (tests/block_builder.py is OK)
         from grpcbigbuffer.test_pb2 import Filesystem, ItemBranch
@@ -163,23 +161,22 @@ class TestGetVarintValue(unittest.TestCase):
                         b''.join([b'block3' for i in range(100)])
                     )
 
-
             item1 = ItemBranch()
             item1.name = ''.join(['item1' for i in range(1)])
-            item1.file = block1.SerializeToString()    
-            
+            item1.file = block1.SerializeToString()
+
             item2 = ItemBranch()
             item2.name = ''.join(['item2' for i in range(100)])
-            item2.file = block2.SerializeToString()    
-            
+            item2.file = block2.SerializeToString()
+
             item3 = ItemBranch()
             item3.name = ''.join(['item3' for i in range(10)])
-            item3.file = block3.SerializeToString()   
-            
+            item3.file = block3.SerializeToString()
+
             item4 = ItemBranch()
             item4.name = "item4"
-            item4.link = "item4" 
-            
+            item4.link = "item4"
+
             item5 = ItemBranch()
             item5.name = "item5"
             item5.filesystem.branch.append(item2)
@@ -190,7 +187,6 @@ class TestGetVarintValue(unittest.TestCase):
             filesystem.branch.append(item3)
             filesystem.branch.append(item5)
             return filesystem
-        
 
         object_id, cache_dir = build_multiblock(
             pf_object_with_block_pointers=generate_block(),
@@ -215,7 +211,6 @@ class TestGetVarintValue(unittest.TestCase):
         # Ahora se realiza el assertEqual entre generated y el _object sin especificar el tipo de hash.
 
         self.assertEqual(generate_block(with_hash=False), generated)
-
 
     def test_complex_filesystem_generate_wbp_file(self):
         # Assuming that the build_multiblock_directory() function works correctly (tests/block_builder.py is OK)
@@ -258,93 +253,105 @@ class TestGetVarintValue(unittest.TestCase):
                         b''.join([b'block3' for i in range(100)])
                     )
 
-
             item1 = ItemBranch()
             item1.name = ''.join(['item1' for i in range(1)])
-            item1.file = block1.SerializeToString()    
-            
+            item1.file = block1.SerializeToString()
+
             item2 = ItemBranch()
             item2.name = ''.join(['item2' for i in range(100)])
-            item2.file = block2.SerializeToString()    
-            
+            item2.file = block2.SerializeToString()
+
             item3 = ItemBranch()
             item3.name = ''.join(['item3' for i in range(10)])
-            item3.file = block3.SerializeToString()   
-            
+            item3.file = block3.SerializeToString()
+
             def rec(i, j, _with_hash):
                 item = ItemBranch()
-                item.name = 'item4.'+str(i)+'.'+str(j)
-                if i < 4:      
+                item.name = 'item4.' + str(i) + '.' + str(j)
+                if i < 4:
                     for _j in range(1, 5):
                         for _z in range(0, 5):
                             sub_item = ItemBranch()
-                            sub_item.name= "subitem-"+str(i)+'-'+str(j)+'-'+str(_z)
-                            sub_item.link=b''.join([b"link"+bytes(str(i), 'utf-8')+bytes(str(_j), 'utf-8')+bytes(str(_z), 'utf-8')  for z in range(0, i+_j+_z) ])
+                            sub_item.name = "subitem-" + str(i) + '-' + str(j) + '-' + str(_z)
+                            sub_item.link = b''.join(
+                                [b"link" + bytes(str(i), 'utf-8') + bytes(str(_j), 'utf-8') + bytes(str(_z), 'utf-8')
+                                 for z in range(0, i + _j + _z)])
                             item.filesystem.branch.append(sub_item)
-                            
+
                         item.filesystem.branch.append(
-                            rec(i+1, _j, _with_hash)
+                            rec(i + 1, _j, _with_hash)
                         )
-                        
+
                         for _z in range(5, 10):
                             sub_item = ItemBranch()
-                            sub_item.name= "subitem-"+str(i)+'-'+str(j)+'-'+str(_z)
-                            sub_item.link=b''.join([b"link"+bytes(str(i), 'utf-8')+bytes(str(_j), 'utf-8')+bytes(str(_z), 'utf-8')  for z in range(0, i+_j+_z) ])
+                            sub_item.name = "subitem-" + str(i) + '-' + str(j) + '-' + str(_z)
+                            sub_item.link = b''.join(
+                                [b"link" + bytes(str(i), 'utf-8') + bytes(str(_j), 'utf-8') + bytes(str(_z), 'utf-8')
+                                 for z in range(0, i + _j + _z)])
                             item.filesystem.branch.append(sub_item)
-                        
+
                 elif i < 5:
-                    
+
                     block = buffer_pb2.Buffer.Block()
                     h = buffer_pb2.Buffer.Block.Hash()
                     if _with_hash: h.type = Enviroment.hash_type
-                    h.value = sha3_256(b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8')).digest()
+                    h.value = sha3_256(b"block" + bytes(str(i), 'utf-8') + bytes(str(j), 'utf-8')).digest()
                     block1.hashes.append(h)
 
-                    if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8')).hexdigest()):
-                        with open(Enviroment.block_dir + sha3_256(b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8')).hexdigest(), 'wb') as file:
+                    if not os.path.isfile(Enviroment.block_dir + sha3_256(
+                            b"block" + bytes(str(i), 'utf-8') + bytes(str(j), 'utf-8')).hexdigest()):
+                        with open(Enviroment.block_dir + sha3_256(
+                                b"block" + bytes(str(i), 'utf-8') + bytes(str(j), 'utf-8')).hexdigest(), 'wb') as file:
                             file.write(
-                                b''.join([b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8') for z in range(10*j*pow(10, i)) ])
+                                b''.join([b"block" + bytes(str(i), 'utf-8') + bytes(str(j), 'utf-8') for z in
+                                          range(10 * j * pow(10, i))])
                             )
                     item.file = block.SerializeToString()
-                    
+
                     for _j in range(1, 5):
                         for _z in range(0, 5):
                             sub_item = ItemBranch()
-                            sub_item.name= "subitem-"+str(i)+'-'+str(j)+'-'+str(_z)
-                            sub_item.link=b''.join([b"link"+bytes(str(i), 'utf-8')+bytes(str(_j), 'utf-8')+bytes(str(_z), 'utf-8')  for z in range(0, i+_j+_z) ])
+                            sub_item.name = "subitem-" + str(i) + '-' + str(j) + '-' + str(_z)
+                            sub_item.link = b''.join(
+                                [b"link" + bytes(str(i), 'utf-8') + bytes(str(_j), 'utf-8') + bytes(str(_z), 'utf-8')
+                                 for z in range(0, i + _j + _z)])
                             item.filesystem.branch.append(sub_item)
-                            
+
                         item.filesystem.branch.append(
-                            rec(i+1, _j, _with_hash)
+                            rec(i + 1, _j, _with_hash)
                         )
-                        
+
                         for _z in range(5, 10):
                             sub_item = ItemBranch()
-                            sub_item.name= "subitem-"+str(i)+'-'+str(j)+'-'+str(_z)
-                            sub_item.link=b''.join([b"link"+bytes(str(i), 'utf-8')+bytes(str(_j), 'utf-8')+bytes(str(_z), 'utf-8')  for z in range(0, i+_j+_z) ])
+                            sub_item.name = "subitem-" + str(i) + '-' + str(j) + '-' + str(_z)
+                            sub_item.link = b''.join(
+                                [b"link" + bytes(str(i), 'utf-8') + bytes(str(_j), 'utf-8') + bytes(str(_z), 'utf-8')
+                                 for z in range(0, i + _j + _z)])
                             item.filesystem.branch.append(sub_item)
-                            
+
                 else:
-                    
+
                     block = buffer_pb2.Buffer.Block()
                     h = buffer_pb2.Buffer.Block.Hash()
                     if _with_hash: h.type = Enviroment.hash_type
-                    h.value = sha3_256(b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8')).digest()
+                    h.value = sha3_256(b"block" + bytes(str(i), 'utf-8') + bytes(str(j), 'utf-8')).digest()
                     block1.hashes.append(h)
 
-                    if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8')).hexdigest()):
-                        with open(Enviroment.block_dir + sha3_256(b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8')).hexdigest(), 'wb') as file:
+                    if not os.path.isfile(Enviroment.block_dir + sha3_256(
+                            b"block" + bytes(str(i), 'utf-8') + bytes(str(j), 'utf-8')).hexdigest()):
+                        with open(Enviroment.block_dir + sha3_256(
+                                b"block" + bytes(str(i), 'utf-8') + bytes(str(j), 'utf-8')).hexdigest(), 'wb') as file:
                             file.write(
-                                b''.join([b"block"+bytes(str(i), 'utf-8')+bytes(str(j), 'utf-8') for z in range(10*j*pow(10, i)) ])
+                                b''.join([b"block" + bytes(str(i), 'utf-8') + bytes(str(j), 'utf-8') for z in
+                                          range(10 * j * pow(10, i))])
                             )
                     item.file = block.SerializeToString()
-                            
-                    
+
                 return item
-            
+
             item4 = ItemBranch()
             item4.filesystem.branch.append(rec(0, 0, with_hash))
-            
+
             item5 = ItemBranch()
             item5.name = "item5"
             item5.filesystem.branch.append(item2)
@@ -352,8 +359,8 @@ class TestGetVarintValue(unittest.TestCase):
             for i in range(100):
                 item5.filesystem.branch.append(
                     ItemBranch(
-                        name = 'item5.'+str(i),
-                        link = 'link5.'+str(i)
+                        name='item5.' + str(i),
+                        link='link5.' + str(i)
                     )
                 )
 
@@ -362,7 +369,6 @@ class TestGetVarintValue(unittest.TestCase):
             filesystem.branch.append(item3)
             filesystem.branch.append(item5)
             return filesystem
-        
 
         object_id, cache_dir = build_multiblock(
             pf_object_with_block_pointers=generate_block(),
