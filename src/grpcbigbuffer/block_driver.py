@@ -67,6 +67,7 @@ def compute_wbp_lengths(tree: Dict[int, Union[Dict, str]], file_list: List[str])
             )
         return lengths
 
+    print('\ntree -> ', tree)
     return {k: v[0] for k, v in __rec_compute_wbp_lengths(_tree=tree, _file_list=file_list).items()}
 
 

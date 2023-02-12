@@ -34,6 +34,9 @@ class TestBlockBuilder(unittest.TestCase):
 
         from grpcbigbuffer.test_pb2 import Filesystem, ItemBranch
 
+        block_lengths: int = pow(10, 3)
+        block_factor_length = 3
+
         block1 = buffer_pb2.Buffer.Block()
         h = buffer_pb2.Buffer.Block.Hash()
         h.type = Enviroment.hash_type
@@ -42,9 +45,11 @@ class TestBlockBuilder(unittest.TestCase):
 
         if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block1").hexdigest()):
             with open(Enviroment.block_dir + sha3_256(b"block1").hexdigest(), 'wb') as file:
-                file.write(
-                    b''.join([b'block1' for i in range(100)])
-                )
+                for c in range(block_factor_length):
+                    file.write(
+                        b''.join([b'block1' for i in range(block_lengths)])
+                    )
+                file.write(b'end')
 
         block2 = buffer_pb2.Buffer.Block()
         h = buffer_pb2.Buffer.Block.Hash()
@@ -54,9 +59,11 @@ class TestBlockBuilder(unittest.TestCase):
 
         if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block2").hexdigest()):
             with open(Enviroment.block_dir + sha3_256(b"block2").hexdigest(), 'wb') as file:
-                file.write(
-                    b''.join([b'block2' for i in range(100)])
-                )
+                for c in range(block_factor_length):
+                    file.write(
+                        b''.join([b'block2' for i in range(block_lengths)])
+                    )
+                file.write(b'end')
 
         block3 = buffer_pb2.Buffer.Block()
         h = buffer_pb2.Buffer.Block.Hash()
@@ -66,9 +73,11 @@ class TestBlockBuilder(unittest.TestCase):
 
         if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block3").hexdigest()):
             with open(Enviroment.block_dir + sha3_256(b"block3").hexdigest(), 'wb') as file:
-                file.write(
-                    b''.join([b'block3' for i in range(100)])
-                )
+                for c in range(block_factor_length):
+                    file.write(
+                        b''.join([b'block3' for i in range(block_lengths)])
+                    )
+                file.write(b'end')
 
         item1 = ItemBranch()
         item1.name = ''.join(['item1' for i in range(1)])
@@ -147,7 +156,6 @@ class TestBlockBuilder(unittest.TestCase):
                         buffer[
                             _e:_e + get_position_length(_e, buffer) + len(encode_bytes(get_position_length(_e, buffer)))
                         ],
-                        buffer[_e:],
                         '\n'
                     )
                     
