@@ -348,14 +348,6 @@ class TestBlockBuilder(unittest.TestCase):
         buff_object = Test()
         buff_object.ParseFromString(buffer)
 
-        def extract_last_elements(json_obj):
-            result = []
-            for _element in json_obj:
-                if type(_element) == list and len(_element) == 2 and type(_element[0]) == str and type(
-                        _element[1]) == list:
-                    result.append(_element[1][-1])
-            return result
-
         for element in _json:
             if type(element) == list:
                 for _e in element[1]:
@@ -370,4 +362,6 @@ class TestBlockBuilder(unittest.TestCase):
 
 if __name__ == '__main__':
     os.system('rm -rf __cache__/*')
-    unittest.main()
+    #unittest.main()
+
+    TestBlockBuilder().test_filesystem()

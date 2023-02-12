@@ -323,6 +323,7 @@ class TestGetVarintValue(unittest.TestCase):
         os.system('rm ' + cache_dir + '/wbp.bin')
         generate_wbp_file(cache_dir)
 
+        print('\n\n parse generated wbp.')
         generated = Filesystem()
         with open(cache_dir + '/wbp.bin', 'rb') as f:
             generated.ParseFromString(

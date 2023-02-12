@@ -67,7 +67,6 @@ def compute_wbp_lengths(tree: Dict[int, Union[Dict, str]], file_list: List[str])
             )
         return lengths
 
-    print('\ntree -> ', tree)
     return {k: v[0] for k, v in __rec_compute_wbp_lengths(_tree=tree, _file_list=file_list).items()}
 
 
@@ -172,9 +171,15 @@ def generate_wbp_file(dirname: str):
 
     blocks: Dict[str, List[int]] = {t[0]: t[1] for t in _json if type(t) == list}
 
+    print('\n blocks -< ', blocks)
+
     tree: Dict[int, Union[Dict, str]] = create_lengths_tree(blocks)
+
+    print('\ntree -> ', tree)
     
     recalculated_lengths: Dict[int, int] = compute_wbp_lengths(tree=tree, file_list=file_list)
+
+    print('\n recalculated lengths -< ', recalculated_lengths)
 
     with open(dirname + '/' + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
         f.write(
