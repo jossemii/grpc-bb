@@ -2,6 +2,7 @@ import os
 import random
 import sys, unittest
 from hashlib import sha3_256
+from typing import List, Tuple
 
 sys.path.append('../src/')
 from grpcbigbuffer import buffer_pb2
@@ -216,7 +217,7 @@ class TestGetVarintValue(unittest.TestCase):
         # Assuming that the build_multiblock_directory() function works correctly (tests/block_builder.py is OK)
         from grpcbigbuffer.test_pb2 import Filesystem, ItemBranch
 
-        def generate_block(with_hash=True):
+        def generate_block(with_hash=True) -> Tuple[Filesystem, List[bytes]]:
             block1 = buffer_pb2.Buffer.Block()
             h = buffer_pb2.Buffer.Block.Hash()
             if with_hash: h.type = Enviroment.hash_type
@@ -253,6 +254,12 @@ class TestGetVarintValue(unittest.TestCase):
                         b''.join([b'block3' for i in range(100)])
                     )
 
+            blocks: List[bytes] = [
+                sha3_256(b"block1").digest(),
+                sha3_256(b"block2").digest(),
+                sha3_256(b"block3").digest()
+            ]
+
             item1 = ItemBranch()
             item1.name = ''.join(['item1' for i in range(1)])
             item1.file = block1.SerializeToString()
@@ -265,7 +272,7 @@ class TestGetVarintValue(unittest.TestCase):
             item3.name = ''.join(['item3' for i in range(10)])
             item3.file = block3.SerializeToString()
 
-            def rec(i, j, _with_hash):
+            def rec(i, j, _with_hash, _blocks: List[bytes]):
                 item = ItemBranch()
                 item.name = 'item4.' + str(i) + '.' + str(j)
                 if i < 4:
@@ -279,7 +286,7 @@ class TestGetVarintValue(unittest.TestCase):
                             item.filesystem.branch.append(sub_item)
 
                         item.filesystem.branch.append(
-                            rec(i + 1, _j, _with_hash)
+                            rec(i + 1, _j, _with_hash, _blocks)
                         )
 
                         for _z in range(5, 10):
@@ -292,11 +299,13 @@ class TestGetVarintValue(unittest.TestCase):
 
                 elif i < 5:
 
-                    block = buffer_pb2.Buffer.Block()
+                    _block = buffer_pb2.Buffer.Block()
                     h = buffer_pb2.Buffer.Block.Hash()
                     if _with_hash: h.type = Enviroment.hash_type
                     h.value = sha3_256(b"block" + bytes(str(i), 'utf-8') + bytes(str(j), 'utf-8')).digest()
-                    block1.hashes.append(h)
+                    _block.hashes.append(h)
+
+                    blocks.append(h.value)
 
                     if not os.path.isfile(Enviroment.block_dir + sha3_256(
                             b"block" + bytes(str(i), 'utf-8') + bytes(str(j), 'utf-8')).hexdigest()):
@@ -306,7 +315,7 @@ class TestGetVarintValue(unittest.TestCase):
                                 b''.join([b"block" + bytes(str(i), 'utf-8') + bytes(str(j), 'utf-8') for z in
                                           range(10 * j * pow(10, i))])
                             )
-                    item.file = block.SerializeToString()
+                    item.file = _block.SerializeToString()
 
                     for _j in range(1, 5):
                         for _z in range(0, 5):
@@ -318,7 +327,7 @@ class TestGetVarintValue(unittest.TestCase):
                             item.filesystem.branch.append(sub_item)
 
                         item.filesystem.branch.append(
-                            rec(i + 1, _j, _with_hash)
+                            rec(i + 1, _j, _with_hash, _blocks)
                         )
 
                         for _z in range(5, 10):
@@ -331,11 +340,13 @@ class TestGetVarintValue(unittest.TestCase):
 
                 else:
 
-                    block = buffer_pb2.Buffer.Block()
+                    _block = buffer_pb2.Buffer.Block()
                     h = buffer_pb2.Buffer.Block.Hash()
                     if _with_hash: h.type = Enviroment.hash_type
                     h.value = sha3_256(b"block" + bytes(str(i), 'utf-8') + bytes(str(j), 'utf-8')).digest()
-                    block1.hashes.append(h)
+                    _block.hashes.append(h)
+
+                    blocks.append(h.value)
 
                     if not os.path.isfile(Enviroment.block_dir + sha3_256(
                             b"block" + bytes(str(i), 'utf-8') + bytes(str(j), 'utf-8')).hexdigest()):
@@ -345,12 +356,12 @@ class TestGetVarintValue(unittest.TestCase):
                                 b''.join([b"block" + bytes(str(i), 'utf-8') + bytes(str(j), 'utf-8') for z in
                                           range(10 * j * pow(10, i))])
                             )
-                    item.file = block.SerializeToString()
+                    item.file = _block.SerializeToString()
 
                 return item
 
             item4 = ItemBranch()
-            item4.filesystem.branch.append(rec(0, 0, with_hash))
+            item4.filesystem.branch.append(rec(0, 0, _with_hash=with_hash, _blocks=blocks))
 
             item5 = ItemBranch()
             item5.name = "item5"
@@ -364,21 +375,36 @@ class TestGetVarintValue(unittest.TestCase):
                     )
                 )
 
-            filesystem: Filesystem = Filesystem()
-            filesystem.branch.append(item1)
-            filesystem.branch.append(item3)
-            filesystem.branch.append(item5)
-            return filesystem
+            _filesystem: Filesystem = Filesystem()
+            _filesystem.branch.append(item1)
+            _filesystem.branch.append(item3)
+            _filesystem.branch.append(item5)
 
+            import math
+            def convert_size(size_bytes):
+                if size_bytes == 0:
+                    return "0B"
+                size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+                i = int(math.floor(math.log(size_bytes, 1024)))
+                p = math.pow(1024, i)
+                s = round(size_bytes / p, 2)
+                return "%s %s" % (s, size_name[i])
+
+            if with_hash:
+                print('filesystem ->  ', _filesystem)
+                print('blocks -> ', blocks)
+                print('filesystem size -> ', convert_size(_filesystem.ByteSize()))
+            return _filesystem, blocks
+
+        filesystem, blocks = generate_block()
+
+        print('\n build multiblock')
         object_id, cache_dir = build_multiblock(
-            pf_object_with_block_pointers=generate_block(),
-            blocks=[
-                sha3_256(b"block1").digest(),
-                sha3_256(b"block2").digest(),
-                sha3_256(b"block3").digest()
-            ]
+            pf_object_with_block_pointers=filesystem,
+            blocks=blocks
         )
 
+        print('\n generate wbp file')
         # Test generate_wbp_file
         from grpcbigbuffer.block_driver import generate_wbp_file
         os.system('rm ' + cache_dir + '/wbp.bin')
@@ -392,9 +418,10 @@ class TestGetVarintValue(unittest.TestCase):
 
         # Ahora se realiza el assertEqual entre generated y el _object sin especificar el tipo de hash.
 
-        self.assertEqual(generate_block(with_hash=False), generated)
+        self.assertEqual(generate_block(with_hash=False)[0], generated)
 
 
 if __name__ == "__main__":
     os.system('rm -rf __cache__/*')
-    unittest.main()
+    #unittest.main()
+    TestGetVarintValue().test_complex_filesystem_generate_wbp_file()
