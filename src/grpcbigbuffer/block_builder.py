@@ -299,27 +299,19 @@ def build_multiblock(
         container=container
     )
 
-    print('\ncontainer -< ', container)
-
     tree: Dict[int, Union[Dict, str]] = create_lengths_tree(
         pointer_container=container
     )
-
-    print('\n tree -< ', tree)
 
     real_lengths: Dict[int, Tuple[int, int, bool]] = compute_real_lengths(
         tree=tree,
         buffer=pf_object_with_block_pointers.SerializeToString()
     )
 
-    print('\n real lengths -< ', real_lengths)
-
     new_buff: List[bytes] = generate_buffer(
         buffer=pf_object_with_block_pointers.SerializeToString(),
         lengths=real_lengths
     )
-
-    print('\n new bufffer -< ', new_buff)
 
     object_id: bytes = generate_id(
         buffers=new_buff,
@@ -341,10 +333,6 @@ def build_multiblock(
         container=container_real_lengths,
         real_lengths=real_lengths
     )
-
-    print('\n container real lengths -> ', container_real_lengths)
-
-    print('\n\n\n')
 
     for i, (b1, b2) in enumerate(zip_longest(new_buff, container_real_lengths.keys())):
         _json.append(i + 1)

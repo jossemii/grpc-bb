@@ -362,6 +362,4 @@ class TestBlockBuilder(unittest.TestCase):
 
 if __name__ == '__main__':
     os.system('rm -rf __cache__/*')
-    #unittest.main()
-
-    TestBlockBuilder().test_filesystem()
+    unittest.main()

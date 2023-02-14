@@ -8,8 +8,7 @@ from grpcbigbuffer.utils import BLOCK_LENGTH, METADATA_FILE_NAME, WITHOUT_BLOCK_
 
 
 def get_pruned_block_length(block_name: str) -> int:
-    block_size: int = os.path.getsize(Enviroment.block_dir + block_name)
-    return block_size + len(encode_bytes(block_size)) - BLOCK_LENGTH - 2*len(encode_bytes(BLOCK_LENGTH))
+    return os.path.getsize(Enviroment.block_dir + block_name) - BLOCK_LENGTH
 
 
 def get_varint_at_position(position, file_list) -> int:
@@ -155,7 +154,6 @@ def generate_wbp_file(dirname: str):
             Tuple[str, List[int]]
         ]] = json.load(f)
 
-    print('_json -> ', _json)
     buffer: List[Union[bytes, str]] = []
     file_list: List[str] = []
     for e in _json:
@@ -171,15 +169,9 @@ def generate_wbp_file(dirname: str):
 
     blocks: Dict[str, List[int]] = {t[0]: t[1] for t in _json if type(t) == list}
 
-    print('\n blocks -< ', blocks)
-
     tree: Dict[int, Union[Dict, str]] = create_lengths_tree(blocks)
-
-    print('\ntree -> ', tree)
     
     recalculated_lengths: Dict[int, int] = compute_wbp_lengths(tree=tree, file_list=file_list)
-
-    print('\n recalculated lengths -< ', recalculated_lengths)
 
     with open(dirname + '/' + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
         f.write(

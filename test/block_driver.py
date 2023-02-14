@@ -4,6 +4,8 @@ import sys, unittest
 from hashlib import sha3_256
 from typing import List, Tuple
 
+import google.protobuf.message
+
 sys.path.append('../src/')
 from grpcbigbuffer import buffer_pb2
 from grpcbigbuffer.block_builder import build_multiblock, get_position_length
@@ -305,8 +307,6 @@ class TestGetVarintValue(unittest.TestCase):
                 s = round(size_bytes / p, 2)
                 return "%s %s" % (s, size_name[i])
 
-            if with_hash:
-                print('filesystem size -> ', convert_size(_filesystem.ByteSize()))
             return _filesystem, _blocks
 
         filesystem, blocks = generate_block()
@@ -323,7 +323,6 @@ class TestGetVarintValue(unittest.TestCase):
         os.system('rm ' + cache_dir + '/wbp.bin')
         generate_wbp_file(cache_dir)
 
-        print('\n\n parse generated wbp.')
         generated = Filesystem()
         with open(cache_dir + '/wbp.bin', 'rb') as f:
             generated.ParseFromString(
@@ -331,11 +330,9 @@ class TestGetVarintValue(unittest.TestCase):
             )
 
         # Ahora se realiza el assertEqual entre generated y el _object sin especificar el tipo de hash.
-
         self.assertEqual(generate_block(with_hash=False)[0], generated)
 
 
 if __name__ == "__main__":
     os.system('rm -rf __cache__/*')
-    #unittest.main()
-    TestGetVarintValue().test_complex_filesystem_generate_wbp_file()
+    unittest.main()
