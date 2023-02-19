@@ -1,3 +1,4 @@
 grpcbigbuffer.egg-info
 __pycache__
-test/__cache__/
+test/__cache__/*
+test/__block__/*

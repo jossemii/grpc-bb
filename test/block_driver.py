@@ -220,7 +220,7 @@ class TestGetVarintValue(unittest.TestCase):
         from grpcbigbuffer.test_pb2 import Filesystem, ItemBranch
 
         def generate_block(with_hash=True) -> Tuple[Filesystem, List[bytes]]:
-            block_lengths: int = pow(10, 3)
+            block_lengths: int = pow(10, 6)
             block_factor_length = 3
 
             block1 = buffer_pb2.Buffer.Block()
@@ -266,23 +266,23 @@ class TestGetVarintValue(unittest.TestCase):
                     file.write(b'end')
 
             item1 = ItemBranch()
-            item1.name = ''.join(['item1' for i in range(1)])
+            item1.name = ''.join(['item1' for i in range(pow(10, 7))])
             item1.file = block1.SerializeToString()
 
             item2 = ItemBranch()
-            item2.name = ''.join(['item2' for i in range(100)])
+            item2.name = ''.join(['item2' for i in range(pow(10, 7))])
             item2.file = block2.SerializeToString()
 
             item3 = ItemBranch()
-            item3.name = ''.join(['item3' for i in range(10)])
+            item3.name = ''.join(['item3' for i in range(pow(10, 7))])
             item3.file = block3.SerializeToString()
 
             item4 = ItemBranch()
-            item4.name = "item4"
+            item4.name = ''.join(['item4' for i in range(pow(10, 7))])
             item4.link = "item4"
 
             item5 = ItemBranch()
-            item5.name = "item5"
+            item5.name = ''.join(['item5' for i in range(pow(10, 7))])
             item5.filesystem.branch.append(item2)
             item5.filesystem.branch.append(item4)
 
@@ -307,6 +307,10 @@ class TestGetVarintValue(unittest.TestCase):
                 s = round(size_bytes / p, 2)
                 return "%s %s" % (s, size_name[i])
 
+            byte_size = _filesystem.ByteSize() + sum([os.path.getsize(b) for b in os.scandir('__block__')])
+            print('\nIndividual sizes -< ', _filesystem.ByteSize(), [os.path.getsize(b) for b in os.scandir('__block__')])
+            print('Size -> ', byte_size, convert_size(byte_size))
+
             return _filesystem, _blocks
 
         filesystem, blocks = generate_block()
@@ -323,6 +327,7 @@ class TestGetVarintValue(unittest.TestCase):
         os.system('rm ' + cache_dir + '/wbp.bin')
         generate_wbp_file(cache_dir)
 
+        print('\n Read generated wbp file.')
         generated = Filesystem()
         with open(cache_dir + '/wbp.bin', 'rb') as f:
             generated.ParseFromString(
@@ -335,4 +340,6 @@ class TestGetVarintValue(unittest.TestCase):
 
 if __name__ == "__main__":
     os.system('rm -rf __cache__/*')
-    unittest.main()
+    os.system('rm -rf __block__/*')
+    #unittest.main()
+    TestGetVarintValue().test_complex_filesystem_generate_wbp_file()
