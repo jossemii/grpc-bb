@@ -4,7 +4,7 @@ import sys, unittest
 from hashlib import sha3_256
 from typing import List, Tuple
 
-import google.protobuf.message
+from TestRealFilesystemCompileBuffer import TestRealFilesystemCompiledBuffer
 
 sys.path.append('../src/')
 from grpcbigbuffer import buffer_pb2
@@ -37,6 +37,8 @@ class TestGetVarintValue(unittest.TestCase):
         value = get_position_length(2, buffer)
         self.assertEqual(value, 448)
 
+
+class TestWBPFileGeneration(unittest.TestCase):
     def test_object_generate_wbp_file(self):
         # Assuming that the build_multiblock_directory() function works correctly (tests/block_builder.py is OK)
         from grpcbigbuffer.test_pb2 import Test
@@ -341,5 +343,4 @@ class TestGetVarintValue(unittest.TestCase):
 if __name__ == "__main__":
     os.system('rm -rf __cache__/*')
     os.system('rm -rf __block__/*')
-    #unittest.main()
-    TestGetVarintValue().test_complex_filesystem_generate_wbp_file()
+    TestRealFilesystemCompiledBuffer().test()
