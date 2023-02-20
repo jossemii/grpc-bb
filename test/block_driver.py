@@ -3,10 +3,10 @@ import random
 import sys, unittest
 from hashlib import sha3_256
 from typing import List, Tuple
+sys.path.append('../src/')
 
 from TestRealFilesystemCompileBuffer import TestRealFilesystemCompiledBuffer
 
-sys.path.append('../src/')
 from grpcbigbuffer import buffer_pb2
 from grpcbigbuffer.block_builder import build_multiblock, get_position_length
 from grpcbigbuffer.client import Enviroment

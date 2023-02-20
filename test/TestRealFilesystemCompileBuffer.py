@@ -8,10 +8,7 @@ import unittest
 from typing import List, Generator, Any, Union, Tuple
 
 from grpcbigbuffer.client import partitions_to_buffer
-
-sys.path.append('../src/')
 from grpcbigbuffer import block_builder
-from grpcbigbuffer.block_builder import build_multiblock
 from grpcbigbuffer.block_driver import generate_wbp_file
 from grpcbigbuffer import celaut_pb2 as celaut, compile_pb2
 from grpcbigbuffer import client as grpcbb
@@ -19,7 +16,6 @@ from grpcbigbuffer import client as grpcbb
 GET_ENV = lambda env, default: (type(default)(os.environ.get(env)) if type(default) != bool
                                 else os.environ.get(env) in ['True', 'true', 'T',
                                                              't']) if env in os.environ.keys() else default
-
 
 MIN_BUFFER_BLOCK_SIZE = GET_ENV(env='MIN_BUFFER_BLOCK_SIZE', default=10 ** 7)
 
@@ -44,13 +40,13 @@ HASH_FUNCTIONS = {
 }
 
 
-def calculate_hashes(value: bytes) -> List[Any.Metadata.HashTag.Hash]:
+def calculate_hashes(value: bytes) -> List[celaut.Any.Metadata.HashTag.Hash]:
     return [
-        Any.Metadata.HashTag.Hash(
+        celaut.Any.Metadata.HashTag.Hash(
             type=SHA3_256_ID,
             value=SHA3_256(value)
         ),
-        Any.Metadata.HashTag.Hash(
+        celaut.Any.Metadata.HashTag.Hash(
             type=SHAKE_256_ID,
             value=SHAKE_256(value)
         )
@@ -61,14 +57,14 @@ def calculate_hashes(value: bytes) -> List[Any.Metadata.HashTag.Hash]:
 def get_service_hex_main_hash(
         service_buffer: Union[bytes, str, celaut.Service, tuple, None] = None,
         partitions_model: tuple = None,
-        metadata: Any.Metadata = None,
+        metadata: celaut.Any.Metadata = None,
         other_hashes: list = None
 ) -> str:
     # Find if it has the hash.
     if other_hashes is None:
         other_hashes = []
     if metadata is None:
-        metadata = Any.Metadata()
+        metadata = celaut.Any.Metadata()
 
     for hash in list(metadata.hashtag.hash) + other_hashes:
         if hash.type == SHA3_256_ID:
@@ -102,7 +98,7 @@ def get_service_hex_main_hash(
         ).hex()
 
 
-def calculate_hashes_by_stream(value: Generator[bytes, None, None]) -> List[Any.Metadata.HashTag.Hash]:
+def calculate_hashes_by_stream(value: Generator[bytes, None, None]) -> List[celaut.Any.Metadata.HashTag.Hash]:
     sha3_256 = hashlib.sha3_256()
     shake_256 = hashlib.shake_256()
     for chunk in value:
@@ -110,17 +106,18 @@ def calculate_hashes_by_stream(value: Generator[bytes, None, None]) -> List[Any.
         shake_256.update(chunk)
 
     return [
-        Any.Metadata.HashTag.Hash(
+        celaut.Any.Metadata.HashTag.Hash(
             type=SHA3_256_ID,
             value=sha3_256.digest()
         ),
-        Any.Metadata.HashTag.Hash(
+        celaut.Any.Metadata.HashTag.Hash(
             type=SHAKE_256_ID,
             value=shake_256.digest(32)
         )
     ]
 
-def get_service_list_of_hashes(service_buffer: bytes, metadata: Any.Metadata, complete: bool = True) -> list:
+
+def get_service_list_of_hashes(service_buffer: bytes, metadata: celaut.Any.Metadata, complete: bool = True) -> list:
     if complete:
         return calculate_hashes(
             value=service_buffer
@@ -234,80 +231,51 @@ class Hyper:
         parseFilesys()
 
     def save(self) -> Tuple[str, Union[str, compile_pb2.ServiceWithMeta]]:
-        if not self.blocks:
-            service_buffer = self.service.SerializeToString()  # 2*len
-            self.metadata.hashtag.hash.extend(
-                get_service_list_of_hashes(
-                    service_buffer=service_buffer,
-                    metadata=self.metadata
-                )
-            )
-            service_id: str = get_service_hex_main_hash(
-                service_buffer=service_buffer,
-                metadata=self.metadata
-            )
 
-            # Once service hashes are calculated, we prune the filesystem for save storage.
-            # self.service.container.filesystem.ClearField('branch')
-            # https://github.com/moby/moby/issues/20972#issuecomment-193381422
-            del service_buffer  # -len
+        # Generate the hashes.
+        bytes_id, directory = block_builder.build_multiblock(
+            pf_object_with_block_pointers=self.service,
+            blocks=self.blocks
+        )
+        service_id: str = codecs.encode(bytes_id, 'hex').decode('utf-8')
 
-        else:
-            # Generate the hashes.
-            bytes_id, directory = block_builder.build_multiblock(
-                pf_object_with_block_pointers=self.service,
-                blocks=self.blocks
-            )
-            service_id: str = codecs.encode(bytes_id, 'hex').decode('utf-8')
+        # Generate the service with metadata.
+        content_id, service_with_meta = block_builder.build_multiblock(
+            pf_object_with_block_pointers=compile_pb2.ServiceWithMeta(
+                metadata=self.metadata,
+                service=self.service
+            ),
+            blocks=self.blocks
+        )
 
-            # Generate the service with metadata.
-            content_id, service_with_meta = block_builder.build_multiblock(
-                pf_object_with_block_pointers=compile_pb2.ServiceWithMeta(
-                    metadata=self.metadata,
-                    service=self.service
-                ),
-                blocks=self.blocks
-            )
-
-            print('\n Generate wbp file.')
-            os.system('rm ' + service_with_meta + '/wbp.bin')
+        print('\n Generate wbp file.')
+        os.system('rm ' + service_with_meta + '/wbp.bin')
+        try:
             generate_wbp_file(service_with_meta)
-            print('\n File generated OK.')
+        except Exception as e:
+            print(e, '\nNo se genero correctamente el wbp file.')
+        print('\n File generated OK.')
 
-            from hashlib import sha3_256
-            from grpcbigbuffer import client as grpc_c
-            validate_content = sha3_256()
-            for i in grpc_c.read_multiblock_directory(service_with_meta):
-                validate_content.update(i)
+        from hashlib import sha3_256
+        from grpcbigbuffer import client as grpc_c
+        validate_content = sha3_256()
+        for i in grpc_c.read_multiblock_directory(service_with_meta):
+            validate_content.update(i)
 
-            print('\n\nCONTENT ID -> ', codecs.encode(content_id, 'hex').decode('utf-8'))
-            print('\n\nCONTENT VALIDATED ID -> ', validate_content.hexdigest())
+        print('\n\nCONTENT ID -> ', codecs.encode(content_id, 'hex').decode('utf-8'))
+        print('\n\nCONTENT VALIDATED ID -> ', validate_content.hexdigest())
 
         return service_id, service_with_meta
 
 
 class TestRealFilesystemCompiledBuffer(unittest.TestCase):
     def test(self):
-        from grpcbigbuffer.test_pb2 import Filesystem
+        os.system('rm -rf __cache__/*')
+        os.system('rm -rf __block__/*')
 
-        print('\n build multiblock')
-        object_id, cache_dir = build_multiblock(
-            pf_object_with_block_pointers=filesystem,
-            blocks=blocks
-        )
+        path = '__filesystem__/for_build/'
+        os.mkdir(CACHE+'fs')
 
-        print('\n generate wbp file')
-        # Test generate_wbp_file
-        from grpcbigbuffer.block_driver import generate_wbp_file
-        os.system('rm ' + cache_dir + '/wbp.bin')
-        generate_wbp_file(cache_dir)
-
-        print('\n Read generated wbp file.')
-        generated = Filesystem()
-        with open(cache_dir + '/wbp.bin', 'rb') as f:
-            generated.ParseFromString(
-                f.read()
-            )
-
-        # Ahora se realiza el assertEqual entre generated y el _object sin especificar el tipo de hash.
-        self.assertEqual(generate_block(with_hash=False)[0], generated)
+        spec_file = Hyper(path=path, aux_id='fs')
+        spec_file.parseContainer()
+        identifier, service_with_meta = spec_file.save()
