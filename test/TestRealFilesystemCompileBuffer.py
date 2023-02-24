@@ -127,20 +127,55 @@ def get_service_list_of_hashes(service_buffer: bytes, metadata: celaut.Any.Metad
 
 
 class Hyper:
-    def __init__(self, path, aux_id):
+    def __init__(self, path, aux_id, build_it):
         super().__init__()
         self.blocks: List[bytes] = []
         self.service = compile_pb2.Service()
         self.metadata = celaut.Any.Metadata()
         self.path = path
         self.aux_id = aux_id
+        self.build_it = build_it
+
+        if self.build_it:
+            self.json = json.load(open(self.path + "service.json", "r"))
+            arch = None
+            for a in COMPILER_SUPPORTED_ARCHITECTURES:
+                if self.json.get('architecture') in a: arch = a[0]
+
+            if not arch: raise Exception("Can't compile this service, not supported architecture.")
+
+            # Directories are created on cache.
+            os.system("mkdir " + CACHE + self.aux_id + "/building")
+            os.system("mkdir " + CACHE + self.aux_id + "/filesystem")
+
+            # Build container and get compressed layers.
+            if not os.path.isfile(self.path + 'Dockerfile'): raise Exception("Error: Dockerfile no encontrado.")
+            os.system(
+                DOCKER_COMMAND + ' buildx build --platform ' + arch + ' --no-cache -t builder' + self.aux_id + ' ' + self.path)
+            os.system(
+                DOCKER_COMMAND + " save builder" + self.aux_id + " > " + CACHE + self.aux_id + "/building/container.tar")
+            os.system(
+                "tar -xvf " + CACHE + self.aux_id + "/building/container.tar -C " + CACHE + self.aux_id + "/building/")
+
+            self.buffer_len = int(
+                subprocess.check_output([DOCKER_COMMAND + " image inspect builder" + aux_id + " --format='{{.Size}}'"],
+                                        shell=True))
 
     def parseContainer(self):
         def parseFilesys() -> celaut.Any.Metadata.HashTag:
+            if self.build_it:
+                # Save his filesystem on cache.
+                for layer in os.listdir(CACHE + self.aux_id + "/building/"):
+                    if os.path.isdir(CACHE + self.aux_id + "/building/" + layer):
+                        print('Unzipping layer ' + layer)
+                        os.system(
+                            "tar -xvf " + CACHE + self.aux_id + "/building/" + layer + "/layer.tar -C "
+                            + CACHE + self.aux_id + "/filesystem/"
+                        )
 
             # Add filesystem data to filesystem buffer object.
             def recursive_parsing(directory: str) -> celaut.Service.Container.Filesystem:
-                host_dir = self.path
+                host_dir = CACHE + self.aux_id + "/filesystem" if self.build_it else self.path
                 filesystem = celaut.Service.Container.Filesystem()
                 for b_name in os.listdir(host_dir + directory):
                     if b_name == '.wh..wh..opq':
@@ -163,6 +198,7 @@ class Hyper:
                                 branch.file = file.read()
 
                         else:
+                            print(directory, '            ', os.path.getsize(host_dir + directory + b_name))
                             block_hash, block = block_builder.create_block(file_path=host_dir + directory + b_name)
                             branch.file = block.SerializeToString()
                             if block_hash not in self.blocks:
@@ -216,6 +252,7 @@ class Hyper:
             blocks=self.blocks
         )
 
+        print('\nBloques -> ', self.blocks)
         print('\n Generate wbp file.')
         os.system('rm ' + service_with_meta + '/wbp.bin')
         try:
@@ -241,9 +278,9 @@ class TestRealFilesystemCompiledBuffer(unittest.TestCase):
         os.system('rm -rf __cache__/*')
         os.system('rm -rf __block__/*')
 
-        path = '__filesystem__/filesystem/'
+        path = '__filesystem__/for_build/'
         os.mkdir(CACHE+'fs')
 
-        spec_file = Hyper(path=path, aux_id='fs')
+        spec_file = Hyper(path=path, aux_id='fs', build_it=True)
         spec_file.parseContainer()
         identifier, service_with_meta = spec_file.save()
