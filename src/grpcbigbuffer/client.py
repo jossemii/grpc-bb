@@ -77,6 +77,17 @@ def move_to_block_dir(file_hash: str, file_path: str) -> bool:
     return False
 
 
+def copy_to_block_dir(file_hash: str, file_path: str) -> bool:
+    if not block_exists(block_id=file_hash) and os.path.isfile(file_path):
+        try:
+            destination_path = os.path.join(Enviroment.block_dir, file_hash)
+            shutil.copyfile(file_path, destination_path)
+            return True
+        except Exception as e:
+            raise Exception('gRPCbb error creating block, file could not be moved: ' + str(e))
+    return False
+
+
 def signal_block_buffer_stream(hash: str):
     # Receiver sends the Buffer with block attr. for stops the block buffer stream.
     pass  # Sends Buffer(block=Block())
