@@ -9,7 +9,7 @@ from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
 from google.protobuf.pyext._message import RepeatedCompositeContainer
 
-from grpcbigbuffer.client import generate_random_dir, block_exists, move_to_block_dir
+from grpcbigbuffer.client import generate_random_dir, block_exists, move_to_block_dir, copy_to_block_dir
 from grpcbigbuffer.utils import Enviroment, CHUNK_SIZE, METADATA_FILE_NAME, WITHOUT_BLOCK_POINTERS_FILE_NAME, \
     get_file_hash, create_lengths_tree, encode_bytes
 
@@ -84,7 +84,8 @@ def search_on_message_real(
                 try:
                     message_size = real_lengths[position][0]
                 except KeyError:
-                    raise Exception('gRPCbb block builder error, real lengths not in '+str(position)+'. '+str(real_lengths))
+                    raise Exception(
+                        'gRPCbb block builder error, real lengths not in ' + str(position) + '. ' + str(real_lengths))
                 search_on_message_real(
                     message=element,
                     pointers=pointers + [real_position + 1],
@@ -106,7 +107,8 @@ def search_on_message_real(
             try:
                 message_size = real_lengths[position][0]
             except KeyError:
-                raise Exception('gRPCbb block builder error, real lengths not in '+str(position)+'. '+str(real_lengths))
+                raise Exception(
+                    'gRPCbb block builder error, real lengths not in ' + str(position) + '. ' + str(real_lengths))
             search_on_message_real(
                 message=value,
                 pointers=pointers + [real_position + 1],
@@ -131,16 +133,18 @@ def search_on_message_real(
             position += 1
             try:
                 if (real_lengths[position][0] != block_length):
-                    raise Exception('Error on gRPCbb: block_builder method computing real message positions. ', position, real_lengths[position], block_length)
+                    raise Exception('Error on gRPCbb: block_builder method computing real message positions. ',
+                                    position, real_lengths[position], block_length)
             except KeyError:
-                raise Exception('gRPCbb block builder error, real lengths not in '+str(position)+'. '+str(real_lengths))
+                raise Exception(
+                    'gRPCbb block builder error, real lengths not in ' + str(position) + '. ' + str(real_lengths))
             position += len(encode_bytes(block.ByteSize())) + block.ByteSize()
             real_position += 1 + len(encode_bytes(block_length)) + block_length
-            
-        elif type(value) == bytes or type(value) == str:            
+
+        elif type(value) == bytes or type(value) == str:
             position += 1 + len(encode_bytes(len(value))) + len(value)
             real_position += 1 + len(encode_bytes(len(value))) + len(value)
-            
+
         else:
             try:
                 temp_message = type(message)()
@@ -354,10 +358,17 @@ def build_multiblock(
     return object_id, cache_dir
 
 
-def create_block(file_path: str) -> Tuple[bytes, buffer_pb2.Buffer.Block]:
+def create_block(file_path: str, copy: bool = True) -> Tuple[bytes, buffer_pb2.Buffer.Block]:
     file_hash: str = get_file_hash(file_path=file_path)
     if not block_exists(block_id=file_hash):
-        if not move_to_block_dir(file_hash=file_hash, file_path=file_path):
+        if copy and not copy_to_block_dir(
+                file_hash=file_hash,
+                file_path=file_path
+        ) or \
+                not copy and not move_to_block_dir(
+            file_hash=file_hash,
+            file_path=file_path
+        ):
             raise Exception('gRPCbb error creating block, file could not be moved.')
 
     file_hash: bytes = bytes.fromhex(file_hash)
