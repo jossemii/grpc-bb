@@ -358,7 +358,7 @@ def build_multiblock(
     return object_id, cache_dir
 
 
-def create_block(file_path: str, copy: bool = True) -> Tuple[bytes, buffer_pb2.Buffer.Block]:
+def create_block(file_path: str, copy: bool = False) -> Tuple[bytes, buffer_pb2.Buffer.Block]:
     file_hash: str = get_file_hash(file_path=file_path)
     if not block_exists(block_id=file_hash):
         if copy and not copy_to_block_dir(
