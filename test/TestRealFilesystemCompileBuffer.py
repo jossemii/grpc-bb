@@ -7,6 +7,7 @@ import sys
 import unittest
 from typing import List, Generator, Any, Union, Tuple
 
+sys.path.append('../src/')
 from grpcbigbuffer.client import partitions_to_buffer
 from grpcbigbuffer import block_builder
 from grpcbigbuffer.block_driver import generate_wbp_file
@@ -116,6 +117,18 @@ def calculate_hashes_by_stream(value: Generator[bytes, None, None]) -> List[cela
         )
     ]
 
+def get_dir_size(path='.'):
+    total = 0
+    with os.scandir(path) as it:
+        for entry in it:
+            if entry.is_symlink():
+                pass
+            elif entry.is_file():
+                total += entry.stat().st_size
+            elif entry.is_dir():
+                total += get_dir_size(entry.path)
+    return total
+
 
 def get_service_list_of_hashes(service_buffer: bytes, metadata: celaut.Any.Metadata, complete: bool = True) -> list:
     if complete:
@@ -184,6 +197,10 @@ class Hyper:
                     branch = celaut.Service.Container.Filesystem.ItemBranch()
                     branch.name = os.path.basename(b_name)
 
+                    if len(branch.name) == 0:
+                        print('ALERT -NAME  ')
+                        continue
+
                     # It's a link.
                     if os.path.islink(host_dir + directory + b_name):
                         branch.link.dst = directory + b_name
@@ -191,24 +208,40 @@ class Hyper:
                                           len(host_dir):] if host_dir in os.path.realpath(
                             host_dir + directory + b_name) else os.path.realpath(host_dir + directory + b_name)
 
+                        if branch.link.ByteSize() == 0 or len(branch.link.dst) == 0 or len(branch.link.src) == 0:
+                            print('ALERT - LINK ', directory + b_name)
+                            continue
+
                     # It's a file.
                     elif os.path.isfile(host_dir + directory + b_name):
                         if os.path.getsize(host_dir + directory + b_name) < MIN_BUFFER_BLOCK_SIZE:
                             with open(host_dir + directory + b_name, 'rb') as file:
                                 branch.file = file.read()
+                            
+                            if len(branch.file) == 0:
+                                # print('4-ALERT.',directory + b_name)
+                                continue
 
                         else:
-                            print(directory, '            ', os.path.getsize(host_dir + directory + b_name))
                             block_hash, block = block_builder.create_block(file_path=host_dir + directory + b_name)
                             branch.file = block.SerializeToString()
+                            if len(branch.file) == 0:
+                                # print('4-ALERT.',directory + b_name)
+                                continue
+
                             if block_hash not in self.blocks:
                                 self.blocks.append(block_hash)
 
                     # It's a folder.
                     elif os.path.isdir(host_dir + directory + b_name):
-                        branch.filesystem.CopyFrom(
-                            recursive_parsing(directory=directory + b_name + '/')
-                        )
+                        branch_filesystem = recursive_parsing(directory=directory + b_name + '/')
+                        if branch_filesystem.ByteSize() > 0:
+                            branch.filesystem.CopyFrom(
+                                branch_filesystem    
+                            )
+                        else:
+                            print('5-ALERT.',directory + b_name)
+                            continue
 
                     filesystem.branch.append(branch)
 
@@ -237,18 +270,20 @@ class Hyper:
     def save(self) -> Tuple[str, Union[str, compile_pb2.ServiceWithMeta]]:
 
         # Generate the hashes.
+        service_with_meta_obj = compile_pb2.ServiceWithMeta(
+                #metadata=self.metadata,
+                service=self.service
+            )
+
         bytes_id, directory = block_builder.build_multiblock(
-            pf_object_with_block_pointers=self.service,
+            pf_object_with_block_pointers=service_with_meta_obj,
             blocks=self.blocks
         )
         service_id: str = codecs.encode(bytes_id, 'hex').decode('utf-8')
 
         # Generate the service with metadata.
         content_id, service_with_meta = block_builder.build_multiblock(
-            pf_object_with_block_pointers=compile_pb2.ServiceWithMeta(
-                metadata=self.metadata,
-                service=self.service
-            ),
+            pf_object_with_block_pointers=service_with_meta_obj,
             blocks=self.blocks
         )
 
@@ -267,9 +302,6 @@ class Hyper:
         for i in grpc_c.read_multiblock_directory(service_with_meta):
             validate_content.update(i)
 
-        print('\n\nCONTENT ID -> ', codecs.encode(content_id, 'hex').decode('utf-8'))
-        print('\n\nCONTENT VALIDATED ID -> ', validate_content.hexdigest())
-
         return service_id, service_with_meta
 
 
@@ -277,10 +309,18 @@ class TestRealFilesystemCompiledBuffer(unittest.TestCase):
     def test(self):
         os.system('rm -rf __cache__/*')
         os.system('rm -rf __block__/*')
+        
+        build_it = False
 
-        path = '__filesystem__/for_build/'
+        path = '__filesystem__/for_build/' if build_it else '__filesystem__/filesystem'
         os.mkdir(CACHE+'fs')
 
-        spec_file = Hyper(path=path, aux_id='fs', build_it=True)
+        spec_file = Hyper(path=path, aux_id='fs', build_it=build_it)
         spec_file.parseContainer()
         identifier, service_with_meta = spec_file.save()
+
+
+if __name__ == "__main__":
+    os.system('rm -rf __cache__/*')
+    os.system('rm -rf __block__/*')
+    TestRealFilesystemCompiledBuffer().test()

@@ -1,4 +1,5 @@
 import os
+import shutil
 import random
 import sys, unittest
 from hashlib import sha3_256
@@ -10,6 +11,30 @@ from TestRealFilesystemCompileBuffer import TestRealFilesystemCompiledBuffer
 from grpcbigbuffer import buffer_pb2
 from grpcbigbuffer.block_builder import build_multiblock, get_position_length
 from grpcbigbuffer.client import Enviroment
+
+
+def write_filesystem_to_directory(filesystem, directory):
+    """
+    Escribe el sistema de archivos del objeto Filesystem en el directorio especificado.
+    """
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    else:
+        os.system('rm -rf __generated_filesystem__/*')
+    for item_branch in filesystem.branch:
+        item_name = item_branch.name
+        item = item_branch.WhichOneof('item')
+        item_path = os.path.join(directory, item_name)
+        if item == 'file':
+            block = buffer_pb2.Buffer.Block()
+            block.ParseFromString(item_branch.file)
+            block_id: str = os.path.join(Enviroment.block_dir, block.hashes[0].value.hex())
+            shutil.copyfile(block_id, item_path)
+        elif item == 'link':
+            pass
+            # os.symlink(item_branch.link, item_path)
+        elif item == 'filesystem':
+            write_filesystem_to_directory(item_branch.filesystem, item_path)
 
 
 class TestGetVarintValue(unittest.TestCase):
@@ -222,8 +247,12 @@ class TestWBPFileGeneration(unittest.TestCase):
         from grpcbigbuffer.test_pb2 import Filesystem, ItemBranch
 
         def generate_block(with_hash=True) -> Tuple[Filesystem, List[bytes]]:
-            block_lengths: int = pow(10, 6)
+
+            # BLOQUES
+
+            block_lengths: int = pow(10, 7)
             block_factor_length = 3
+
 
             block1 = buffer_pb2.Buffer.Block()
             h = buffer_pb2.Buffer.Block.Hash()
@@ -239,6 +268,7 @@ class TestWBPFileGeneration(unittest.TestCase):
                         )
                     file.write(b'end')
 
+
             block2 = buffer_pb2.Buffer.Block()
             h = buffer_pb2.Buffer.Block.Hash()
             if with_hash: h.type = Enviroment.hash_type
@@ -252,6 +282,7 @@ class TestWBPFileGeneration(unittest.TestCase):
                             b''.join([b'block2' for i in range(block_lengths)])
                         )
                     file.write(b'end')
+
 
             block3 = buffer_pb2.Buffer.Block()
             h = buffer_pb2.Buffer.Block.Hash()
@@ -267,36 +298,332 @@ class TestWBPFileGeneration(unittest.TestCase):
                         )
                     file.write(b'end')
 
+
+            block6 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block6").digest()
+            block6.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block6").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block6").hexdigest(), 'wb') as file:
+                    for c in range(block_factor_length):
+                        file.write(
+                            b''.join([b'block6' for i in range(block_lengths)])
+                        )
+                    file.write(b'end')
+
+
+            block7 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block7").digest()
+            block7.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block7").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block7").hexdigest(), 'wb') as file:
+                    for c in range(block_factor_length):
+                        file.write(
+                            b''.join([b'block7' for i in range(block_lengths)])
+                        )
+                    file.write(b'end')
+
+
+            block8 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block8").digest()
+            block8.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block8").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block8").hexdigest(), 'wb') as file:
+                    for c in range(block_factor_length):
+                        file.write(
+                            b''.join([b'block8' for i in range(block_lengths)])
+                        )
+                    file.write(b'end')   
+
+
+            block12 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block12").digest()
+            block12.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block12").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block12").hexdigest(), 'wb') as file:
+                    for c in range(block_factor_length):
+                        file.write(
+                            b''.join([b'block12' for i in range(block_lengths)])
+                        )
+                    file.write(b'end')   
+
+
+            block13 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block13").digest()
+            block13.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block13").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block13").hexdigest(), 'wb') as file:
+                    for c in range(block_factor_length):
+                        file.write(
+                            b''.join([b'block13' for i in range(block_lengths)])
+                        )
+                    file.write(b'end')   
+
+
+            block14 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block14").digest()
+            block14.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block14").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block14").hexdigest(), 'wb') as file:
+                    for c in range(block_factor_length):
+                        file.write(
+                            b''.join([b'block14' for i in range(block_lengths)])
+                        )
+                    file.write(b'end')
+
+
+            block15 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block15").digest()
+            block15.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block15").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block15").hexdigest(), 'wb') as file:
+                    for c in range(block_factor_length):
+                        file.write(
+                            b''.join([b'block15' for i in range(block_lengths)])
+                        )
+                    file.write(b'end')                    
+
+
+            block16 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block16").digest()
+            block16.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block16").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block16").hexdigest(), 'wb') as file:
+                    for c in range(block_factor_length):
+                        file.write(
+                            b''.join([b'block16' for i in range(block_lengths)])
+                        )
+                    file.write(b'end')  
+
+
+            block17 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block17").digest()
+            block17.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block17").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block17").hexdigest(), 'wb') as file:
+                    for c in range(block_factor_length):
+                        file.write(
+                            b''.join([b'block17' for i in range(block_lengths)])
+                        )
+                    file.write(b'end')  
+
+
+
+            block18 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block18").digest()
+            block18.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block18").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block18").hexdigest(), 'wb') as file:
+                    for c in range(block_factor_length):
+                        file.write(
+                            b''.join([b'block18' for i in range(block_lengths)])
+                        )
+                    file.write(b'end')  
+
+
+            block19 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block19").digest()
+            block19.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block19").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block19").hexdigest(), 'wb') as file:
+                    for c in range(block_factor_length):
+                        file.write(
+                            b''.join([b'block19' for i in range(block_lengths)])
+                        )
+                    file.write(b'end') 
+
+
+            block20 = buffer_pb2.Buffer.Block()
+            h = buffer_pb2.Buffer.Block.Hash()
+            if with_hash: h.type = Enviroment.hash_type
+            h.value = sha3_256(b"block20").digest()
+            block20.hashes.append(h)
+
+            if not os.path.isfile(Enviroment.block_dir + sha3_256(b"block20").hexdigest()):
+                with open(Enviroment.block_dir + sha3_256(b"block20").hexdigest(), 'wb') as file:
+                    for c in range(block_factor_length):
+                        file.write(
+                            b''.join([b'block20' for i in range(block_lengths)])
+                        )
+                    file.write(b'end') 
+
+
+            # ITEMS
+
             item1 = ItemBranch()
-            item1.name = ''.join(['item1' for i in range(pow(10, 7))])
+            item1.name = ''.join(['item1' for i in range(1)]) #item-name
             item1.file = block1.SerializeToString()
 
             item2 = ItemBranch()
-            item2.name = ''.join(['item2' for i in range(pow(10, 7))])
+            item2.name = ''.join(['item2' for i in range(1)]) #item-name
             item2.file = block2.SerializeToString()
 
             item3 = ItemBranch()
-            item3.name = ''.join(['item3' for i in range(pow(10, 7))])
+            item3.name = ''.join(['item3' for i in range(1)]) #item-name
             item3.file = block3.SerializeToString()
 
             item4 = ItemBranch()
-            item4.name = ''.join(['item4' for i in range(pow(10, 7))])
-            item4.link = "item4"
+            item4.name = ''.join(['item4' for i in range(1)]) #item-name
+            item4.filesystem.branch.append(item1)
+            item4.filesystem.branch.append(item3)
 
             item5 = ItemBranch()
-            item5.name = ''.join(['item5' for i in range(pow(10, 7))])
+            item5.name = ''.join(['item5' for i in range(1)]) #item-name
             item5.filesystem.branch.append(item2)
             item5.filesystem.branch.append(item4)
 
+            item6 = ItemBranch()
+            item6.name = ''.join(['item6' for i in range(1)]) #item-name
+            item6.file = block6.SerializeToString()
+
+            item7 = ItemBranch()
+            item7.name = ''.join(['item7' for i in range(1)]) #item-name
+            item7.file = block7.SerializeToString()
+
+            item8 = ItemBranch()
+            item8.name = ''.join(['item8' for i in range(1)]) #item-name
+            item8.file = block8.SerializeToString()
+
+            item9 = ItemBranch()
+            item9.name = ''.join(['item9' for i in range(1)]) #item-name
+            item9.filesystem.branch.append(item6)
+            item9.filesystem.branch.append(item7)
+
+            item10 = ItemBranch()
+            item10.name = ''.join(['item10' for i in range(1)]) #item-name
+            item10.filesystem.branch.append(item5)
+            item10.filesystem.branch.append(item9)
+
+            
+            item11 = ItemBranch()
+            item11.name = ''.join(['item11' for i in range(1)]) #item-name
+            item11.filesystem.branch.append(item10)
+            item11.filesystem.branch.append(item8)
+            
+
+            item12 = ItemBranch()
+            item12.name = ''.join(['item12' for i in range(1)]) #item-name
+            item12.file = block12.SerializeToString()
+
+
+            item13 = ItemBranch()
+            item13.name = ''.join(['item13' for i in range(1)]) #item-name
+            item13.file = block13.SerializeToString()
+
+
+            item14 = ItemBranch()
+            item14.name = ''.join(['item14' for i in range(1)]) #item-name
+            item14.file = block14.SerializeToString()
+
+            
+            item15 = ItemBranch()
+            item15.name = ''.join(['item15' for i in range(1)]) #item-name
+            item15.file = block15.SerializeToString()
+
+            item16 = ItemBranch()
+            item16.name = ''.join(['item16' for i in range(1)]) #item-name
+            item16.file = block16.SerializeToString()
+
+            item17 = ItemBranch()
+            item17.name = ''.join(['item17' for i in range(1)]) #item-name
+            item17.file = block17.SerializeToString()
+
+
+            item18 = ItemBranch()
+            item18.name = ''.join(['item18' for i in range(1)]) #item-name
+            item18.file = block18.SerializeToString()
+
+
+            item19 = ItemBranch()
+            item19.name = ''.join(['item19' for i in range(1)]) #item-name
+            item19.file = block19.SerializeToString()
+
+
+            item20 = ItemBranch()
+            item20.name = ''.join(['item20' for i in range(1)]) #item-name
+            item20.file = block20.SerializeToString()
+
+
+            item21 = ItemBranch()
+            item21.name = ''.join(['item21' for i in range(1)]) #item-name
+            item21.filesystem.branch.append(item12)
+            item21.filesystem.branch.append(item13)
+            item21.filesystem.branch.append(item14)
+            item21.filesystem.branch.append(item15)
+
+
+            item22 = ItemBranch()
+            item22.name = ''.join(['item22' for i in range(1)]) #item-name
+            item22.filesystem.branch.append(item16)
+            item22.filesystem.branch.append(item17)
+
+
+            item23 = ItemBranch()
+            item23.name = ''.join(['item23' for i in range(1)]) #item-name
+            item23.filesystem.branch.append(item18)
+            item23.filesystem.branch.append(item19)
+            item23.filesystem.branch.append(item21)
+
+
+            item24 = ItemBranch()
+            item24.name = ''.join(['item24' for i in range(1)]) #item-name
+            item24.filesystem.branch.append(item22)
+            item24.filesystem.branch.append(item20)
+            item24.filesystem.branch.append(item23)
+
+
             _filesystem: Filesystem = Filesystem()
-            _filesystem.branch.append(item1)
-            _filesystem.branch.append(item3)
-            _filesystem.branch.append(item5)
+            _filesystem.branch.append(item11)
+            _filesystem.branch.append(item24)
 
             _blocks = [
                 sha3_256(b"block1").digest(),
                 sha3_256(b"block2").digest(),
-                sha3_256(b"block3").digest()
+                sha3_256(b"block3").digest(),
+                sha3_256(b"block6").digest(),
+                sha3_256(b"block7").digest(),
+                sha3_256(b"block8").digest(),
+                sha3_256(b"block12").digest(),
+                sha3_256(b"block13").digest(),
+                sha3_256(b"block14").digest(),
+                sha3_256(b"block15").digest(),
+                sha3_256(b"block16").digest(),
+                sha3_256(b"block17").digest(),
+                sha3_256(b"block18").digest(),
+                sha3_256(b"block19").digest(),
+                sha3_256(b"block20").digest(),
             ]
 
             import math
@@ -318,6 +645,11 @@ class TestWBPFileGeneration(unittest.TestCase):
         filesystem, blocks = generate_block()
 
         print('\n build multiblock')
+        print('\n\n\nBUILD MULTIBLOCK ', filesystem.ByteSize(), '\ncount blocks -> ', len(blocks), '\nblocks -> ', [len(b) for b in blocks], '\n\n')
+
+        write_filesystem_to_directory(filesystem, '__generated_filesystem__')
+        exit()
+
         object_id, cache_dir = build_multiblock(
             pf_object_with_block_pointers=filesystem,
             blocks=blocks
@@ -343,4 +675,4 @@ class TestWBPFileGeneration(unittest.TestCase):
 if __name__ == "__main__":
     os.system('rm -rf __cache__/*')
     os.system('rm -rf __block__/*')
-    TestRealFilesystemCompiledBuffer().test()
+    TestWBPFileGeneration().test_complex_filesystem_generate_wbp_file()
