@@ -79,7 +79,7 @@ def search_on_message_real(
                 position += 1
                 if position not in real_lengths.keys():
                     position += len(encode_bytes(element.ByteSize())) + element.ByteSize()
-                    real_position += len(encode_bytes(element.ByteSize())) + element.ByteSize()
+                    real_position += 1 + len(encode_bytes(element.ByteSize())) + element.ByteSize()
                     continue
                 try:
                     message_size = real_lengths[position][0]
@@ -102,7 +102,7 @@ def search_on_message_real(
             position += 1
             if position not in real_lengths.keys():
                 position += len(encode_bytes(value.ByteSize())) + value.ByteSize()
-                real_position += len(encode_bytes(value.ByteSize())) + value.ByteSize()
+                real_position += 1 + len(encode_bytes(value.ByteSize())) + value.ByteSize()
                 continue
             try:
                 message_size = real_lengths[position][0]
@@ -288,6 +288,10 @@ def generate_id(buffers: List[bytes], blocks: List[bytes]) -> bytes:
                         break
                     hash_id.update(piece)
     return hash_id.digest()
+
+
+def purify_buffer(buff: bytes) -> bytes:
+    return buff
 
 
 def build_multiblock(
