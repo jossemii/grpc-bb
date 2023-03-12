@@ -54,10 +54,6 @@ def compute_wbp_lengths(tree: Dict[int, Union[Dict, str]], file_list: List[str])
                 pruned_length: int = get_pruned_block_length(value)
 
             if pruned_length > position_length:
-                print('\ntree -> ', _tree)
-                print('\npruned length -> ', pruned_length)
-                print('\n position -> ', key)
-                print('\nposition length -> ', position_length)
                 raise Exception("gRPCbb on block_driver compute_wbp_lengths method, "
                                 "the pruned_length can't be greater than the real length.")
             lengths[key] = (
@@ -129,6 +125,7 @@ def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) 
                 new_value=new_value,
             )
 
+    print('replaced lengths.')
     buff: bytes = b''
     for b in buffer:
         if type(b) == bytes:
@@ -144,6 +141,7 @@ def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) 
             if len(block_buff) != BLOCK_LENGTH:
                 raise Exception("gRPCbb regenerate buffer method, incorrect block format.")
             buff += block_buff
+        print('buff -> ', len(buff))
     return buff
 
 
@@ -169,14 +167,9 @@ def generate_wbp_file(dirname: str):
 
     blocks: Dict[str, List[int]] = {t[0]: t[1] for t in _json if type(t) == list}
 
-    print('blocks .> ', blocks)
     tree: Dict[int, Union[Dict, str]] = create_lengths_tree(blocks)
 
-    print('\n tree -> ', tree)
-
     recalculated_lengths: Dict[int, int] = compute_wbp_lengths(tree=tree, file_list=file_list)
-
-    print('\n recalculated_lengths -> ', recalculated_lengths)
 
     with open(dirname + '/' + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
         f.write(
