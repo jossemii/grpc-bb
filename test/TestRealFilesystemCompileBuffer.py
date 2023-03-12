@@ -198,7 +198,6 @@ class Hyper:
                     branch.name = os.path.basename(b_name)
 
                     if len(branch.name) == 0:
-                        print('ALERT -NAME  ')
                         continue
 
                     # It's a link.
@@ -209,7 +208,6 @@ class Hyper:
                             host_dir + directory + b_name) else os.path.realpath(host_dir + directory + b_name)
 
                         if branch.link.ByteSize() == 0 or len(branch.link.dst) == 0 or len(branch.link.src) == 0:
-                            print('ALERT - LINK ', directory + b_name)
                             continue
 
                     # It's a file.
@@ -219,14 +217,12 @@ class Hyper:
                                 branch.file = file.read()
                             
                             if len(branch.file) == 0:
-                                # print('4-ALERT.',directory + b_name)
                                 continue
 
                         else:
                             block_hash, block = block_builder.create_block(file_path=host_dir + directory + b_name)
                             branch.file = block.SerializeToString()
                             if len(branch.file) == 0:
-                                # print('4-ALERT.',directory + b_name)
                                 continue
 
                             if block_hash not in self.blocks:
@@ -240,7 +236,6 @@ class Hyper:
                                 branch_filesystem    
                             )
                         else:
-                            print('5-ALERT.',directory + b_name)
                             continue
 
                     filesystem.branch.append(branch)
@@ -271,7 +266,7 @@ class Hyper:
 
         # Generate the hashes.
         service_with_meta_obj = compile_pb2.ServiceWithMeta(
-                #metadata=self.metadata,
+                metadata=self.metadata,
                 service=self.service
             )
 
