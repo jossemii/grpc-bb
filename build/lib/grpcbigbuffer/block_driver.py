@@ -126,7 +126,6 @@ def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) 
             )
 
     for b in buffer:
-        print('b -> ', len(b))
         if type(b) == bytes:
             yield b
         else:
