@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 import unittest
-from typing import List, Generator, Any, Union, Tuple
+from typing import List, Generator, Union, Tuple
 
 sys.path.append('../src/')
 from grpcbigbuffer.client import partitions_to_buffer
