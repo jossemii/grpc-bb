@@ -1,6 +1,6 @@
 import json
 import os.path
-from typing import Union, List, Tuple, Dict
+from typing import Union, List, Tuple, Dict, Generator
 
 from grpcbigbuffer.buffer_pb2 import Buffer
 from grpcbigbuffer.utils import BLOCK_LENGTH, METADATA_FILE_NAME, WITHOUT_BLOCK_POINTERS_FILE_NAME, Enviroment, \
@@ -114,7 +114,7 @@ def set_varint_value(varint_pos: int, buffer: List[Union[bytes, str]], new_value
     raise Exception('gRPCbb block driver error on set varint value')
 
 
-def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) -> bytes:
+def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) -> Generator[bytes, None, None]:
     """
     Replace real lengths with wbp lengths.
     """
@@ -125,11 +125,10 @@ def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) 
                 new_value=new_value,
             )
 
-    print('replaced lengths.')
-    buff: bytes = b''
     for b in buffer:
+        print('b -> ', len(b))
         if type(b) == bytes:
-            buff += b
+            yield b
         else:
             block_buff = Buffer.Block(
                 hashes=[
@@ -140,9 +139,7 @@ def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) 
             ).SerializeToString()
             if len(block_buff) != BLOCK_LENGTH:
                 raise Exception("gRPCbb regenerate buffer method, incorrect block format.")
-            buff += block_buff
-        print('buff -> ', len(buff))
-    return buff
+            yield block_buff
 
 
 def generate_wbp_file(dirname: str):
@@ -172,6 +169,5 @@ def generate_wbp_file(dirname: str):
     recalculated_lengths: Dict[int, int] = compute_wbp_lengths(tree=tree, file_list=file_list)
 
     with open(dirname + '/' + WITHOUT_BLOCK_POINTERS_FILE_NAME, 'wb') as f:
-        f.write(
-            regenerate_buffer(recalculated_lengths, buffer)
-        )
+        for c in regenerate_buffer(recalculated_lengths, buffer):
+            f.write(c)
