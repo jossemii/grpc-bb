@@ -82,7 +82,7 @@ class Enviroment(type):
     cache_dir = os.path.abspath(os.curdir) + '/__cache__/grpcbigbuffer/'
     block_dir = os.path.abspath(os.curdir) + '/__block__/'
     block_depth = 1
-    mem_manager = lambda _len: MemManager(len=_len)
+    mem_manager = lambda len: MemManager(len=len)
     # SHA3_256
     hash_type: bytes = bytes.fromhex("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a")
 
