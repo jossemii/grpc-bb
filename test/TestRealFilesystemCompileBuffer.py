@@ -220,7 +220,10 @@ class Hyper:
                                 continue
 
                         else:
-                            block_hash, block = block_builder.create_block(file_path=host_dir + directory + b_name)
+                            block_hash, block = block_builder.create_block(
+                                file_path=host_dir + directory + b_name,
+                                copy=True
+                            )
                             branch.file = block.SerializeToString()
                             if len(branch.file) == 0:
                                 continue
