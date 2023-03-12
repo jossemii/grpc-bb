@@ -290,6 +290,10 @@ def generate_id(buffers: List[bytes], blocks: List[bytes]) -> bytes:
     return hash_id.digest()
 
 
+def purify_buffer(buff: bytes) -> bytes:
+    return buff
+
+
 def build_multiblock(
         pf_object_with_block_pointers: Any,
         blocks: List[bytes]
