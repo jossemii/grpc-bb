@@ -79,7 +79,7 @@ def search_on_message_real(
                 position += 1
                 if position not in real_lengths.keys():
                     position += len(encode_bytes(element.ByteSize())) + element.ByteSize()
-                    real_position += len(encode_bytes(element.ByteSize())) + element.ByteSize()
+                    real_position += 1 + len(encode_bytes(element.ByteSize())) + element.ByteSize()
                     continue
                 try:
                     message_size = real_lengths[position][0]
@@ -102,7 +102,7 @@ def search_on_message_real(
             position += 1
             if position not in real_lengths.keys():
                 position += len(encode_bytes(value.ByteSize())) + value.ByteSize()
-                real_position += len(encode_bytes(value.ByteSize())) + value.ByteSize()
+                real_position += 1 + len(encode_bytes(value.ByteSize())) + value.ByteSize()
                 continue
             try:
                 message_size = real_lengths[position][0]
