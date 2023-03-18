@@ -59,7 +59,7 @@ def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
         return False
 
     if b'\n"\x12 \xb4\xba\x88\xa7u}[\x1f9\xf5\x192\xf8#T\xa6\xb8\xcfX\xde\x14\xd0\xe0\x12\xea\xe3BY\xe4\x82\xb4*' == buffer:
-        print('VA A MOVER EL .service.zip -> ', directory)
+        print('VA A MOVER EL .service.zip -> ', directory, Enviroment.block_dir + block_id)
     with open(directory, 'wb') as file:
         try:
             for data in read_block(
