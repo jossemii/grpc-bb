@@ -9,7 +9,8 @@ from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
 from google.protobuf.pyext._message import RepeatedCompositeContainer
 
-from grpcbigbuffer.client import generate_random_dir, block_exists, move_to_block_dir, copy_to_block_dir
+from grpcbigbuffer.client import generate_random_dir, block_exists, move_to_block_dir, copy_to_block_dir, \
+    get_hash_from_block
 from grpcbigbuffer.utils import Enviroment, CHUNK_SIZE, METADATA_FILE_NAME, WITHOUT_BLOCK_POINTERS_FILE_NAME, \
     get_file_hash, create_lengths_tree, encode_bytes
 
@@ -20,7 +21,7 @@ def is_block(bytes_obj: bytes, blocks: List[bytes]):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
             block.ParseFromString(bytes_obj)
-        if len(block.hashes) != 0 and block.hashes[0].value in blocks:
+        if bytes.fromhex(get_hash_from_block(block, internal_block=True)) in blocks:
             return True
     except DecodeError:
         pass

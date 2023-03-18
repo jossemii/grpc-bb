@@ -1,5 +1,6 @@
 import hashlib
 import os
+from shutil import rmtree
 from threading import Condition
 
 import typing
@@ -101,7 +102,10 @@ def modify_env(
 ):
     if cache_dir: Enviroment.cache_dir = cache_dir + 'grpcbigbuffer/'
     if mem_manager: Enviroment.mem_manager = mem_manager
-    if hash_type: Enviroment.hash_type = hash_type
+    if hash_type and hash_type != Enviroment.hash_type:
+        Enviroment.hash_type = hash_type
+        # Si se modifica el algoritmo hash de los bloques, se pierde compatibilidad con el registro previo.
+        rmtree(Enviroment.block_dir)
     if block_depth: Enviroment.block_depth = block_depth
     if block_dir: Enviroment.block_dir = block_dir
 

@@ -50,23 +50,18 @@ def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
             warnings.simplefilter("ignore", category=RuntimeWarning)
             block.ParseFromString(buffer)
     except DecodeError:
-        print('COPY BLOCK IF EXISTS: DECODE ERROR - NO ES UN BLOQUE.')
         return False
 
-    block_id: typing.Optional[str] = get_hash_from_block(block=block)
+    block_id: typing.Optional[str] = get_hash_from_block(block=block, internal_block=True)
     if not block_id:
         print('COPY BLOCK IF EXISTS: NOT BLOCK ID - ', block.hashes)
         return False
 
     with open(directory, 'wb') as file:
-        print('COPY BLOCK IF EXISTS: OPEN DIRECTORY FILE ', directory)
         for data in read_block(
                 block_id=block_id
         ):
-            if type(data) is bytes:
-                file.write(data)
-            else:
-                print('COPY BLOCK IF EXISTS: INCORRECT DATA TYPE - ', type(data))
+            file.write(data)
 
 
 def move_to_block_dir(file_hash: str, file_path: str) -> bool:
@@ -98,7 +93,9 @@ def signal_block_buffer_stream(hash: str):
     pass  # Sends Buffer(block=Block())
 
 
-def get_hash_from_block(block: buffer_pb2.Buffer.Block) -> typing.Optional[str]:
+def get_hash_from_block(block: buffer_pb2.Buffer.Block, internal_block: bool = False) -> typing.Optional[str]:
+    if internal_block:
+        return block.hashes[0].value.hex()
     for hash in block.hashes:
         if hash.type == Enviroment.hash_type:
             return hash.value.hex()
@@ -131,7 +128,6 @@ def generate_random_file() -> str:
         if not os.path.isfile(file): return file
 
 
-
 def message_to_bytes(message) -> bytes:
     if type(type(message)) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
         return message.SerializeToString()
@@ -152,9 +148,6 @@ def remove_file(file: str):
 
 def remove_dir(dir: str):
     shutil.rmtree(dir)
-
-
-
 
 
 def i_read_multiblock_directory(directory: str, delete_directory: bool = False, ignore_blocks: bool = True) \
