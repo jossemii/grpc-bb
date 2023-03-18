@@ -54,7 +54,8 @@ def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
 
     block_id: typing.Optional[str] = get_hash_from_block(block=block, internal_block=True)
     if not block_id:
-        print('EL BLOQUE NO ES CORRECTO ', block)
+        if b'\n"\x12 \xb4\xba\x88\xa7u}[\x1f9\xf5\x192\xf8#T\xa6\xb8\xcfX\xde\x14\xd0\xe0\x12\xea\xe3BY\xe4\x82\xb4*' == buffer:
+            print('ALGO VA MAL ', block)
         return False
 
     with open(directory, 'wb') as file:
