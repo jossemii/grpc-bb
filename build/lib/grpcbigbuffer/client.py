@@ -54,6 +54,7 @@ def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
 
     block_id: typing.Optional[str] = get_hash_from_block(block=block, internal_block=True)
     if not block_id:
+        print('EL BLOQUE NO ES CORRECTO ', block)
         return False
 
     with open(directory, 'wb') as file:
@@ -62,7 +63,8 @@ def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
                     block_id=block_id
             ):
                 file.write(data)
-        except:  # TODO control only Exception('gRPCbb: Error reading block.')
+        except Exception as e:  # TODO control only Exception('gRPCbb: Error reading block.')
+            print('FALLO AL LEER Y ESCRIBIR EL BLOQUE ', e)
             return False
 
 
