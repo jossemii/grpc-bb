@@ -54,14 +54,16 @@ def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
 
     block_id: typing.Optional[str] = get_hash_from_block(block=block, internal_block=True)
     if not block_id:
-        print('COPY BLOCK IF EXISTS: NOT BLOCK ID - ', block.hashes)
         return False
 
     with open(directory, 'wb') as file:
-        for data in read_block(
-                block_id=block_id
-        ):
-            file.write(data)
+        try:
+            for data in read_block(
+                    block_id=block_id
+            ):
+                file.write(data)
+        except:  # TODO control only Exception('gRPCbb: Error reading block.')
+            return False
 
 
 def move_to_block_dir(file_hash: str, file_path: str) -> bool:
@@ -95,7 +97,7 @@ def signal_block_buffer_stream(hash: str):
 
 def get_hash_from_block(block: buffer_pb2.Buffer.Block, internal_block: bool = False) -> typing.Optional[str]:
     if internal_block:
-        return block.hashes[0].value.hex()
+        return len(block.hashes) == 1 and block.hashes[0].value.hex()
     for hash in block.hashes:
         if hash.type == Enviroment.hash_type:
             return hash.value.hex()
