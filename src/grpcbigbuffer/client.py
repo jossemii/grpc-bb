@@ -60,19 +60,21 @@ def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
 
     if b'\n"\x12 \xb4\xba\x88\xa7u}[\x1f9\xf5\x192\xf8#T\xa6\xb8\xcfX\xde\x14\xd0\xe0\x12\xea\xe3BY\xe4\x82\xb4*' == buffer:
         print('VA A MOVER EL .service.zip -> ', directory, Enviroment.block_dir + block_id)
-    with open(directory, 'wb') as file:
-        try:
-            l = 0
+
+    try:
+        l = 0
+        with open(directory, 'wb') as file:
             for data in read_block(
                     block_id=block_id
             ):
                 l += len(data)
                 file.write(data)
-            if b'\n"\x12 \xb4\xba\x88\xa7u}[\x1f9\xf5\x192\xf8#T\xa6\xb8\xcfX\xde\x14\xd0\xe0\x12\xea\xe3BY\xe4\x82\xb4*' == buffer:
-                print('LONGITUD  DE .SERVICE.ZIP -> ', l)
-        except Exception as e:  # TODO control only Exception('gRPCbb: Error reading block.')
-            print('FALLO AL LEER Y ESCRIBIR EL BLOQUE ', e)
-            return False
+        if b'\n"\x12 \xb4\xba\x88\xa7u}[\x1f9\xf5\x192\xf8#T\xa6\xb8\xcfX\xde\x14\xd0\xe0\x12\xea\xe3BY\xe4\x82\xb4*' == buffer:
+            print('LONGITUD  DE .SERVICE.ZIP -> ', l)
+            print('LONGITUD DEL DIRECTORIO -> .SERVICE.IP', os.path.getsize(directory))
+    except Exception as e:  # TODO control only Exception('gRPCbb: Error reading block.')
+        print('FALLO AL LEER Y ESCRIBIR EL BLOQUE ', e)
+        return False
 
 
 def move_to_block_dir(file_hash: str, file_path: str) -> bool:
