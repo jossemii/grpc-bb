@@ -75,6 +75,7 @@ def read_block(block_id: str) -> Generator[Union[bytes, buffer_pb2.Buffer.Block]
         )
 
     else:
+        print('COPY BLOCK IF EXISTS:  Error reading block.')
         raise Exception('gRPCbb: Error reading block.')
 
 

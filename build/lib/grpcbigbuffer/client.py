@@ -50,18 +50,23 @@ def copy_block_if_exists(buffer: bytes, directory: str) -> bool:
             warnings.simplefilter("ignore", category=RuntimeWarning)
             block.ParseFromString(buffer)
     except DecodeError:
+        print('COPY BLOCK IF EXISTS: DECODE ERROR - NO ES UN BLOQUE.')
         return False
 
     block_id: typing.Optional[str] = get_hash_from_block(block=block)
     if not block_id:
+        print('COPY BLOCK IF EXISTS: NOT BLOCK ID - ', block.hashes)
         return False
 
     with open(directory, 'wb') as file:
+        print('COPY BLOCK IF EXISTS: OPEN DIRECTORY FILE ', directory)
         for data in read_block(
                 block_id=block_id
         ):
             if type(data) is bytes:
                 file.write(data)
+            else:
+                print('COPY BLOCK IF EXISTS: INCORRECT DATA TYPE - ', type(data))
 
 
 def move_to_block_dir(file_hash: str, file_path: str) -> bool:
