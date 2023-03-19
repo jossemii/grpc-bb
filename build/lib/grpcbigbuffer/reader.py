@@ -47,17 +47,18 @@ def read_multiblock_directory(directory: str, delete_directory: bool = False, ig
             yield from read_file_by_chunks(filename=directory + str(e))
         else:
             block_id: str = e[0]
-            block = buffer_pb2.Buffer.Block(
-                hashes=[buffer_pb2.Buffer.Block.Hash(type=Enviroment.hash_type, value=bytes.fromhex(block_id))],
-                previous_lengths_position=e[1]
-            )
             if type(block_id) != str:
                 raise Exception('gRPCbb error on block metadata file ( _.json ).')
             if not ignore_blocks:
+                block = buffer_pb2.Buffer.Block(
+                    hashes=[buffer_pb2.Buffer.Block.Hash(type=Enviroment.hash_type, value=bytes.fromhex(block_id))],
+                    previous_lengths_position=e[1]
+                )
                 yield block
-            yield from read_block(block_id=block_id)
-            if not ignore_blocks:
+                yield from read_block(block_id=block_id)
                 yield block
+            else:
+                yield from read_block(block_id=block_id)
 
     if delete_directory:
         shutil.rmtree(directory)
