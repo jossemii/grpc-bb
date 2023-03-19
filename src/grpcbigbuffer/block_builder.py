@@ -277,8 +277,10 @@ def generate_buffer(buffer: bytes, lengths: Dict[int, Tuple[int, int, bool]]) ->
 
 def generate_id(buffers: List[bytes], blocks: List[bytes]) -> bytes:
     hash_id = sha3_256()
+    le = 0
     for buffer, block in zip_longest(buffers, blocks):
         if buffer:
+            le += len(buffer)
             hash_id.update(buffer)
         if block:
             with BufferedReader(open(Enviroment.block_dir + block.hex(), 'rb')) as f:
@@ -287,7 +289,9 @@ def generate_id(buffers: List[bytes], blocks: List[bytes]) -> bytes:
                     piece: bytes = f.read(CHUNK_SIZE)
                     if len(piece) == 0:
                         break
+                    le += len(piece)
                     hash_id.update(piece)
+    print('LENGTH OF GENERATE ID -> ', le)
     return hash_id.digest()
 
 
