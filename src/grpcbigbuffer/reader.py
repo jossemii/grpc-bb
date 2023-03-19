@@ -43,6 +43,7 @@ def read_multiblock_directory(directory: str, delete_directory: bool = False, ig
     for e in json.load(open(
             directory + METADATA_FILE_NAME,
     )):
+        print('READ --> ', e, type(e))
         if type(e) == int:
             yield from read_file_by_chunks(filename=directory + str(e))
         else:
