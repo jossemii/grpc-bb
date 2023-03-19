@@ -15,16 +15,16 @@ from grpcbigbuffer.utils import Enviroment, CHUNK_SIZE, METADATA_FILE_NAME, WITH
     get_file_hash, create_lengths_tree, encode_bytes
 
 
-def is_block(bytes_obj: bytes, blocks: List[bytes]):
+def is_block(bytes_obj: bytes, blocks: List[bytes]) -> bool:
     try:
         block = buffer_pb2.Buffer.Block()
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
             block.ParseFromString(bytes_obj)
-        if bytes.fromhex(get_hash_from_block(block, internal_block=True)) in blocks:
+        hash_str: str = get_hash_from_block(block, internal_block=True)
+        if hash_str and bytes.fromhex(hash_str) in blocks:
             return True
-    except DecodeError:
-        pass
+    except DecodeError: pass
     return False
 
 
