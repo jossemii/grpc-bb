@@ -4,7 +4,7 @@ import warnings
 from hashlib import sha3_256
 from io import BufferedReader
 from itertools import zip_longest
-from typing import Any, List, Dict, Union, Tuple
+from typing import Any, List, Dict, Union, Tuple, Optional
 from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
 from google.protobuf.pyext._message import RepeatedCompositeContainer
@@ -21,7 +21,7 @@ def is_block(bytes_obj: bytes, blocks: List[bytes]) -> bool:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
             block.ParseFromString(bytes_obj)
-        hash_str: str = get_hash_from_block(block, internal_block=True)
+        hash_str: Optional[str] = get_hash_from_block(block, internal_block=True)
         if hash_str and bytes.fromhex(hash_str) in blocks:
             return True
     except DecodeError: pass
