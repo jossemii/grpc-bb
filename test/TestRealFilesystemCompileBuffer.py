@@ -305,8 +305,6 @@ class Hyper:
 
 class TestRealFilesystemCompiledBuffer(unittest.TestCase):
     def test(self):
-        os.system('rm -rf __cache__/*')
-        os.system('rm -rf __block__/*')
         
         build_it = False
 
