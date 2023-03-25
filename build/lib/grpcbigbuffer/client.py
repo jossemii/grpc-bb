@@ -96,14 +96,17 @@ def signal_block_buffer_stream(hash: str):
     pass  # Sends Buffer(block=Block())
 
 
-def get_hash_from_block(block: buffer_pb2.Buffer.Block, internal_block: bool = False) -> typing.Optional[str]:
+def get_hash_from_block(block: buffer_pb2.Buffer.Block,
+                        internal_block: bool = False,
+                        hexadecimal: bool = True
+                        ) -> typing.Optional[str]:
     if internal_block:
         if len(block.hashes) == 1 and block.hashes[0].type == b'':
-            return block.hashes[0].value.hex()
+            return block.hashes[0].value.hex() if hexadecimal else block.hashes[0].value
     else:
         for hash in block.hashes:
             if hash.type == Enviroment.hash_type:
-                return hash.value.hex()
+                return hash.value.hex() if hexadecimal else hash.value
     return None
 
 
