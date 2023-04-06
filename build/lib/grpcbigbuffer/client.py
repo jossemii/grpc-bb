@@ -683,7 +683,9 @@ def parse_from_buffer(
                     )
 
                 except EmptyBufferException:
-                    yield buffer_pb2.Empty()
+                    if indices[1] == buffer_pb2.Empty:
+                        yield buffer_pb2.Empty()
+                    else: continue
 
         elif 1 in indices:  # Does not've more than one index and more than one partition too.
             if len(partitions_model[1]) > 1:
@@ -708,7 +710,9 @@ def parse_from_buffer(
                         _request_iterator=itertools.chain([buffer], request_iterator),
                     )
                 except EmptyBufferException:
-                    yield buffer_pb2.Empty()
+                    if indices[1] == buffer_pb2.Empty:
+                        yield buffer_pb2.Empty()
+                    else: continue
 
         else:
             raise Exception('Parse from buffer error: index are not correct ' + str(indices))
