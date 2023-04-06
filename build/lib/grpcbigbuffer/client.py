@@ -683,7 +683,7 @@ def parse_from_buffer(
                     )
 
                 except EmptyBufferException:
-                    continue
+                    yield buffer_pb2.Empty()
 
         elif 1 in indices:  # Does not've more than one index and more than one partition too.
             if len(partitions_model[1]) > 1:
