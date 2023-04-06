@@ -708,7 +708,7 @@ def parse_from_buffer(
                         _request_iterator=itertools.chain([buffer], request_iterator),
                     )
                 except EmptyBufferException:
-                    continue
+                    yield buffer_pb2.Empty()
 
         else:
             raise Exception('Parse from buffer error: index are not correct ' + str(indices))
