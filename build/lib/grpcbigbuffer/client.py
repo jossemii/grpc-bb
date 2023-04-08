@@ -640,7 +640,7 @@ def parse_from_buffer(
             if not ((len(buffer.head.partitions) == 0 and len(partitions_model[buffer.head.index]) == 1) or
                     (len(buffer.head.partitions) == len(partitions_model[buffer.head.index]) and
                      list(buffer.head.partitions) == partitions_model[buffer.head.index])):  # If not match
-                for b in conversor(
+                yield from conversor(
                         iterator=iterate_partitions(
                             partitions=[None for i in buffer.head.partitions] if len(buffer.head.partitions) > 0 else [
                                 None],
@@ -653,11 +653,11 @@ def parse_from_buffer(
                         _yield_remote_partition_dir=yield_remote_partition_dir,
                         pf_object=indices[buffer.head.index],
                         _partitions_message_mode=partitions_message_mode[buffer.head.index],
-                ): yield b
+                )
 
             elif len(partitions_model[buffer.head.index]) > 1:
                 yield indices[buffer.head.index]
-                for b in iterate_partitions(
+                yield from iterate_partitions(
                         partitions=[
                             get_subclass(object_cls=indices[buffer.head.index], partition=partition)
                             if partitions_message_mode[buffer.head.index][part_i] else None for
@@ -666,8 +666,7 @@ def parse_from_buffer(
                         # TODO performance
                         _signal=signal,
                         _request_iterator=itertools.chain([buffer], request_iterator),
-                ):
-                    yield b
+                )
 
             else:
                 try:
@@ -689,7 +688,7 @@ def parse_from_buffer(
 
         elif 1 in indices:  # Does not've more than one index and more than one partition too.
             if len(partitions_model[1]) > 1:
-                for b in conversor(
+                yield from conversor(
                         iterator=iterate_partitions(
                             _signal=signal,
                             _request_iterator=itertools.chain([buffer], request_iterator),
@@ -700,8 +699,7 @@ def parse_from_buffer(
                         _yield_remote_partition_dir=yield_remote_partition_dir,
                         pf_object=indices[1],
                         _partitions_message_mode=partitions_message_mode[1],
-                ):
-                    yield b
+                )
             else:
                 try:
                     yield iterate_partition(
@@ -809,11 +807,10 @@ def serialize_to_buffer(
             with open(file, 'wb') as f, _mem_manager(len=len(message_bytes)):
                 f.write(message_bytes)
             try:
-                for c in read_from_registry(
+                yield from read_from_registry(
                         filename=file,
                         signal=_signal
-                ):
-                    yield c
+                )
             finally:
                 remove_file(file)
 
@@ -835,32 +832,29 @@ def serialize_to_buffer(
 
             for partition in message[1:]:
                 if type(partition) is Dir:
-                    for b in send_file(
+                    yield from send_file(
                             filedir=partition,
                             _signal=signal
-                    ):
-                        yield b
+                    )
 
                 else:
-                    for b in send_message(
+                    yield from send_message(
                             _signal=signal,
                             _message=partition,
                             _mem_manager=mem_manager,
-                    ):
-                        yield b
+                    )
 
         else:  # If message is a protobuf object.
             head = buffer_pb2.Buffer.Head(
                 index=indices[type(message)],
                 partitions=partitions_model[indices[type(message)]]
             )
-            for b in send_message(
+            yield from send_message(
                     _signal=signal,
                     _message=message,
                     _head=head,
                     _mem_manager=mem_manager,
-            ):
-                yield b
+            )
 
 
 def client_grpc(
@@ -884,7 +878,7 @@ def client_grpc(
     if not partitions_serializer: partitions_serializer = [buffer_pb2.Buffer.Head.Partition()]
     if not mem_manager: mem_manager = Enviroment.mem_manager
     signal = Signal()
-    for b in parse_from_buffer(
+    yield from parse_from_buffer(
             request_iterator=method(
                 serialize_to_buffer(
                     message_iterator=input if input else buffer_pb2.Empty(),
@@ -900,7 +894,7 @@ def client_grpc(
             partitions_model=partitions_parser,
             partitions_message_mode=partitions_message_mode_parser,
             yield_remote_partition_dir=yield_remote_partition_dir_on_serializer,
-    ): yield b
+    )
 
 
 """
