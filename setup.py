@@ -5,8 +5,8 @@ setup(
     version='0.1.0',
 
     url='https://github.com/jossemii/GRPCBigBuffer.git',
-    author='Josemi Avellana',
-    author_email='josemi.bnf@gmail.com',
+    author='jossemii',
+    author_email='jossemii@proton.me',
 
     py_modules=[
         'grpcbigbuffer'
@@ -17,5 +17,5 @@ setup(
     ],
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    python_requires=">=3.11",
+    python_requires=">=3.8",
 )
