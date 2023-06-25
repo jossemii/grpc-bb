@@ -12,8 +12,8 @@ setup(
         'grpcbigbuffer'
     ],
     install_requires=[
-        'grpcio==1.56.0',
-        'protobuf==4.23.3',
+        'grpcio==1.48.1',
+        'protobuf==3.19.4',
     ],
     package_dir={"": "src"},
     packages=find_packages(where="src"),
