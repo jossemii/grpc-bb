@@ -12,7 +12,7 @@ setup(
         'grpcbigbuffer'
     ],
     install_requires=[
-        'grpcio==1.48.1',
+        'grpcio==1.49.1',
         'protobuf==3.19.4',
     ],
     package_dir={"": "src"},
