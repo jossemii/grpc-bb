@@ -5,17 +5,17 @@ setup(
     version='0.1.0',
 
     url='https://github.com/jossemii/GRPCBigBuffer.git',
-    author='jossemii',
+    author='Josemi Avellana',
     author_email='jossemii@proton.me',
 
     py_modules=[
         'grpcbigbuffer'
     ],
     install_requires=[
-        'grpcio==1.49.1',
-        'protobuf==3.19.4',
+        'grpcio==1.56.0',
+        'protobuf==4.23.3',
     ],
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    python_requires=">=3.8",
+    python_requires=">=3.7",
 )

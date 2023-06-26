@@ -114,6 +114,8 @@ class TestBlockBuilder(unittest.TestCase):
             ]
         )
 
+        print(f"Block builder ok. basic")
+
         # Read the buffer.
         buffer = b''
         with open(os.path.join(cache_dir, '_.json'), 'r') as f:
@@ -209,7 +211,7 @@ class TestBlockBuilder(unittest.TestCase):
                 sha3_256(b"block3").digest()
             ]
         )
-
+        print(f"Block builder ok. simple")
         # Read the buffer.
         buffer = b''
         with open(os.path.join(cache_dir, '_.json'), 'r') as f:
@@ -324,7 +326,7 @@ class TestBlockBuilder(unittest.TestCase):
                 sha3_256(b"block3").digest()
             ]
         )
-
+        print(f"Block builder ok. test complex obj.")
         # Read the buffer.
         buffer = b''
         with open(os.path.join(cache_dir, '_.json'), 'r') as f:
