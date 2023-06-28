@@ -137,7 +137,7 @@ def generate_random_file() -> str:
 
 
 def message_to_bytes(message) -> bytes:
-    if type(type(message)) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
+    if issubclass(message, Message):
         return message.SerializeToString()
     elif type(message) is str:
         return bytes(message, 'utf-8')
@@ -313,7 +313,7 @@ def put_submessage(partition, message, obj):
 
 
 def combine_partitions(
-        obj_cls: protobuf.pyext.cpp_message.GeneratedProtocolMessageType,
+        obj_cls: protobuf.message.Message,
         partitions_model: tuple,
         partitions: typing.Tuple[str]
 ):
@@ -339,7 +339,7 @@ def combine_partitions(
 def parse_from_buffer(
         request_iterator,
         signal: Signal = None,
-        indices: Union[protobuf.pyext.cpp_message.GeneratedProtocolMessageType, dict] = None,
+        indices: Union[protobuf.message.Message, dict] = None,
         # indice: method      message_field = None,
         partitions_model: Union[list, dict] = None,
         partitions_message_mode: Union[bool, list, dict] = False,  # Write on disk by default.
@@ -351,7 +351,7 @@ def parse_from_buffer(
         if not partitions_model: partitions_model = [buffer_pb2.Buffer.Head.Partition()]
         if not signal: signal = Signal(exist=False)
         if not mem_manager: mem_manager = Enviroment.mem_manager
-        if type(indices) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType: indices = {1: indices}
+        if issubclass(indices, protobuf.message.Message): indices = {1: indices}
         if type(indices) is not dict: raise Exception
 
         if type(partitions_model) is list: partitions_model = {1: partitions_model}  # Only've one index.
@@ -383,8 +383,8 @@ def parse_from_buffer(
         for i in indices.keys():  # Check if partitions modes and partitions have the same lenght in all indices.
             if len(partitions_message_mode[i]) != len(partitions_model[i]):
                 raise Exception
-    except Exception as e:
-        raise Exception(f'{e} Parse from buffer error: Partitions or Indices are not correct.' + str(partitions_model) + str(
+    except:
+        raise Exception('Parse from buffer error: Partitions or Indices are not correct.' + str(partitions_model) + str(
             partitions_message_mode) + str(indices))
 
     def parser_iterator(
@@ -464,7 +464,7 @@ def parse_from_buffer(
             raise EmptyBufferException()
         if message_field is str:
             return all_buffer.decode('utf-8')
-        elif type(message_field) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType:
+        elif issubclass(message_field, protobuf.message.Message):
             message = message_field()
             message.ParseFromString(
                 all_buffer
@@ -719,7 +719,7 @@ def parse_from_buffer(
 def serialize_to_buffer(
         message_iterator=None,  # Message or tuples (with head on the first item.)
         signal=None,
-        indices: Union[protobuf.pyext.cpp_message.GeneratedProtocolMessageType, dict] = None,
+        indices: Union[protobuf.message.Message, dict] = None,
         partitions_model: Union[list, dict] = None,
         mem_manager=None
 ) -> Generator[buffer_pb2.Buffer, None, None]:  # method: indice
@@ -729,7 +729,7 @@ def serialize_to_buffer(
         if not partitions_model: partitions_model = [buffer_pb2.Buffer.Head.Partition()]
         if not signal: signal = Signal(exist=False)
         if not mem_manager: mem_manager = Enviroment.mem_manager
-        if type(indices) is protobuf.pyext.cpp_message.GeneratedProtocolMessageType: indices = {1: indices}
+        if issubclass(indices, protobuf.message.Message): indices = {1: indices}
         if type(indices) is not dict: raise Exception
 
         if type(partitions_model) is list: partitions_model = {1: partitions_model}  # Only've one index.
@@ -861,10 +861,10 @@ def client_grpc(
         method,
         input=None,
         timeout=None,
-        indices_parser: Union[protobuf.pyext.cpp_message.GeneratedProtocolMessageType, dict] = None,
+        indices_parser: Union[protobuf.message.Message, dict] = None,
         partitions_parser: Union[list, dict] = None,
         partitions_message_mode_parser: Union[bool, list, dict] = None,
-        indices_serializer: Union[protobuf.pyext.cpp_message.GeneratedProtocolMessageType, dict] = None,
+        indices_serializer: Union[protobuf.message.Message, dict] = None,
         partitions_serializer: Union[list, dict] = None,
         mem_manager=None,
         yield_remote_partition_dir_on_serializer: bool = False,
@@ -903,7 +903,7 @@ def client_grpc(
 
 
 def partitions_to_buffer(
-        message: protobuf.pyext.cpp_message.GeneratedProtocolMessageType,
+        message: protobuf.message.Message,
         partitions_model: tuple,
         partitions: tuple
 ) -> str:
