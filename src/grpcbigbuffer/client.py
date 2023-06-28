@@ -383,8 +383,8 @@ def parse_from_buffer(
         for i in indices.keys():  # Check if partitions modes and partitions have the same lenght in all indices.
             if len(partitions_message_mode[i]) != len(partitions_model[i]):
                 raise Exception
-    except:
-        raise Exception('Parse from buffer error: Partitions or Indices are not correct.' + str(partitions_model) + str(
+    except Exception as e:
+        raise Exception(f'{e} Parse from buffer error: Partitions or Indices are not correct.' + str(partitions_model) + str(
             partitions_message_mode) + str(indices))
 
     def parser_iterator(
