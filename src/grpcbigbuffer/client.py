@@ -1,3 +1,4 @@
+import inspect
 import itertools
 import json
 import os
@@ -313,7 +314,7 @@ def put_submessage(partition, message, obj):
 
 
 def combine_partitions(
-        obj_cls: protobuf.message.Message,
+        obj_cls: Message,
         partitions_model: tuple,
         partitions: typing.Tuple[str]
 ):
@@ -339,7 +340,7 @@ def combine_partitions(
 def parse_from_buffer(
         request_iterator,
         signal: Signal = None,
-        indices: Union[protobuf.message.Message, dict] = None,
+        indices: Union[Message, dict] = None,
         # indice: method      message_field = None,
         partitions_model: Union[list, dict] = None,
         partitions_message_mode: Union[bool, list, dict] = False,  # Write on disk by default.
@@ -351,7 +352,7 @@ def parse_from_buffer(
         if not partitions_model: partitions_model = [buffer_pb2.Buffer.Head.Partition()]
         if not signal: signal = Signal(exist=False)
         if not mem_manager: mem_manager = Enviroment.mem_manager
-        if issubclass(indices, protobuf.message.Message): indices = {1: indices}
+        if inspect.isclass(indices) and issubclass(indices, Message): indices = {1: indices}
         if type(indices) is not dict: raise Exception
 
         if type(partitions_model) is list: partitions_model = {1: partitions_model}  # Only've one index.
@@ -464,7 +465,7 @@ def parse_from_buffer(
             raise EmptyBufferException()
         if message_field is str:
             return all_buffer.decode('utf-8')
-        elif issubclass(message_field, protobuf.message.Message):
+        elif inspect.isclass(message_field) and issubclass(message_field, Message):
             message = message_field()
             message.ParseFromString(
                 all_buffer
@@ -719,7 +720,7 @@ def parse_from_buffer(
 def serialize_to_buffer(
         message_iterator=None,  # Message or tuples (with head on the first item.)
         signal=None,
-        indices: Union[protobuf.message.Message, dict] = None,
+        indices: Union[Message, dict] = None,
         partitions_model: Union[list, dict] = None,
         mem_manager=None
 ) -> Generator[buffer_pb2.Buffer, None, None]:  # method: indice
@@ -729,7 +730,7 @@ def serialize_to_buffer(
         if not partitions_model: partitions_model = [buffer_pb2.Buffer.Head.Partition()]
         if not signal: signal = Signal(exist=False)
         if not mem_manager: mem_manager = Enviroment.mem_manager
-        if issubclass(indices, protobuf.message.Message): indices = {1: indices}
+        if inspect.isclass(indices) and issubclass(indices, Message): indices = {1: indices}
         if type(indices) is not dict: raise Exception
 
         if type(partitions_model) is list: partitions_model = {1: partitions_model}  # Only've one index.
@@ -861,10 +862,10 @@ def client_grpc(
         method,
         input=None,
         timeout=None,
-        indices_parser: Union[protobuf.message.Message, dict] = None,
+        indices_parser: Union[Message, dict] = None,
         partitions_parser: Union[list, dict] = None,
         partitions_message_mode_parser: Union[bool, list, dict] = None,
-        indices_serializer: Union[protobuf.message.Message, dict] = None,
+        indices_serializer: Union[Message, dict] = None,
         partitions_serializer: Union[list, dict] = None,
         mem_manager=None,
         yield_remote_partition_dir_on_serializer: bool = False,
@@ -903,7 +904,7 @@ def client_grpc(
 
 
 def partitions_to_buffer(
-        message: protobuf.message.Message,
+        message: Message,
         partitions_model: tuple,
         partitions: tuple
 ) -> str:
