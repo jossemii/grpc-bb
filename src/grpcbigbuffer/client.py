@@ -138,7 +138,7 @@ def generate_random_file() -> str:
 
 
 def message_to_bytes(message) -> bytes:
-    if issubclass(message, Message):
+    if inspect.isclass(message) and issubclass(message, Message):
         return message.SerializeToString()
     elif type(message) is str:
         return bytes(message, 'utf-8')
