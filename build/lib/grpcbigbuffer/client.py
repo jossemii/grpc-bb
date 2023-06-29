@@ -732,13 +732,21 @@ def serialize_to_buffer(
         mem_manager=None
 ) -> Generator[buffer_pb2.Buffer, None, None]:  # method: indice
     try:
-        if not message_iterator: message_iterator = buffer_pb2.Empty()
-        if not indices: indices = {}
-        if not partitions_model: partitions_model = [buffer_pb2.Buffer.Head.Partition()]
-        if not signal: signal = Signal(exist=False)
-        if not mem_manager: mem_manager = Enviroment.mem_manager
-        if inspect.isclass(indices) and issubclass(indices, Message): indices = {1: indices}
-        if type(indices) is not dict: raise Exception
+        if not message_iterator:
+            message_iterator = buffer_pb2.Empty()
+        if not indices:
+            indices = {}
+        if not partitions_model:
+            partitions_model = [buffer_pb2.Buffer.Head.Partition()]
+        if not signal:
+            signal = Signal(exist=False)
+        if not mem_manager:
+            mem_manager = Enviroment.mem_manager
+        if type(indices) is not dict:
+            if issubclass(indices, Message):
+                indices = {1: indices}
+            else:
+                raise Exception
 
         if type(partitions_model) is list: partitions_model = {1: partitions_model}  # Only've one index.
         if type(partitions_model) is not dict: raise Exception
