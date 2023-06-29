@@ -138,7 +138,7 @@ def generate_random_file() -> str:
 
 
 def message_to_bytes(message) -> bytes:
-    if inspect.isclass(message) and issubclass(message, Message):
+    if inspect.isclass(type(message)) and issubclass(message, Message):
         return message.SerializeToString()
     elif type(message) is str:
         return bytes(message, 'utf-8')
@@ -348,12 +348,19 @@ def parse_from_buffer(
         yield_remote_partition_dir: bool = False,
 ):
     try:
-        if not indices: indices = buffer_pb2.Empty()
-        if not partitions_model: partitions_model = [buffer_pb2.Buffer.Head.Partition()]
-        if not signal: signal = Signal(exist=False)
-        if not mem_manager: mem_manager = Enviroment.mem_manager
-        if inspect.isclass(indices) and issubclass(indices, Message): indices = {1: indices}
-        if type(indices) is not dict: raise Exception
+        if not indices:
+            indices = buffer_pb2.Empty()
+        if not partitions_model:
+            partitions_model = [buffer_pb2.Buffer.Head.Partition()]
+        if not signal:
+            signal = Signal(exist=False)
+        if not mem_manager:
+            mem_manager = Enviroment.mem_manager
+        if type(indices) is not dict:
+            if issubclass(indices, Message):
+                indices = {1: indices}
+            else:
+                raise Exception
 
         if type(partitions_model) is list: partitions_model = {1: partitions_model}  # Only've one index.
         if type(partitions_model) is not dict: raise Exception
