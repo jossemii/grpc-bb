@@ -7,7 +7,7 @@ from itertools import zip_longest
 from typing import Any, List, Dict, Union, Tuple
 from grpcbigbuffer import buffer_pb2
 from google.protobuf.message import Message, DecodeError
-from google.protobuf.internal.containers import RepeatedCompositeFieldContainer as RepeatedCompositeContainer
+from google._upb._message import RepeatedCompositeContainer
 
 from grpcbigbuffer.client import generate_random_dir, block_exists, move_to_block_dir, copy_to_block_dir, \
     get_hash_from_block
