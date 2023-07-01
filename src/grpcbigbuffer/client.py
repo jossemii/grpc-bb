@@ -11,7 +11,7 @@ from typing import Generator, Union, List
 
 from google import protobuf
 from google.protobuf.message import DecodeError, Message
-from google.protobuf.internal.containers import RepeatedCompositeFieldContainer as RepeatedCompositeContainer
+from google._upb._message import RepeatedCompositeContainer
 
 from grpcbigbuffer import buffer_pb2
 from grpcbigbuffer.block_driver import generate_wbp_file, WITHOUT_BLOCK_POINTERS_FILE_NAME, METADATA_FILE_NAME
