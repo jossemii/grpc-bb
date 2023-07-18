@@ -362,6 +362,7 @@ def parse_from_buffer(
             else:
                 raise Exception
 
+        indices.update({0: bytes})
         if type(partitions_model) is list: partitions_model = {1: partitions_model}  # Only've one index.
         if type(partitions_model) is not dict: raise Exception
         for i in indices.keys():
@@ -720,6 +721,19 @@ def parse_from_buffer(
                         yield buffer_pb2.Empty()
                     else: continue
 
+        elif 0 in indices:  # always true
+            try:
+                yield iterate_partition(
+                    message_field_or_route=indices[0] if partitions_message_mode[0][0] else None,
+                    _signal=signal,
+                    _request_iterator=itertools.chain([buffer], request_iterator),
+                )
+            except EmptyBufferException:
+                if indices[0] == buffer_pb2.Empty:
+                    yield buffer_pb2.Empty()
+                else:
+                    continue
+
         else:
             raise Exception('Parse from buffer error: index are not correct ' + str(indices))
 
@@ -748,6 +762,7 @@ def serialize_to_buffer(
             else:
                 raise Exception
 
+        indices.update({0: bytes})
         if type(partitions_model) is list: partitions_model = {1: partitions_model}  # Only've one index.
         if type(partitions_model) is not dict: raise Exception
         for i in indices.keys():
@@ -763,7 +778,7 @@ def serialize_to_buffer(
 
         if 1 not in indices:
             message_type = next(message_iterator)
-            indices.update({1: message_type[0]}) if type(message_type) is tuple else indices.update(
+            indices.update({1: message_type[0]}) if type(message_type) is tuple and message_type[0] != bytes else indices.update(
                 {1: type(message_type)})
             message_iterator = itertools.chain([message_type], message_iterator)
 
