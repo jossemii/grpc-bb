@@ -584,7 +584,6 @@ def serialize_to_buffer(
         message_iterator=None,  # Message or tuples (with head on the first item.)
         signal=None,
         indices: Union[Message, dict] = None,
-        partitions_model: Union[list, dict] = None,
         mem_manager=None
 ) -> Generator[buffer_pb2.Buffer, None, None]:  # method: indice
     try:
@@ -592,8 +591,6 @@ def serialize_to_buffer(
             message_iterator = buffer_pb2.Empty()
         if not indices:
             indices = {}
-        if not partitions_model:
-            partitions_model = [buffer_pb2.Buffer.Head.Partition()]
         if not signal:
             signal = Signal(exist=False)
         if not mem_manager:
@@ -605,16 +602,6 @@ def serialize_to_buffer(
                 raise Exception
 
         indices.update({0: bytes})
-        if type(partitions_model) is list: partitions_model = {1: partitions_model}  # Only've one index.
-        if type(partitions_model) is not dict: raise Exception
-        for i in indices.keys():
-            if i in partitions_model:
-                if type(partitions_model[i]) is buffer_pb2.Buffer.Head.Partition: partitions_model[i] = [
-                    partitions_model[i]]
-                if type(partitions_model[i]) is not list: raise Exception
-            else:
-                partitions_model.update({i: [buffer_pb2.Buffer.Head.Partition()]})
-
         if not hasattr(message_iterator, '__iter__') or type(message_iterator) is tuple:
             message_iterator = itertools.chain([message_iterator])
 
@@ -626,8 +613,8 @@ def serialize_to_buffer(
             message_iterator = itertools.chain([message_type], message_iterator)
 
         indices = {e[1]: e[0] for e in indices.items()}
-    except:
-        raise Exception('Serialzie to buffer error: Indices are not correct ' + str(indices) + str(partitions_model))
+    except Exception as e:
+        raise Exception(f'Serialzie to buffer error: Indices are not correct {str(indices)} - {str(e)}')
 
     def send_file(filedir: Dir, _signal: Signal) -> Generator[buffer_pb2.Buffer, None, None]:
         for _b in read_from_registry(
@@ -699,8 +686,7 @@ def serialize_to_buffer(
         if type(message) is tuple:  # If is partitioned
             yield buffer_pb2.Buffer(
                 head=buffer_pb2.Buffer.Head(
-                    index=indices[message[0]],
-                    partitions=partitions_model[indices[message[0]]]
+                    index=indices[message[0]]
                 )
             )
 
@@ -720,8 +706,7 @@ def serialize_to_buffer(
 
         else:  # If message is a protobuf object.
             head = buffer_pb2.Buffer.Head(
-                index=indices[type(message)],
-                partitions=partitions_model[indices[type(message)]]
+                index=indices[type(message)]
             )
             yield from send_message(
                 _signal=signal,
