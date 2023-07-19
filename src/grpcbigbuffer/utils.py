@@ -18,8 +18,9 @@ class EmptyBufferException(Exception):
 
 
 class Dir(object):
-    def __init__(self, dir: str):
-        self.name = dir
+    def __init__(self, dir: str, _type: type):
+        self.dir: str = dir
+        self.type: type = _type
 
 
 class MemManager(object):

@@ -581,7 +581,7 @@ def parse_from_buffer(
 
 
 def serialize_to_buffer(
-        message_iterator=None,  # Message or tuples (with head on the first item.)
+        message_iterator=None,  # Message, bytes or Dir
         signal=None,
         indices: Union[Message, dict] = None,
         mem_manager=None
@@ -616,9 +616,12 @@ def serialize_to_buffer(
     except Exception as e:
         raise Exception(f'Serialzie to buffer error: Indices are not correct {str(indices)} - {str(e)}')
 
-    def send_file(filedir: Dir, _signal: Signal) -> Generator[buffer_pb2.Buffer, None, None]:
+    def send_file(_head: buffer_pb2.Buffer.Head, filedir: Dir, _signal: Signal) -> Generator[buffer_pb2.Buffer, None, None]:
+        yield buffer_pb2.Buffer(
+            head=_head
+        )
         for _b in read_from_registry(
-                filename=filedir.name,
+                filename=filedir.dir,
                 signal=_signal
         ):
             _signal.wait()
@@ -632,7 +635,7 @@ def serialize_to_buffer(
 
     def send_message(
             _signal: Signal,
-            _message: Message,
+            _message: Message | bytes,
             _head: buffer_pb2.Buffer.Head = None,
             _mem_manager=Enviroment.mem_manager,
     ) -> Generator[buffer_pb2.Buffer, None, None]:
@@ -657,9 +660,10 @@ def serialize_to_buffer(
 
         else:
             try:
-                if _head: yield buffer_pb2.Buffer(
-                    head=_head
-                )
+                if _head:
+                    yield buffer_pb2.Buffer(
+                        head=_head
+                    )
             finally:
                 _signal.wait()
 
@@ -683,35 +687,21 @@ def serialize_to_buffer(
                 _signal.wait()
 
     for message in message_iterator:
-        if type(message) is tuple:  # If is partitioned
-            yield buffer_pb2.Buffer(
-                head=buffer_pb2.Buffer.Head(
-                    index=indices[message[0]]
-                )
+        if type(message) is Dir:
+            yield from send_file(
+                _head=buffer_pb2.Buffer.Head(
+                    index=indices[message.type]
+                ),
+                filedir=message.dir,
+                _signal=signal
             )
-
-            for partition in message[1:]:
-                if type(partition) is Dir:
-                    yield from send_file(
-                        filedir=partition,
-                        _signal=signal
-                    )
-
-                else:
-                    yield from send_message(
-                        _signal=signal,
-                        _message=partition,
-                        _mem_manager=mem_manager,
-                    )
-
-        else:  # If message is a protobuf object.
-            head = buffer_pb2.Buffer.Head(
-                index=indices[type(message)]
-            )
+        else:
             yield from send_message(
                 _signal=signal,
                 _message=message,
-                _head=head,
+                _head=buffer_pb2.Buffer.Head(
+                    index=indices[type(message)]
+                ),
                 _mem_manager=mem_manager,
             )
 
