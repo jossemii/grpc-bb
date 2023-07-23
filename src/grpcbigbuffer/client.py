@@ -512,17 +512,20 @@ def parse_from_buffer(
 
             return dirname  # separator break.
 
-    def iterate_message(message_field_or_route, _signal: Signal, _request_iterator):
-        if message_field_or_route and type(message_field_or_route) is not str:
+    def iterate_message(message_field, mode: bool, _signal: Signal, _request_iterator):
+        if mode:
             return parse_message(
-                message_field=message_field_or_route,
+                message_field=message_field,
                 _request_iterator=_request_iterator,
                 _signal=_signal,
             )
         else:
-            return save_to_dir(
-                _request_iterator=_request_iterator,
-                _signal=_signal
+            return Dir(
+                dir=save_to_dir(
+                    _request_iterator=_request_iterator,
+                    _signal=_signal
+                ),
+                _type=message_field
             )
 
     for buffer in request_iterator:
@@ -538,8 +541,8 @@ def parse_from_buffer(
                     yield indices[buffer.head.index]
 
                 yield iterate_message(
-                    message_field_or_route=indices[buffer.head.index] if partitions_message_mode[buffer.head.index]
-                        else None,
+                    message_field=indices[buffer.head.index],
+                    mode=partitions_message_mode[buffer.head.index],
                     _signal=signal,
                     _request_iterator=itertools.chain([buffer], request_iterator),
                 )
@@ -553,7 +556,8 @@ def parse_from_buffer(
         elif 1 in indices:  # Does not've more than one index and more than one partition too.
             try:
                 yield iterate_message(
-                    message_field_or_route=indices[1] if partitions_message_mode[1] else None,
+                    message_field=indices[1],
+                    mode=partitions_message_mode[1],
                     _signal=signal,
                     _request_iterator=itertools.chain([buffer], request_iterator),
                 )
@@ -566,7 +570,8 @@ def parse_from_buffer(
         elif 0 in indices:  # always true
             try:
                 yield iterate_message(
-                    message_field_or_route=indices[0] if partitions_message_mode[0] else None,
+                    message_field=indices[0],
+                    mode=partitions_message_mode[0],
                     _signal=signal,
                     _request_iterator=itertools.chain([buffer], request_iterator),
                 )
