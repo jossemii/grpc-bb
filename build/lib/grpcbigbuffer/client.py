@@ -3,13 +3,11 @@ import itertools
 import json
 import os
 import shutil
-import sys
 import typing
 import warnings
 from random import randint
-from typing import Generator, Union, List, Dict
+from typing import Generator, Union, List, Dict, Type
 
-from google import protobuf
 from google.protobuf.message import DecodeError, Message
 from google._upb._message import RepeatedCompositeContainer
 
@@ -340,7 +338,7 @@ def combine_partitions(
 def parse_from_buffer(
         request_iterator,
         signal: Signal = None,
-        indices: Union[Message, Dict[int, Message]] = None,
+        indices: Union[Message, Dict[int, Union[Type[bytes], Message]]] = None,
         partitions_message_mode: Union[bool, Dict[int, bool]] = False,  # Write on disk by default.
         mem_manager=None,
 ):
@@ -588,7 +586,7 @@ def parse_from_buffer(
 def serialize_to_buffer(
         message_iterator=None,  # Message, bytes or Dir
         signal=None,
-        indices: Union[Message, dict] = None,
+        indices: Union[Message, Dict[int, Union[Type[bytes], Message]]] = None,
         mem_manager=None
 ) -> Generator[buffer_pb2.Buffer, None, None]:  # method: indice
     try:
@@ -715,9 +713,9 @@ def client_grpc(
         method,
         input=None,
         timeout=None,
-        indices_parser: Union[Message, dict] = None,
+        indices_parser: Union[Message, Dict[int, Union[Type[bytes], Message]]] = None,
         partitions_message_mode_parser: Union[bool, list, dict] = None,
-        indices_serializer: Union[Message, dict] = None,
+        indices_serializer: Union[Message, Dict[int, Union[Type[bytes], Message]]] = None,
         mem_manager=None,
 ):  # indice: method
     if not indices_parser:
