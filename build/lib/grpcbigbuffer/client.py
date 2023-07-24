@@ -534,10 +534,6 @@ def parse_from_buffer(
                     'Parse from buffer error: buffer head index is not correct ' + str(buffer.head.index) + str(
                         indices.keys()))
             try:
-                if not partitions_message_mode[buffer.head.index]:
-                    # return a dir with some indices, specify the index is needed.
-                    yield indices[buffer.head.index]
-
                 yield iterate_message(
                     message_field=indices[buffer.head.index],
                     mode=partitions_message_mode[buffer.head.index],
