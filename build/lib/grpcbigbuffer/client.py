@@ -619,12 +619,12 @@ def serialize_to_buffer(
     except Exception as e:
         raise Exception(f'Serialzie to buffer error: Indices are not correct {str(indices)} - {str(e)}')
 
-    def send_file(_head: buffer_pb2.Buffer.Head, filedir: Dir, _signal: Signal) -> Generator[buffer_pb2.Buffer, None, None]:
+    def send_file(_head: buffer_pb2.Buffer.Head, filedir: str, _signal: Signal) -> Generator[buffer_pb2.Buffer, None, None]:
         yield buffer_pb2.Buffer(
             head=_head
         )
         for _b in read_from_registry(
-                filename=filedir.dir,
+                filename=filedir,
                 signal=_signal
         ):
             _signal.wait()
