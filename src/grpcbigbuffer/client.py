@@ -605,11 +605,10 @@ def serialize_to_buffer(
             message_iterator = itertools.chain([message_iterator])
 
         if 1 not in indices:
-            message_type = next(message_iterator)
-            indices.update({1: message_type[0]}) if type(message_type) is tuple and message_type[
-                0] != bytes else indices.update(
-                {1: type(message_type)})
-            message_iterator = itertools.chain([message_type], message_iterator)
+            first_message = next(message_iterator)
+            indices.update({1: first_message.type}) if type(first_message) is Dir else indices.update(
+                {1: type(first_message)})
+            message_iterator = itertools.chain([first_message], message_iterator)
 
         indices = {e[1]: e[0] for e in indices.items()}
     except Exception as e:
