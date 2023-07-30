@@ -601,13 +601,15 @@ def serialize_to_buffer(
                 raise Exception
 
         indices.update({0: bytes})
-        if not hasattr(message_iterator, '__iter__') or type(message_iterator) is tuple:
+        if not hasattr(message_iterator, '__iter__'):
             message_iterator = itertools.chain([message_iterator])
 
-        if 1 not in indices:
-            first_message = next(message_iterator)
-            indices.update({1: first_message.type}) if type(first_message) is Dir else indices.update(
-                {1: type(first_message)})
+        if len(indices) == 1: # Only 've {0: bytes}
+            first_message = next(message_iterator) # Extract the first message to send.
+            if type(first_message) is Dir and first_message.type != bytes:  # If the message is Dir and it's not bytes
+                indices.update({1: first_message.type})
+            elif issubclass(type(first_message), Message):  # If the message is a proto Message type
+                indices.update({1: type(first_message)})
             message_iterator = itertools.chain([first_message], message_iterator)
 
         indices = {e[1]: e[0] for e in indices.items()}
