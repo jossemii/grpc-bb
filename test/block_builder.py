@@ -14,13 +14,13 @@ from grpcbigbuffer.utils import encode_bytes, create_lengths_tree
 class TestCreateLengthsTree(unittest.TestCase):
     def test_create_lengths_tree(self):
         # Test with a single element
-        pointer_container = {'abc': [1, 2, 3]}
+        pointer_container = {'abc': [[1, 2, 3]]}
         expected_output = {1: {2: {3: 'abc'}}}
         self.assertEqual(create_lengths_tree(pointer_container), expected_output)
 
         # Test with multiple elements
-        pointer_container = {'abc': [1, 2, 3, 5], 'fjk': [1, 8]}
-        expected_output = {1: {2: {3: {5: 'abc'}}, 8: 'fjk'}}
+        pointer_container = {'abc': [[1, 2, 3, 5], [1, 16]], 'fjk': [[1, 8]]}
+        expected_output = {1: {2: {3: {5: 'abc'}}, 8: 'fjk', 16: "abc"}}
         self.assertEqual(create_lengths_tree(pointer_container), expected_output)
 
         # Test with empty input

@@ -112,16 +112,20 @@ def modify_env(
 
 
 def create_lengths_tree(
-        pointer_container: typing.Dict[str, typing.List[int]]
+        pointer_container: typing.Dict[str, typing.List[typing.List[int]]]
 ) -> typing.Dict[int, typing.Union[typing.Dict, str]]:
-    tree = {}
-    for key, pointers in pointer_container.items():
-        current_level = tree
-        for pointer in pointers[:-1]:
-            if pointer not in current_level:
-                current_level[pointer] = {}
-            current_level = current_level[pointer]
-        current_level[pointers[-1]] = key
+    """
+        Create a tree of the pointers where the leafs are the block id's.
+    """
+    tree: typing.Dict[int, typing.Union[typing.Dict, str]] = {}
+    for key, list_pointers in pointer_container.items():
+        for pointers in list_pointers:
+            current_level = tree
+            for pointer in pointers[:-1]:
+                if pointer not in current_level:
+                    current_level[pointer] = {}
+                current_level = current_level[pointer]
+            current_level[pointers[-1]] = key
     return tree
 
 
