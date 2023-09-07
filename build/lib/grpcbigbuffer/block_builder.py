@@ -68,7 +68,7 @@ def search_on_message_real(
         initial_position: int,
         real_initial_position: int,
         blocks: List[bytes],
-        container: Dict[str, List[int]],
+        container: List[Tuple[str, List[int]]],
         real_lengths: Dict[int, Tuple[int, int, bool]],
 ):
     position: int = initial_position
@@ -124,11 +124,7 @@ def search_on_message_real(
         elif type(value) == bytes and is_block(value, blocks):
             block = buffer_pb2.Buffer.Block()
             block.ParseFromString(value)
-            if get_hash(block) in container:
-                raise Exception('gRPCbb block builder error, duplicated blocks not supported.')
-            container[
-                get_hash(block)
-            ] = pointers + [real_position + 1]
+            container.append((get_hash(block), pointers + [real_position + 1]))
             block_length: int = get_block_length(get_hash(block))
             position += 1
             try:
@@ -163,8 +159,13 @@ def search_on_message(
         pointers: List[int],
         initial_position: int,
         blocks: List[bytes],
-        container: Dict[str, List[int]]
+        container: Dict[str, List[List[int]]]
 ):
+    """
+       Search_on_message makes a tree search of the protobuf object (attr. message) and stores all the buffer block
+        identifier instances with its indexes (ascendant order) on the container dictionary.
+        It allows to know where the buffer needs to be changed when the buffer block substitute the block identifier.
+       """
     position: int = initial_position
     for field, value in message.ListFields():
         if isinstance(value, RepeatedCompositeContainer):
@@ -191,11 +192,19 @@ def search_on_message(
         elif type(value) == bytes and is_block(value, blocks):
             block = buffer_pb2.Buffer.Block()
             block.ParseFromString(value)
-            if get_hash(block) in container:
-                raise Exception('gRPCbb block builder error, duplicated blocks not supported.')
-            container[
-                get_hash(block)
-            ] = pointers + [position + 1]
+
+            # TODO ¿como saber a cual de las listas asignarlo?
+            #   - se podría cargar con una lista auxiliar donde almacenar los punteros.
+            #   - se podría identificar cada instancia de bloque y retornar Dict[int, List[int]  en lugar de   List[int]
+            #
+
+            _block_hash = get_hash(block)
+            _list_of_pointers = pointers + [position + 1]
+            if _block_hash not in container:
+                container[_block_hash] = [_list_of_pointers]
+            else:
+                container[_block_hash].append(_list_of_pointers)
+
             position += 1 + len(encode_bytes(block.ByteSize())) + block.ByteSize()
 
         elif type(value) == bytes or type(value) == str:
@@ -214,6 +223,18 @@ def search_on_message(
 
 
 def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Dict[int, Tuple[int, int, bool]]:
+    """
+    Given the pointer's tree with block id's as the leafs it will return a dict of pointers with its
+    real length, compressed format (of the input buffer) length, and a boolean saying if it's the pointer
+    of a block id message or not (tree's leaf or not).
+
+    :param tree:Tree of pointers as nodes and block id's as leafs.
+    :type tree: Dict[int, Union[Dict, str]]
+    :param buffer:Buffer of the compressed object.
+    :type buffer: bytes
+    :return: A dict of pointers with its real and compressed lengths and if it's leaf or not.
+    :rtype: Dict[int, Tuple[int, int, bool]]
+    """
     def traverse_tree(internal_tree: Dict, internal_buffer: bytes, initial_total_length: int) \
             -> Tuple[int, Dict[int, Tuple[int, int, bool]]]:
 
@@ -260,6 +281,19 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
 
 
 def generate_buffer(buffer: bytes, lengths: Dict[int, Tuple[int, int, bool]]) -> List[bytes]:
+    """
+    Iterates over the buffer, replacing the compressed buffer with the real buffer,
+    replacing the compressed lengths of each pointer with its real length.
+    It is returned in list format since it is not necessary to return the entire buffer,
+    the content of the blocks does not need to be loaded into memory.
+
+    :param buffer: Compressed buffer
+    :type buffer: bytes
+    :param lengths:  A dict of pointers with its real and compressed lengths and if it's leaf or not.
+    :type lengths: Dict[int, Tuple[int, int, bool]]
+    :return: The inter-block buffers list with the real lengths.
+    :rtype: List[bytes]
+    """
     list_of_bytes: List[bytes] = []
     new_buff: bytes = b''
     i: int = 0
@@ -298,7 +332,7 @@ def build_multiblock(
         pf_object_with_block_pointers: Any,
         blocks: List[bytes]
 ) -> Tuple[bytes, str]:
-    container: Dict[str, List[int]] = {}
+    container: Dict[str, List[List[int]]] = {}
     search_on_message(
         message=pf_object_with_block_pointers,
         pointers=[],
@@ -311,11 +345,13 @@ def build_multiblock(
         pointer_container=container
     )
 
+    # no importa para duplicidad
     real_lengths: Dict[int, Tuple[int, int, bool]] = compute_real_lengths(
         tree=tree,
         buffer=pf_object_with_block_pointers.SerializeToString()
     )
 
+    # no importa para duplicidad
     new_buff: List[bytes] = generate_buffer(
         buffer=pf_object_with_block_pointers.SerializeToString(),
         lengths=real_lengths
@@ -331,7 +367,7 @@ def build_multiblock(
         Tuple[str, List[int]]
     ]] = []
 
-    container_real_lengths = {}
+    container_real_lengths: List[Tuple[str, List[int]]] = []
     search_on_message_real(
         message=pf_object_with_block_pointers,
         pointers=[],
@@ -342,16 +378,13 @@ def build_multiblock(
         real_lengths=real_lengths
     )
 
-    for i, (b1, b2) in enumerate(zip_longest(new_buff, container_real_lengths.keys())):
+    for i, (b1, b2) in enumerate(zip_longest(new_buff, container_real_lengths)):
         _json.append(i + 1)
         with open(cache_dir + str(i + 1), 'wb') as f:
             f.write(b1)
 
         if b2:
-            _json.append((
-                b2,
-                container_real_lengths[b2]
-            ))
+            _json.append((b2[0], b2[1]))
 
     with open(cache_dir + METADATA_FILE_NAME, 'w') as f:
         json.dump(_json, f)
