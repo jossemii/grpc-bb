@@ -145,7 +145,7 @@ def generate_wbp_file(dirname: str):
     with open(dirname + '/' + METADATA_FILE_NAME, 'r') as f:
         _json: List[Union[
             int,
-            Tuple[str, List[int]]
+            List[str, List[int]]
         ]] = json.load(f)
 
     buffer: List[Union[bytes, str]] = []
@@ -161,7 +161,12 @@ def generate_wbp_file(dirname: str):
             file_list.append(Enviroment.block_dir + e[0])
             buffer.append(Enviroment.block_dir + e[0])
 
-    blocks: Dict[str, List[int]] = {t[0]: t[1] for t in _json if type(t) == list}
+    blocks: Dict[str, List[List[int]]] = {}
+    for _t in _json:
+        if type(_t) == list:
+            if _t[0] not in blocks:
+                blocks[_t[0]] = []
+            blocks[_t[0]].append(_t[1])  # _t[1] is a List[int] always.
 
     tree: Dict[int, Union[Dict, str]] = create_lengths_tree(blocks)
 

@@ -193,11 +193,6 @@ def search_on_message(
             block = buffer_pb2.Buffer.Block()
             block.ParseFromString(value)
 
-            # TODO ¿como saber a cual de las listas asignarlo?
-            #   - se podría cargar con una lista auxiliar donde almacenar los punteros.
-            #   - se podría identificar cada instancia de bloque y retornar Dict[int, List[int]  en lugar de   List[int]
-            #
-
             _block_hash = get_hash(block)
             _list_of_pointers = pointers + [position + 1]
             if _block_hash not in container:
