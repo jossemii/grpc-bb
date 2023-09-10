@@ -2,11 +2,11 @@
 
 ## Abstract
 
-gRPCbb (pronounced "gRPC BiggerBuffer") is an extension of the gRPC protocol that allows efficient transfer of messages of any size while minimizing the impact on performance. This paper describes the structure of messages in gRPCbb and how they are managed to optimize the transmission of large data.
+gRPCbb (pronounced "gRPC BigBuffer") is an extension of the gRPC protocol that allows efficient transfer of messages of any size while minimizing the impact on performance. This paper describes the structure of messages in gRPCbb and how they are managed to optimize the transmission of large data.
 
 ## Introduction
 
-The gRPC protocol is widely used for communication between distributed applications. However, its ability to efficiently transmit large messages can be limited. gRPCbb addresses this limitation by enabling the transfer of large messages while maintaining optimal performance.
+The gRPC protocol is used for communication between distributed applications. However, its ability to efficiently transmit large messages can be limited. gRPCbb addresses this limitation by enabling the transfer of large messages while maintaining optimal performance.
 
 ## Messages in gRPCbb
 
@@ -67,7 +67,7 @@ It is possible to incorporate blocks within blocks, allowing for finer granulari
 
 ## Conclusion
 
-gRPCbb (pronounced "gRPC BiggerBuffer") is an extension of the gRPC protocol that enables efficient transfer of messages of any size while maintaining optimal performance. By dividing messages into fragments, using signals, and allowing block management, this extension becomes a valuable tool for applications that require efficient transfer of large data. Its ability to adapt to different indices and partitions facilitates interoperability between objects within a single gRPC method, making it a versatile solution for distributed applications.
+gRPCbb (pronounced "gRPC BigBuffer") is an extension of the gRPC protocol that enables efficient transfer of messages of any size while maintaining optimal performance. By dividing messages into fragments, using signals, and allowing block management, this extension becomes a valuable tool for applications that require efficient transfer of large data. Its ability to adapt to different indices facilitates interoperability between objects within a single gRPC method, making it a versatile solution for distributed applications.
 
 ## References
 
