@@ -646,7 +646,6 @@ class TestWBPFileGeneration(unittest.TestCase):
         print('\n\n\nBUILD MULTIBLOCK ', filesystem.ByteSize(), '\ncount blocks -> ', len(blocks), '\nblocks -> ', [len(b) for b in blocks], '\n\n')
 
         write_filesystem_to_directory(filesystem, '__generated_filesystem__')
-        exit()
 
         object_id, cache_dir = build_multiblock(
             pf_object_with_block_pointers=filesystem,
@@ -671,6 +670,10 @@ class TestWBPFileGeneration(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    os.makedirs("__cache__", exist_ok=True)
+    os.makedirs("__block__", exist_ok=True)
+    os.makedirs("__generated_filesystem__", exist_ok=True)
     os.system('rm -rf __cache__/*')
     os.system('rm -rf __block__/*')
+    os.system("rm -rf __generated_filesystem__/*")
     TestWBPFileGeneration().test_complex_filesystem_generate_wbp_file()
