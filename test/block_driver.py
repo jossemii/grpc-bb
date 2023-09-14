@@ -1,14 +1,27 @@
 import os
 import shutil
-import random
-import sys, unittest
+import sys
+import unittest
 from hashlib import sha3_256
 from typing import List, Tuple
+
 sys.path.append('../src/')
 
 from grpcbigbuffer import buffer_pb2
 from grpcbigbuffer.block_builder import build_multiblock, get_position_length
 from grpcbigbuffer.client import Enviroment
+
+import math
+
+
+def convert_size(size_bytes):
+    if size_bytes == 0:
+        return "0B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return "%s %s" % (s, size_name[i])
 
 
 def write_filesystem_to_directory(filesystem, directory):
@@ -203,7 +216,7 @@ class TestWBPFileGeneration(unittest.TestCase):
 
             item4 = ItemBranch()
             item4.name = "item4"
-            item4.link = "item4"
+            item4.file = block3.SerializeToString()
 
             item5 = ItemBranch()
             item5.name = "item5"
@@ -216,20 +229,29 @@ class TestWBPFileGeneration(unittest.TestCase):
             filesystem.branch.append(item5)
             return filesystem
 
-        object_id, cache_dir = build_multiblock(
-            pf_object_with_block_pointers=generate_block(),
-            blocks=[
+        filesystem, blocks = generate_block(), [
                 sha3_256(b"block1").digest(),
                 sha3_256(b"block2").digest(),
                 sha3_256(b"block3").digest()
             ]
+
+        print('\n build multiblock')
+        print('\n\n\nBUILD MULTIBLOCK ', filesystem.ByteSize(), '\ncount blocks -> ', len(blocks), '\nblocks -> ', [len(b) for b in blocks], '\n\n')
+
+        write_filesystem_to_directory(filesystem, '__generated_filesystem__')
+
+        object_id, cache_dir = build_multiblock(
+            pf_object_with_block_pointers=filesystem,
+            blocks=blocks
         )
 
+        print('\n generate wbp file')
         # Test generate_wbp_file
         from grpcbigbuffer.block_driver import generate_wbp_file
         os.system('rm ' + cache_dir + '/wbp.bin')
         generate_wbp_file(cache_dir)
 
+        print('\n Read generated wbp file.')
         generated = Filesystem()
         with open(cache_dir + '/wbp.bin', 'rb') as f:
             generated.ParseFromString(
@@ -238,7 +260,7 @@ class TestWBPFileGeneration(unittest.TestCase):
 
         # Ahora se realiza el assertEqual entre generated y el _object sin especificar el tipo de hash.
 
-        self.assertEqual(generate_block(with_hash=False), generated)
+        self.assertEqual(generate_block(with_hash=False)[0], generated)
 
     def test_complex_filesystem_generate_wbp_file(self):
         # Assuming that the build_multiblock_directory() function works correctly (tests/block_builder.py is OK)
@@ -624,16 +646,6 @@ class TestWBPFileGeneration(unittest.TestCase):
                 sha3_256(b"block20").digest(),
             ]
 
-            import math
-            def convert_size(size_bytes):
-                if size_bytes == 0:
-                    return "0B"
-                size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-                i = int(math.floor(math.log(size_bytes, 1024)))
-                p = math.pow(1024, i)
-                s = round(size_bytes / p, 2)
-                return "%s %s" % (s, size_name[i])
-
             byte_size = _filesystem.ByteSize() + sum([os.path.getsize(b) for b in os.scandir('__block__')])
             print('\nIndividual sizes -< ', _filesystem.ByteSize(), [os.path.getsize(b) for b in os.scandir('__block__')])
             print('Size -> ', byte_size, convert_size(byte_size))
@@ -676,4 +688,4 @@ if __name__ == "__main__":
     os.system('rm -rf __cache__/*')
     os.system('rm -rf __block__/*')
     os.system("rm -rf __generated_filesystem__/*")
-    TestWBPFileGeneration().test_complex_filesystem_generate_wbp_file()
+    TestWBPFileGeneration().test_object_generate_wbp_file()
