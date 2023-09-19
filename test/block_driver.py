@@ -165,7 +165,7 @@ class TestWBPFileGeneration(unittest.TestCase):
         # Assuming that the build_multiblock_directory() function works correctly (tests/block_builder.py is OK)
         from grpcbigbuffer.test_pb2 import Filesystem, ItemBranch
 
-        def generate_block(with_hash=True):
+        def generate_block(with_hash=True) -> Filesystem:
             block1 = buffer_pb2.Buffer.Block()
             h = buffer_pb2.Buffer.Block.Hash()
             if with_hash: h.type = Enviroment.hash_type
@@ -207,7 +207,7 @@ class TestWBPFileGeneration(unittest.TestCase):
             item1.file = block1.SerializeToString()
 
             item2 = ItemBranch()
-            item2.name = ''.join(['item2' for i in range(100)])
+            item2.name = ''.join(['item2' for i in range(5)])
             item2.file = block2.SerializeToString()
 
             item3 = ItemBranch()
@@ -220,12 +220,13 @@ class TestWBPFileGeneration(unittest.TestCase):
 
             item5 = ItemBranch()
             item5.name = "item5"
-            item5.filesystem.branch.append(item2)
+            item5.filesystem.branch.append(item3)
             item5.filesystem.branch.append(item4)
 
             filesystem: Filesystem = Filesystem()
             filesystem.branch.append(item1)
             filesystem.branch.append(item3)
+            filesystem.branch.append(item4)
             filesystem.branch.append(item5)
             return filesystem
 
@@ -236,7 +237,8 @@ class TestWBPFileGeneration(unittest.TestCase):
             ]
 
         print('\n build multiblock')
-        print('\n\n\nBUILD MULTIBLOCK ', filesystem.ByteSize(), '\ncount blocks -> ', len(blocks), '\nblocks -> ', [len(b) for b in blocks], '\n\n')
+        print('\n\n\nBUILD MULTIBLOCK ', filesystem.ByteSize(), '\ncount blocks -> ', len(blocks), '\nblocks -> ',
+              [len(b) for b in blocks], '\n\n')
 
         write_filesystem_to_directory(filesystem, '__generated_filesystem__')
 
@@ -260,7 +262,7 @@ class TestWBPFileGeneration(unittest.TestCase):
 
         # Ahora se realiza el assertEqual entre generated y el _object sin especificar el tipo de hash.
 
-        self.assertEqual(generate_block(with_hash=False)[0], generated)
+        self.assertEqual(generate_block(with_hash=False), generated)
 
     def test_complex_filesystem_generate_wbp_file(self):
         # Assuming that the build_multiblock_directory() function works correctly (tests/block_builder.py is OK)
@@ -593,7 +595,7 @@ class TestWBPFileGeneration(unittest.TestCase):
 
             item20 = ItemBranch()
             item20.name = ''.join(['item20' for i in range(1)]) #item-name
-            item20.file = block20.SerializeToString()
+            item20.file = block1.SerializeToString()
 
 
             item21 = ItemBranch()
@@ -688,4 +690,4 @@ if __name__ == "__main__":
     os.system('rm -rf __cache__/*')
     os.system('rm -rf __block__/*')
     os.system("rm -rf __generated_filesystem__/*")
-    TestWBPFileGeneration().test_object_generate_wbp_file()
+    TestWBPFileGeneration().test_complex_filesystem_generate_wbp_file()
