@@ -60,8 +60,8 @@ def analyze_protobuf_data(binary_data, _tab=""):
                   f"{_tab} Field Number: {field_number}\n"
                   f"{_tab} Length: {length}\n"
                   f"{_tab} Message: {message}\n"
-                  f"{_tab} Decoded message: {decoded_message}\n"
-                  f"{_tab} \n{GREEN}Length matches message length.{RESET}\n")
+                  f"{_tab} {BLUE}Decoded message: {decoded_message}{RESET}\n"
+                  f"{_tab} {GREEN}Length matches message length.{RESET}\n")
 
             analyze_protobuf_data(binary_data=message, _tab=_tab+"  ")
 
@@ -71,8 +71,8 @@ def analyze_protobuf_data(binary_data, _tab=""):
                   f"{_tab} Length: {length}\n"
                   f"{_tab} Real Length: {len(decoded_message)}\n"
                   f"{_tab} Message: {message}\n"
-                  f"{_tab} Decoded message: {decoded_message}\n"
-                  f"{_tab} \n{RED}Length does not match message length.{RESET}\n")
+                  f"{_tab} {BLUE}Decoded message: {decoded_message}{RESET}\n"
+                  f"{_tab} {RED}Length does not match message length.{RESET}\n")
 
 
 # Example usage:
