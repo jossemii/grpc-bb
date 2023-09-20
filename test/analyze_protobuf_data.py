@@ -60,7 +60,7 @@ def analyze_protobuf_data(binary_data, _tab=""):
             print(f"\n\n"
                   f"{_tab} Field Number: {field_number}\n"
                   f"{_tab} Length: {length}\n"
-                  f"{_tab} Message: {message}\n"
+                  f"{_tab} {YELLOW}Message: {message}{RESET}\n"
                   f"{_tab} {GREEN}Length matches message length.{RESET}\n")
 
             analyze_protobuf_data(binary_data=message, _tab=_tab+"  ")
@@ -70,7 +70,7 @@ def analyze_protobuf_data(binary_data, _tab=""):
             print(f"\n\n"
                   f"{_tab} Field Number: {field_number}\n"
                   f"{_tab} Length: {length}\n"
-                  f"{_tab} Message: {message}\n"
+                  f"{_tab} {YELLOW}Message: {message}{RESET}\n"
                   f"{_tab} {BLUE}Decoded message: {decoded_message}{RESET}\n"
                   f"{_tab} {GREEN}Length matches message length.{RESET}\n")
 
@@ -81,13 +81,31 @@ def analyze_protobuf_data(binary_data, _tab=""):
                   f"{_tab} Field Number: {field_number}\n"
                   f"{_tab} Length: {length}\n"
                   f"{_tab} Real Length: {len(decoded_message)}\n"
-                  f"{_tab} Message: {message}\n"
+                  f"{_tab} {YELLOW}Message: {message}{RESET}\n"
                   f"{_tab} {BLUE}Decoded message: {decoded_message}{RESET}\n"
                   f"{_tab} {RED}Length does not match message length.{RESET}\n")
 
 
 # Example usage:
 if __name__ == "__main__":
+
+    print("\n\n---------\n")
+    print(b'\n\x09\n\x07item444')
+
     analyze_protobuf_data(
         binary_data=b'\n\x09\n\x07item444'
+    )
+
+    print("\n\n---------\n")
+    print(b'"\x02\x08\x01')
+
+    analyze_protobuf_data(
+        binary_data=b'"\x02\x08\x01'
+    )
+
+    print("\n\n---------\n")
+    print(b'"\x02\x08\x01*\x08\n\x06\n\x04hola')
+
+    analyze_protobuf_data(
+        binary_data=b'"\x02\x08\x01*\x08\n\x06\n\x04hola'
     )
