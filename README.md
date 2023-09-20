@@ -74,3 +74,4 @@ gRPCbb (pronounced "gRPC BigBuffer") is an extension of the gRPC protocol that e
 - [gRPC Website](https://grpc.io/)
 - [Protocol Buffers Documentation](https://developers.google.com/protocol-buffers)
 - [Protocol Buffers Encoding Specification](https://developers.google.com/protocol-buffers/docs/encoding#simple)
+- [Protocol Buffers Encoded Proto Size Limitations](https://protobuf.dev/programming-guides/encoding/#size-limit)
