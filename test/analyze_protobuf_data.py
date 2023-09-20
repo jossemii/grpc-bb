@@ -1,3 +1,5 @@
+from typing import List, Tuple
+
 
 # ANSI escape codes for text colors
 RED = "\033[91m"
@@ -7,7 +9,7 @@ BLUE = "\033[94m"
 RESET = "\033[0m"
 
 
-def extract_protobuf_data(binary_data):
+def extract_protobuf_data(binary_data) -> List[Tuple[int, int, bytes]]:
     result = []
 
     # Iterate through the binary data to extract messages
@@ -33,7 +35,7 @@ def extract_protobuf_data(binary_data):
                 raise ValueError("Malformed varint encoding")
 
             # Check if the length is equal to the binary_data length
-            if len(binary_data) != length:
+            if len(binary_data) < length:
                 result.append((field_number, length, binary_data))
                 break
 
@@ -63,7 +65,7 @@ def analyze_protobuf_data(binary_data, _tab=""):
                   f"{_tab} {YELLOW}Message: {message}{RESET}\n"
                   f"{_tab} {GREEN}Length matches message length.{RESET}\n")
 
-            analyze_protobuf_data(binary_data=message, _tab=_tab+"  ")
+            analyze_protobuf_data(binary_data=message, _tab=_tab + "  ")
             continue
 
         if length == len(message):
@@ -74,7 +76,7 @@ def analyze_protobuf_data(binary_data, _tab=""):
                   f"{_tab} {BLUE}Decoded message: {decoded_message}{RESET}\n"
                   f"{_tab} {GREEN}Length matches message length.{RESET}\n")
 
-            analyze_protobuf_data(binary_data=message, _tab=_tab+"  ")
+            analyze_protobuf_data(binary_data=message, _tab=_tab + "  ")
 
         else:
             print(f"\n\n"
@@ -83,29 +85,22 @@ def analyze_protobuf_data(binary_data, _tab=""):
                   f"{_tab} Real Length: {len(decoded_message)}\n"
                   f"{_tab} {YELLOW}Message: {message}{RESET}\n"
                   f"{_tab} {BLUE}Decoded message: {decoded_message}{RESET}\n"
-                  f"{_tab} {RED}Length does not match message length.{RESET}\n")
+                  f"{_tab} {RED}Length does not match message length.  {length} != {len(decoded_message)}{RESET}\n")
 
 
 # Example usage:
 if __name__ == "__main__":
+    def _print(_b):
+        print(f"\n\n---------\n{_b}")
+        analyze_protobuf_data(
+            binary_data=_b
+        )
 
-    print("\n\n---------\n")
-    print(b'\n\x09\n\x07item444')
 
-    analyze_protobuf_data(
-        binary_data=b'\n\x09\n\x07item444'
-    )
-
-    print("\n\n---------\n")
-    print(b'"\x02\x08\x01')
-
-    analyze_protobuf_data(
-        binary_data=b'"\x02\x08\x01'
-    )
-
-    print("\n\n---------\n")
-    print(b'"\x02\x08\x01*\x08\n\x06\n\x04hola')
-
-    analyze_protobuf_data(
-        binary_data=b'"\x02\x08\x01*\x08\n\x06\n\x04hola'
-    )
+    list(map(_print,
+             [
+                 b'\n\x09\n\x07item444',
+                 b'"\x02\x08\x01',
+                 b'"\x02\x08\x01*\x08\n\x06\n\x04hola'
+             ]
+             ))
