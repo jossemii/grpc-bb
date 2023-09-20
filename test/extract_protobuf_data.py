@@ -54,7 +54,18 @@ def extract_protobuf_data(binary_data):
 def analyze_protobuf_data(binary_data, _tab=""):
     for field_number, length, message in extract_protobuf_data(binary_data=binary_data):
         # Assuming the message is UTF-8 encoded
-        decoded_message = message.decode('utf-8')
+        try:
+            decoded_message = message.decode('utf-8')
+        except UnicodeDecodeError:
+            print(f"\n\n"
+                  f"{_tab} Field Number: {field_number}\n"
+                  f"{_tab} Length: {length}\n"
+                  f"{_tab} Message: {message}\n"
+                  f"{_tab} {GREEN}Length matches message length.{RESET}\n")
+
+            analyze_protobuf_data(binary_data=message, _tab=_tab+"  ")
+            continue
+
         if length == len(message):
             print(f"\n\n"
                   f"{_tab} Field Number: {field_number}\n"
