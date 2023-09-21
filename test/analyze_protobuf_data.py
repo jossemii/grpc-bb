@@ -6,6 +6,7 @@ from grpcbigbuffer.utils import encode_bytes
 
 # ANSI escape codes for text colors
 RED = "\033[91m"
+MAGENTA = "\u001b[35m"
 GREEN = "\033[92m"
 YELLOW = "\033[93m"
 BLUE = "\033[94m"
@@ -39,7 +40,6 @@ def extract_protobuf_data(binary_data, length_position: int = 0) -> List[Tuple[i
                 raise ValueError("Malformed varint encoding")
 
             local_position -= len(binary_data)
-            length_position += local_position
 
             # Check if the length is equal to the binary_data length
             if len(binary_data) < length:
@@ -51,14 +51,23 @@ def extract_protobuf_data(binary_data, length_position: int = 0) -> List[Tuple[i
 
             binary_data = binary_data[length:]
 
+            if length_of_the_length(message)+1 != local_position:
+                raise Exception('Algorithm error: Local position (how many bytes was the index moved), '
+                                'should be equal to the length of the length of the message '
+                                'plus an index message byte.')
+
             # Append the extracted data to the result
             result.append((field_number, length, message, length_position))
-            length_position += len(message)
+            length_position += local_position + len(message)
 
         else:  # If it's not a protobuf message.
             break
 
     return result
+
+
+def length_of_the_length(m: bytes) -> int:
+    return len(encode_bytes(len(m)))
 
 
 def analyze_protobuf_data(binary_data, length_position=0, _tab=""):
@@ -68,20 +77,24 @@ def analyze_protobuf_data(binary_data, length_position=0, _tab=""):
             decoded_message = message.decode('utf-8')
         except UnicodeDecodeError:
             print(f"\n\n"
-                  f"{_tab} Length Position: {length_position}\n"
+                  f"{_tab} Index Position: {length_position}\n"
+                  f"{_tab} {MAGENTA}Length Position: {length_position+1}{RESET}\n"
+                  f"{_tab} Content message Position: {length_position + length_of_the_length(message)+1}\n"
                   f"{_tab} Field Number: {field_number}\n"
                   f"{_tab} Length: {length}\n"
                   f"{_tab} {YELLOW}Message: {message}{RESET}\n"
                   f"{_tab} {GREEN}Length matches message length.{RESET}\n")
 
             analyze_protobuf_data(binary_data=message,
-                                  length_position=length_position,
+                                  length_position=length_position + length_of_the_length(message)+1,
                                   _tab=_tab + "  ")
             continue
 
         if length == len(message):
             print(f"\n\n"
-                  f"{_tab} Length Position: {length_position}\n"
+                  f"{_tab} Index Position: {length_position}\n"
+                  f"{_tab} {MAGENTA}Length Position: {length_position+1}{RESET}\n"
+                  f"{_tab} Content message Position: {length_position + length_of_the_length(message)+1}\n"
                   f"{_tab} Field Number: {field_number}\n"
                   f"{_tab} Length: {length}\n"
                   f"{_tab} {YELLOW}Message: {message}{RESET}\n"
@@ -89,12 +102,14 @@ def analyze_protobuf_data(binary_data, length_position=0, _tab=""):
                   f"{_tab} {GREEN}Length matches message length.{RESET}\n")
 
             analyze_protobuf_data(binary_data=message,
-                                  length_position=length_position,
+                                  length_position=length_position + length_of_the_length(message)+1,
                                   _tab=_tab + "  ")
 
         else:
             print(f"\n\n"
-                  f"{_tab} Length Position: {length_position}\n"
+                  f"{_tab} Index Position: {length_position}\n"
+                  f"{_tab} {MAGENTA}Length Position: {length_position+1}{RESET}\n"
+                  f"{_tab} Content message Position: {length_position + length_of_the_length(message)+1}\n"
                   f"{_tab} Field Number: {field_number}\n"
                   f"{_tab} Length: {length}\n"
                   f"{_tab} Real Length: {len(decoded_message)}\n"
