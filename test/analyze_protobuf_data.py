@@ -101,10 +101,6 @@ def analyze_protobuf_data(binary_data, length_position=0, _tab=""):
                   f"{_tab} {BLUE}Decoded message: {decoded_message}{RESET}\n"
                   f"{_tab} {GREEN}Length matches message length.{RESET}\n")
 
-            analyze_protobuf_data(binary_data=message,
-                                  length_position=length_position + length_of_the_length(message)+1,
-                                  _tab=_tab + "  ")
-
         else:
             print(f"\n\n"
                   f"{_tab} Index Position: {length_position}\n"
