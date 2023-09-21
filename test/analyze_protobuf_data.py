@@ -1,5 +1,8 @@
 from typing import List, Tuple
+import sys
 
+sys.path.append('../src/')
+from grpcbigbuffer.utils import encode_bytes
 
 # ANSI escape codes for text colors
 RED = "\033[91m"
@@ -9,11 +12,12 @@ BLUE = "\033[94m"
 RESET = "\033[0m"
 
 
-def extract_protobuf_data(binary_data) -> List[Tuple[int, int, bytes]]:
+def extract_protobuf_data(binary_data, length_position: int = 0) -> List[Tuple[int, int, bytes, int]]:
     result = []
 
     # Iterate through the binary data to extract messages
     while binary_data:
+        local_position = len(binary_data)
         # Decode the field tag and wire type from the first byte
         field_tag = binary_data[0]
         field_number = field_tag >> 3
@@ -34,9 +38,12 @@ def extract_protobuf_data(binary_data) -> List[Tuple[int, int, bytes]]:
             else:
                 raise ValueError("Malformed varint encoding")
 
+            local_position -= len(binary_data)
+            length_position += local_position
+
             # Check if the length is equal to the binary_data length
             if len(binary_data) < length:
-                result.append((field_number, length, binary_data))
+                result.append((field_number, length, binary_data, -1))
                 break
 
             # Read the message based on the length
@@ -45,7 +52,8 @@ def extract_protobuf_data(binary_data) -> List[Tuple[int, int, bytes]]:
             binary_data = binary_data[length:]
 
             # Append the extracted data to the result
-            result.append((field_number, length, message))
+            result.append((field_number, length, message, length_position))
+            length_position += len(message)
 
         else:  # If it's not a protobuf message.
             break
@@ -53,33 +61,40 @@ def extract_protobuf_data(binary_data) -> List[Tuple[int, int, bytes]]:
     return result
 
 
-def analyze_protobuf_data(binary_data, _tab=""):
-    for field_number, length, message in extract_protobuf_data(binary_data=binary_data):
+def analyze_protobuf_data(binary_data, length_position=0, _tab=""):
+    for field_number, length, message, length_position in extract_protobuf_data(binary_data=binary_data, length_position=length_position):
         # Assuming the message is UTF-8 encoded
         try:
             decoded_message = message.decode('utf-8')
         except UnicodeDecodeError:
             print(f"\n\n"
+                  f"{_tab} Length Position: {length_position}\n"
                   f"{_tab} Field Number: {field_number}\n"
                   f"{_tab} Length: {length}\n"
                   f"{_tab} {YELLOW}Message: {message}{RESET}\n"
                   f"{_tab} {GREEN}Length matches message length.{RESET}\n")
 
-            analyze_protobuf_data(binary_data=message, _tab=_tab + "  ")
+            analyze_protobuf_data(binary_data=message,
+                                  length_position=length_position,
+                                  _tab=_tab + "  ")
             continue
 
         if length == len(message):
             print(f"\n\n"
+                  f"{_tab} Length Position: {length_position}\n"
                   f"{_tab} Field Number: {field_number}\n"
                   f"{_tab} Length: {length}\n"
                   f"{_tab} {YELLOW}Message: {message}{RESET}\n"
                   f"{_tab} {BLUE}Decoded message: {decoded_message}{RESET}\n"
                   f"{_tab} {GREEN}Length matches message length.{RESET}\n")
 
-            analyze_protobuf_data(binary_data=message, _tab=_tab + "  ")
+            analyze_protobuf_data(binary_data=message,
+                                  length_position=length_position,
+                                  _tab=_tab + "  ")
 
         else:
             print(f"\n\n"
+                  f"{_tab} Length Position: {length_position}\n"
                   f"{_tab} Field Number: {field_number}\n"
                   f"{_tab} Length: {length}\n"
                   f"{_tab} Real Length: {len(decoded_message)}\n"
