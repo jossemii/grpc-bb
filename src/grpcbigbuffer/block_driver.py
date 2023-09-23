@@ -142,7 +142,6 @@ def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) 
 
 
 def validate_lengths_tree(blocks: Dict[str, List[List[int]]], file_list: List[str]) -> bool:
-    print(f"\nblocks -> {blocks}")
     for block, pointer_lists in blocks.items():
         for _l in pointer_lists:
             block_index_position: int = _l[-1]
