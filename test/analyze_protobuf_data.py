@@ -41,10 +41,14 @@ def extract_protobuf_data(binary_data, length_position: int = 0) -> List[Tuple[i
 
             local_position -= len(binary_data)
 
+            """
+            
             # Check if the length is equal to the binary_data length
-            if len(binary_data) < length:
+            if len(binary_data) < length:   # TODO Check if is really needed that (or if is a bug).
                 result.append((field_number, length, binary_data, -1))
                 break
+            
+            """
 
             # Read the message based on the length
             message = binary_data[:length]
