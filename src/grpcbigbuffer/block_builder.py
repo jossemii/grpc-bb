@@ -272,7 +272,8 @@ def compute_real_lengths(tree: Dict[int, Union[Dict, str]], buffer: bytes) -> Di
 
         return total_tree_length, real_lengths
 
-    return traverse_tree(tree, buffer, len(buffer))[1]
+    #  For the case when are duplicate blocks, the lengths tree needs to be sorted.
+    return dict(sorted(traverse_tree(tree, buffer, len(buffer))[1].items()))
 
 
 def generate_buffer(buffer: bytes, lengths: Dict[int, Tuple[int, int, bool]]) -> List[bytes]:

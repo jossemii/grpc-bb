@@ -141,6 +141,21 @@ def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) 
             yield block_buff
 
 
+def validate_lengths_tree(blocks: Dict[str, List[List[int]]], file_list: List[str]) -> bool:
+    print(f"\nblocks -> {blocks}")
+    for block, pointer_lists in blocks.items():
+        for _l in pointer_lists:
+            block_index_position: int = _l[-1]
+            position_length: int = get_varint_at_position(block_index_position, file_list=file_list)
+            block_length: int = get_pruned_block_length(block_name=block)
+            if block_length > position_length:
+                print(f"\n Salta la validación con la posición {block_index_position}, el bloque {block} en"
+                      f"  position length -> {position_length}"
+                      f"  y  block length -> {block_length}")
+                return False
+    return True
+
+
 def generate_wbp_file(dirname: str):
     with open(dirname + '/' + METADATA_FILE_NAME, 'r') as f:
         _json: List[Union[
@@ -167,6 +182,9 @@ def generate_wbp_file(dirname: str):
             if _t[0] not in blocks:
                 blocks[_t[0]] = []
             blocks[_t[0]].append(_t[1])  # _t[1] is a List[int] always.
+
+    if not validate_lengths_tree(blocks=blocks, file_list=file_list):
+        exit()
 
     tree: Dict[int, Union[Dict, str]] = create_lengths_tree(blocks)
 
