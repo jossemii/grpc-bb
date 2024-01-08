@@ -4,7 +4,7 @@ setup(
     name='grpcbigbuffer',
     version='0.1.0',
 
-    url='https://github.com/jossemii/GRPCBigBuffer.git',
+    url='https://github.com/celaut-project/grpc-bb.git',
     author='Josemi Avellana',
     author_email='jossemii@proton.me',
 
