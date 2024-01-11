@@ -2,6 +2,7 @@ import json
 import os.path
 from typing import Union, List, Tuple, Dict, Generator
 
+from grpcbigbuffer.validate_lengths_tree import validate_lengths_tree
 from grpcbigbuffer.buffer_pb2 import Buffer
 from grpcbigbuffer.utils import BLOCK_LENGTH, METADATA_FILE_NAME, WITHOUT_BLOCK_POINTERS_FILE_NAME, Enviroment, \
     create_lengths_tree, encode_bytes
@@ -139,20 +140,6 @@ def regenerate_buffer(lengths: Dict[int, int], buffer: List[Union[bytes, str]]) 
             if len(block_buff) != BLOCK_LENGTH:
                 raise Exception("gRPCbb regenerate buffer method, incorrect block format.")
             yield block_buff
-
-
-def validate_lengths_tree(blocks: Dict[str, List[List[int]]], file_list: List[str]) -> bool:
-    for block, pointer_lists in blocks.items():
-        for _l in pointer_lists:
-            block_index_position: int = _l[-1]
-            position_length: int = get_varint_at_position(block_index_position, file_list=file_list)
-            block_length: int = get_pruned_block_length(block_name=block)
-            if block_length > position_length:
-                print(f"\n Salta la validación con la posición {block_index_position}, el bloque {block} en"
-                      f"  position length -> {position_length}"
-                      f"  y  block length -> {block_length}")
-                return False
-    return True
 
 
 def generate_wbp_file(dirname: str):
