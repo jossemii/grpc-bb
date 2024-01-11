@@ -4,3 +4,4 @@ test/__cache__/*
 test/__block__/*
 test/__filesystem__/*
 test/__generated_filesystem__/*
+venv
