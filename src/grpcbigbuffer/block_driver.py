@@ -5,35 +5,7 @@ from typing import Union, List, Tuple, Dict, Generator
 from grpcbigbuffer.validate_lengths_tree import validate_lengths_tree
 from grpcbigbuffer.buffer_pb2 import Buffer
 from grpcbigbuffer.utils import BLOCK_LENGTH, METADATA_FILE_NAME, WITHOUT_BLOCK_POINTERS_FILE_NAME, Enviroment, \
-    create_lengths_tree, encode_bytes
-
-
-def get_pruned_block_length(block_name: str) -> int:
-    return os.path.getsize(Enviroment.block_dir + block_name) - BLOCK_LENGTH
-
-
-def get_varint_at_position(position, file_list) -> int:
-    file_size = sum(os.path.getsize(f) for f in file_list)
-    if position > file_size:
-        raise ValueError(f"Position {position} is out of buffer range.")
-    file_index = 0
-    while position > os.path.getsize(file_list[file_index]):
-        position -= os.path.getsize(file_list[file_index])
-        file_index += 1
-    with open(file_list[file_index], "rb") as file:
-        file.seek(position)
-        result = 0
-        shift = 0
-        while True:
-            byte = file.read(1)
-            if not byte:
-                break
-            byte = ord(byte)
-            result |= (byte & 0x7F) << shift
-            if not byte & 0x80:
-                break
-            shift += 7
-        return result
+    create_lengths_tree, encode_bytes, get_varint_at_position, get_pruned_block_length
 
 
 def compute_wbp_lengths(tree: Dict[int, Union[Dict, str]], file_list: List[str]) -> Dict[int, int]:
