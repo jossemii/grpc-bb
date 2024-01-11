@@ -81,20 +81,20 @@ class TestBlockBuilder(unittest.TestCase):
 
         item1 = ItemBranch()
         item1.name = ''.join(['item1' for i in range(1)])
-        item1.file = block1.SerializeToString()    
-        
+        item1.file = block1.SerializeToString()
+
         item2 = ItemBranch()
         item2.name = ''.join(['item2' for i in range(100)])
-        item2.file = block2.SerializeToString()    
-        
+        item2.file = block2.SerializeToString()
+
         item3 = ItemBranch()
         item3.name = ''.join(['item3' for i in range(10)])
-        item3.file = block3.SerializeToString()   
-        
+        item3.file = block3.SerializeToString()
+
         item4 = ItemBranch()
         item4.name = "item4"
-        item4.link = "item4" 
-        
+        item4.link = "item4"
+
         item5 = ItemBranch()
         item5.name = "item5"
         item5.filesystem.branch.append(item2)
@@ -146,7 +146,7 @@ class TestBlockBuilder(unittest.TestCase):
                         _element[1]) == list:
                     result.append(_element[1][-1])
             return result
-        
+
         print('\n')
         for element in _json:
             if type(element) == list:
@@ -156,13 +156,11 @@ class TestBlockBuilder(unittest.TestCase):
                         str(_e) + ' ', get_position_length(_e, buffer),
                         encode_bytes(get_position_length(_e, buffer)),
                         buffer[
-                            _e:_e + get_position_length(_e, buffer) + len(encode_bytes(get_position_length(_e, buffer)))
+                        _e:_e + get_position_length(_e, buffer) + len(encode_bytes(get_position_length(_e, buffer)))
                         ],
                         '\n'
                     )
-                    
-                    
-                   
+
     def test_simple_filesystem(self):
 
         from grpcbigbuffer.test_pb2 import Filesystem, ItemBranch
@@ -178,7 +176,7 @@ class TestBlockBuilder(unittest.TestCase):
                 file.write(
                     b''.join([b'block1' for i in range(100)])
                 )
-                
+
         block2 = buffer_pb2.Buffer.Block()
         h = buffer_pb2.Buffer.Block.Hash()
         h.type = Enviroment.hash_type
@@ -193,16 +191,16 @@ class TestBlockBuilder(unittest.TestCase):
 
         item1 = ItemBranch()
         item1.name = ''.join(['item1' for i in range(1)])
-        item1.file = block1.SerializeToString()  
-        
+        item1.file = block1.SerializeToString()
+
         item2 = ItemBranch()
         item2.name = ''.join(['item2' for i in range(1)])
-        item2.file = block2.SerializeToString()    
-        
+        item2.file = block2.SerializeToString()
+
         filesystem: Filesystem = Filesystem()
         filesystem.branch.append(item1)
         filesystem.branch.append(item2)
-        
+
         object_id, cache_dir = build_multiblock(
             pf_object_with_block_pointers=filesystem,
             blocks=[
@@ -242,7 +240,7 @@ class TestBlockBuilder(unittest.TestCase):
                         _element[1]) == list:
                     result.append(_element[1][-1])
             return result
-    
+
         for element in _json:
             if type(element) == list:
                 for _e in element[1]:
@@ -251,12 +249,11 @@ class TestBlockBuilder(unittest.TestCase):
                         str(_e) + ' ', get_position_length(_e, buffer),
                         encode_bytes(get_position_length(_e, buffer)),
                         buffer[
-                            _e:_e + get_position_length(_e, buffer) + len(encode_bytes(get_position_length(_e, buffer)))
+                        _e:_e + get_position_length(_e, buffer) + len(encode_bytes(get_position_length(_e, buffer)))
                         ],
                         buffer[_e:],
                         '\n'
                     )
-
 
     def test_typical_complex_object(self):
 
@@ -438,12 +435,16 @@ class TestBlockBuilder(unittest.TestCase):
                             break
                         buffer += block
 
-        buff_object = Test()
-        buff_object.ParseFromString(buffer)
+        try:
+            buff_object = Test()
+            buff_object.ParseFromString(buffer)
+        except:
+            assert False
 
         for element in _json:
             if type(element) == list:
                 for _e in element[1]:
+                    # TODO How to assert that?
                     print(
                         '\n\n',
                         str(_e) + ' ', get_position_length(_e, buffer),
