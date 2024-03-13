@@ -1,15 +1,13 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='grpcbigbuffer',
+    name='pee-rpc',
     version='0.1.0',
 
-    url='https://github.com/celaut-project/grpc-bb.git',
-    author='Josemi Avellana',
-    author_email='jossemii@proton.me',
+    url='https://github.com/pee-rpc/pee-rpc.git',
 
     py_modules=[
-        'grpcbigbuffer'
+        'pee-rpc'
     ],
     install_requires=[
         'grpcio==1.56.0',
