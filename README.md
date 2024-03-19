@@ -2,7 +2,7 @@
 
 ## Abstract
 
-Pee-RPC (pronounced "gRPC BigBuffer") is an extension of the gRPC protocol that allows efficient transfer of messages of any size while minimizing the impact on performance. This paper describes the structure of messages in Pee-RPC and how they are managed to optimize the transmission of large data.
+Pee-RPC is an extension of the gRPC protocol that allows efficient transfer of messages of any size while minimizing the impact on performance. This paper describes the structure of messages in Pee-RPC and how they are managed to optimize the transmission of large data.
 
 ## Introduction
 
