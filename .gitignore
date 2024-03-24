@@ -6,3 +6,6 @@ test/__filesystem__/*
 test/__generated_filesystem__/*
 venv
 .idea/
+__cache__
+__block__
+__generated_filesystem__

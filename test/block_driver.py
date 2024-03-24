@@ -26,7 +26,7 @@ def convert_size(size_bytes):
 
 def write_filesystem_to_directory(filesystem, directory):
     """
-    Escribe el sistema de archivos del objeto Filesystem en el directorio especificado.
+    Write the file system of the Filesystem object to the specified directory.
     """
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -157,7 +157,7 @@ class TestWBPFileGeneration(unittest.TestCase):
                 f.read()
             )
 
-        # Ahora se realiza el assertEqual entre generated y el _object sin especificar el tipo de hash.
+        # Now the assertEqual is performed between generated and the _object without specifying the hash type.
 
         self.assertEqual(generate_block(with_hash=False), generated)
 
