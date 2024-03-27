@@ -1,14 +1,17 @@
 [package]
-name = "pyo3_simple_generator"
+name = "block_builder"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "pyo3_simple_generator"
+name = "block_builder"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = "0.21.0"
 futures = "0.3"
 async-stream = "0.3"
+tokio = "1.36.0"
+prost = "0.12"
+prost-types = "0.12"
+sha3 = "0.10.8"
