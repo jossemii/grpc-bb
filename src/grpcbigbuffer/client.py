@@ -781,7 +781,6 @@ def write_to_file(
         
         for buff in serialize_to_buffer(
                 message_iterator=input if input else buffer_pb2.Empty(),
-                signal=signal,
                 indices=indices,
                 mem_manager=mem_manager
             ):
