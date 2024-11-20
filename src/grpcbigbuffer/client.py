@@ -813,11 +813,8 @@ def read_from_file(
         ...     print(dir_obj)
     """
 
-    print("Start read file")
-    for i in parse_from_buffer(
+    yield from parse_from_buffer(
             request_iterator=read_bee_file(filename=path),
             indices=indices,
             partitions_message_mode=False  # Always false means always yield a Dir.
-        ):
-        print("yield dir")
-        yield i
+        )

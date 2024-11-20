@@ -110,7 +110,6 @@ def read_bee_file(filename: str) -> Generator[buffer_pb2.Buffer, None, None]:
     """
     try:
         with open(filename, 'rb') as f:
-            print(f"opened file {filename}")
             while True:
                 # Read the 4-byte length prefix
                 size_bytes = f.read(4)
@@ -135,8 +134,6 @@ def read_bee_file(filename: str) -> Generator[buffer_pb2.Buffer, None, None]:
                 except DecodeError as e:
                     raise ValueError(f"Failed to parse message: {e}")
 
-                print("read buff")
                 yield buff
     finally:
-        print(f"Bee file readed.")
         gc.collect()
