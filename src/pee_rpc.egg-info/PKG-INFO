@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: pee-rpc
+Version: 0.1.0
+Home-page: https://github.com/pee-rpc/pee-rpc.git
+Requires-Python: >=3.11
+License-File: LICENSE
+Requires-Dist: grpcio==1.56.0
+Requires-Dist: protobuf==4.23.3
