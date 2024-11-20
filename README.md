@@ -1,16 +1,16 @@
-# Pee-RPC: Enhancing Large Message Handling in gRPC
+# Bee-RPC: Enhancing Large Message Handling in gRPC
 
 ## Abstract
 
-Pee-RPC is an extension of the gRPC protocol that allows efficient transfer of messages of any size while minimizing the impact on performance. This paper describes the structure of messages in Pee-RPC and how they are managed to optimize the transmission of large data.
+Bee-RPC is an extension of the gRPC protocol that allows efficient transfer of messages of any size while minimizing the impact on performance. This paper describes the structure of messages in Bee-RPC and how they are managed to optimize the transmission of large data.
 
 ## Introduction
 
-The gRPC protocol is used for communication between distributed applications. However, its ability to efficiently transmit large messages can be limited. Pee-RPC addresses this limitation by enabling the transfer of large messages while maintaining optimal performance.
+The gRPC protocol is used for communication between distributed applications. However, its ability to efficiently transmit large messages can be limited. Bee-RPC addresses this limitation by enabling the transfer of large messages while maintaining optimal performance.
 
-## Messages in Pee-RPC
+## Messages in Bee-RPC
 
-A message in Pee-RPC is defined using a protobuf message, which includes several key attributes for efficient data transmission:
+A message in Bee-RPC is defined using a protobuf message, which includes several key attributes for efficient data transmission:
 
 ```protobuf
 syntax = "proto3";
@@ -53,7 +53,7 @@ message Buffer  {
 
 ## Using Blocks (Buffer Containers)
 
-Blocks are a fundamental feature of Pee-RPC for efficient management of large messages:
+Blocks are a fundamental feature of Bee-RPC for efficient management of large messages:
 
 1. When the receiver receives a Buffer with the `block` attribute, a list of block identifiers and a list of indices of the Protobuf lengths affected by the block are defined.
 2. The receiver checks if it already has the buffer on disk. If so, it can skip the transfer of that data.
@@ -67,7 +67,7 @@ It is possible to incorporate blocks within blocks, allowing for finer granulari
 
 ## Conclusion
 
-Pee-RPC is an extension of the gRPC protocol that enables efficient transfer of messages of any size while maintaining optimal performance. By dividing messages into fragments, using signals, and allowing block management, this extension becomes a valuable tool for applications that require efficient transfer of large data. Its ability to adapt to different indices facilitates interoperability between objects within a single gRPC method, making it a versatile solution for distributed applications.
+Bee-RPC is an extension of the gRPC protocol that enables efficient transfer of messages of any size while maintaining optimal performance. By dividing messages into fragments, using signals, and allowing block management, this extension becomes a valuable tool for applications that require efficient transfer of large data. Its ability to adapt to different indices facilitates interoperability between objects within a single gRPC method, making it a versatile solution for distributed applications.
 
 ## References
 
