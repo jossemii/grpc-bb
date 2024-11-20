@@ -13,7 +13,7 @@ from google._upb._message import RepeatedCompositeContainer
 
 from grpcbigbuffer import buffer_pb2
 from grpcbigbuffer.block_driver import generate_wbp_file, WITHOUT_BLOCK_POINTERS_FILE_NAME, METADATA_FILE_NAME
-from grpcbigbuffer.reader import read_block, read_multiblock_directory, read_from_registry, block_exists
+from grpcbigbuffer.reader import read_block, read_multiblock_directory, read_from_registry, block_exists, read_bee_file
 from grpcbigbuffer.utils import Enviroment, MAX_DIR, Signal, EmptyBufferException, Dir, CHUNK_SIZE
 
 
@@ -815,7 +815,7 @@ def read_from_file(
 
     print("Start read file")
     for i in parse_from_buffer(
-            request_iterator=read_from_registry(filename=path),
+            request_iterator=read_bee_file(filename=path),
             indices=indices,
             partitions_message_mode=False  # Always false means always yield a Dir.
         ):
