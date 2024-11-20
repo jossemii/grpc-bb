@@ -5,6 +5,7 @@ import shutil
 from io import BufferedReader
 from typing import Generator, Union
 
+from google.protobuf.message import DecodeError
 from grpcbigbuffer import buffer_pb2
 from grpcbigbuffer.utils import Signal, CHUNK_SIZE, METADATA_FILE_NAME, Enviroment
 
@@ -89,3 +90,50 @@ def read_from_registry(filename: str, signal: Signal = None) -> Generator[buffer
                 signal=signal
             ):
         yield buffer_pb2.Buffer(chunk=c) if type(c) is bytes else buffer_pb2.Buffer(block=c)
+
+
+def read_bee_file(filename: str) -> Generator[buffer_pb2.Buffer, None, None]:
+    """
+    Reads a `.bee` file containing serialized buffer_pb2.Buffer objects with length-prefixed encoding.
+
+    Each message is preceded by a 4-byte big-endian integer indicating its length. This function
+    parses and yields each message as a buffer_pb2.Buffer object.
+
+    Args:
+        filename (str): Path to the `.bee` file.
+
+    Yields:
+        buffer_pb2.Buffer: Parsed protobuf message.
+
+    Raises:
+        ValueError: If a message cannot be fully read or deserialized.
+    """
+    try:
+        with open(filename, 'rb') as f:
+            while True:
+                # Read the 4-byte length prefix
+                size_bytes = f.read(4)
+                if not size_bytes:
+                    break  # End of file
+
+                if len(size_bytes) != 4:
+                    raise ValueError("Invalid file format: Could not read message size.")
+
+                # Decode the length of the message
+                message_size = int.from_bytes(size_bytes, byteorder='big')
+
+                # Read the message content based on the length
+                message_bytes = f.read(message_size)
+                if len(message_bytes) != message_size:
+                    raise ValueError("Invalid file format: Incomplete message data.")
+
+                # Parse the message
+                buff = buffer_pb2.Buffer()
+                try:
+                    buff.ParseFromString(message_bytes)
+                except DecodeError as e:
+                    raise ValueError(f"Failed to parse message: {e}")
+
+                yield buff
+    finally:
+        gc.collect()

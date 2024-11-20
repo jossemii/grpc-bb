@@ -527,7 +527,6 @@ def parse_from_buffer(
             )
 
     for buffer in request_iterator:
-        print(f"buffer {len(buffer)}")
         # The order of conditions is important.
         if buffer.HasField('head'):
             if buffer.head.index not in indices:
@@ -745,14 +744,10 @@ def write_to_file(
         input=None,
         indices: Union[Message, Dict[int, Union[Type[bytes], Message]]] = None,
         mem_manager=None,
-) -> str:        
+) -> str:
     """
     Writes serialized data to a binary file with a `.bee` extension.
-
-    This function ensures that the directory for the file exists, creates the 
-    output file, serializes the provided input (or an empty message if no input 
-    is provided), and writes the serialized data into the file.
-
+    Each serialized message is prefixed by its length (4 bytes, big-endian).
     Args:
         path (str): The directory path where the file will be created.
         file_name (str): The name of the output file (without the `.bee` extension).
@@ -762,15 +757,9 @@ def write_to_file(
                              serialization. Defaults to `None`.
         mem_manager (optional): A memory manager for resource handling during 
                                  serialization. Defaults to `None`.
-
     Returns:
         str: The full path to the output `.bee` file that was created.
-
-    Example:
-        >>> write_to_file("/path/to/dir", "myfile", input=my_data)
-        "/path/to/dir/myfile.bee"
     """
-    
     # Create the full path for the output file
     output_file = os.path.join(path, f"{file_name}.bee")  # bee-rpc file extension
 
@@ -779,13 +768,22 @@ def write_to_file(
 
     # Open the output file in write-binary mode
     with open(output_file, 'wb') as f:
-        
         for buff in serialize_to_buffer(
                 message_iterator=input if input else buffer_pb2.Empty(),
                 indices=indices,
                 mem_manager=mem_manager
             ):
-                f.write(buff.SerializeToString())
+            # Serialize the buffer
+            serialized_data = buff.SerializeToString()
+            
+            # Get the size of the serialized data
+            size = len(serialized_data)
+            
+            # Write the size as a 4-byte big-endian integer
+            f.write(size.to_bytes(4, byteorder='big'))
+            
+            # Write the serialized message
+            f.write(serialized_data)
 
     return output_file
 
@@ -815,11 +813,8 @@ def read_from_file(
         ...     print(dir_obj)
     """
 
-    print(f"Read from file.")
-    for i in parse_from_buffer(
+    yield from parse_from_buffer(
             request_iterator=read_from_registry(filename=path),
             indices=indices,
             partitions_message_mode=False  # Always false means always yield a Dir.
-        ):
-        print(i)
-        yield i
+        )
