@@ -814,7 +814,7 @@ def read_from_file(
         ...     print(dir_obj)
     """
 
-    with open(output_file, 'wb') as f:
+    with open(path, 'wb') as f:
         
         yield from parse_from_buffer(
                 message_iterator=read_from_registry(filename=path),
