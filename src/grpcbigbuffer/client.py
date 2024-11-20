@@ -787,3 +787,37 @@ def write_to_file(
                 f.write(buff.SerializeToString())
 
     return output_file
+
+
+def read_from_file(
+        path: str,
+        indices: Union[Message, Dict[int, Union[Type[bytes], Message]]] = None
+) -> Generator[Dir, None, None]:        
+    """
+    Reads serialized data from a binary file with a `.bee` extension.
+
+    This function opens a `.bee` file, deserializes its content, and yields 
+    parsed `Dir` objects. It uses the provided indices for guiding deserialization 
+    and ensures the correct parsing of the file.
+
+    Args:
+        path (str): The full path to the `.bee` file to read.
+        indices (optional): A mapping or protocol buffer message for guiding 
+                            the deserialization. Defaults to `None`.
+
+    Returns:
+        Generator[Dir, None, None]: A generator that yields `Dir` objects parsed 
+                                    from the file content.
+
+    Example:
+        >>> for dir_obj in read_from_file("/path/to/myfile.bee"):
+        ...     print(dir_obj)
+    """
+
+    with open(output_file, 'wb') as f:
+        
+        yield from parse_from_buffer(
+                message_iterator=read_from_registry(filename=path),
+                indices=indices,
+                partitions_message_mode=False  # Always false means always yield a Dir.
+            )
