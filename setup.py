@@ -1,13 +1,13 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='pee-rpc',
-    version='0.1.0',
+    name='bee-rpc',
+    version='0.0.0',
 
-    url='https://github.com/pee-rpc/pee-rpc.git',
+    url='https://github.com/bee-rpc/bee-rpc.git',
 
     py_modules=[
-        'pee-rpc'
+        'bee-rpc'
     ],
     install_requires=[
         'grpcio==1.56.0',
