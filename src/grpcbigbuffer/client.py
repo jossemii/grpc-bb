@@ -527,6 +527,7 @@ def parse_from_buffer(
             )
 
     for buffer in request_iterator:
+        print(f"buffer {len(buffer)}")
         # The order of conditions is important.
         if buffer.HasField('head'):
             if buffer.head.index not in indices:
