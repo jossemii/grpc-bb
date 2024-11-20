@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='bee-rpc',
-    version='0.0.8',
+    version='0.0.9',
 
     url='https://github.com/bee-rpc/bee-rpc.git',
 

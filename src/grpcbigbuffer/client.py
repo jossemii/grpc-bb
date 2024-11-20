@@ -813,8 +813,10 @@ def read_from_file(
         ...     print(dir_obj)
     """
 
-    yield from parse_from_buffer(
+    for i in parse_from_buffer(
             request_iterator=read_from_registry(filename=path),
             indices=indices,
             partitions_message_mode=False  # Always false means always yield a Dir.
-        )
+        ):
+        print("yield dir")
+        yield i
