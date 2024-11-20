@@ -813,6 +813,7 @@ def read_from_file(
         ...     print(dir_obj)
     """
 
+    print("Start read file")
     for i in parse_from_buffer(
             request_iterator=read_from_registry(filename=path),
             indices=indices,
