@@ -744,6 +744,7 @@ def write_to_file(
         input=None,
         indices: Union[Message, Dict[int, Union[Type[bytes], Message]]] = None,
         mem_manager=None,
+        extension: str="bee"
 ) -> str:
     """
     Writes serialized data to a binary file with a `.bee` extension.
@@ -761,7 +762,7 @@ def write_to_file(
         str: The full path to the output `.bee` file that was created.
     """
     # Create the full path for the output file
-    output_file = os.path.join(path, f"{file_name}.bee")  # bee-rpc file extension
+    output_file = os.path.join(path, f"{file_name}.{extension}")  # bee-rpc file extension
 
     # Ensure the output directory exists
     os.makedirs(path, exist_ok=True)
