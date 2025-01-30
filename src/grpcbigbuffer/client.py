@@ -6,7 +6,7 @@ import shutil
 import typing
 import warnings
 from random import randint
-from typing import Generator, Union, List, Dict, Type
+from typing import Callable, Generator, Optional, Union, List, Dict, Type
 
 from google.protobuf.message import DecodeError, Message
 from google._upb._message import RepeatedCompositeContainer
@@ -341,6 +341,7 @@ def parse_from_buffer(
         indices: Union[Message, Dict[int, Union[Type[bytes], Message]]] = None,
         partitions_message_mode: Union[bool, Dict[int, bool]] = False,  # Write on disk by default.
         mem_manager=None,
+        debug: Optional[Callable[[str], None]]=None,
 ):
     try:
         if not indices:
@@ -583,7 +584,8 @@ def serialize_to_buffer(
         message_iterator=None,  # Message, bytes or Dir
         signal=None,
         indices: Union[Message, Dict[int, Union[Type[bytes], Message]]] = None,
-        mem_manager=None
+        mem_manager=None,
+        debug: Optional[Callable[[str], None]]=None,
 ) -> Generator[buffer_pb2.Buffer, None, None]:  # method: indice
     try:
         if not message_iterator:
@@ -714,6 +716,7 @@ def client_grpc(
         partitions_message_mode_parser: Union[bool, list, dict] = None,
         indices_serializer: Union[Message, Dict[int, Union[Type[bytes], Message]]] = None,
         mem_manager=None,
+        debug: Optional[Callable[[str], None]]=None,
 ):  # indice: method
     if not indices_parser:
         indices_parser = buffer_pb2.Empty
@@ -729,12 +732,14 @@ def client_grpc(
                 signal=signal,
                 indices=indices_serializer,
                 mem_manager=mem_manager,
+                debug=debug
             ),
             timeout=timeout
         ),
         signal=signal,
         indices=indices_parser,
         partitions_message_mode=partitions_message_mode_parser,
+        debug=debug
     )
 
 
