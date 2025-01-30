@@ -6,7 +6,7 @@ import shutil
 import typing
 import warnings
 from random import randint
-from typing import Callable, Generator, Optional, Union, List, Dict, Type
+from typing import Callable, Generator, Union, List, Dict, Type
 
 from google.protobuf.message import DecodeError, Message
 from google._upb._message import RepeatedCompositeContainer
@@ -341,34 +341,52 @@ def parse_from_buffer(
         indices: Union[Message, Dict[int, Union[Type[bytes], Message]]] = None,
         partitions_message_mode: Union[bool, Dict[int, bool]] = False,  # Write on disk by default.
         mem_manager=None,
-        debug: Optional[Callable[[str], None]]=None,
+        debug: Callable[[str], None] = lambda s: None,
 ):
     try:
+        debug("Starting parse_from_buffer")
         if not indices:
+            debug("Indices not provided, setting default value (buffer_pb2.Empty)")
             indices = buffer_pb2.Empty()
         if not signal:
+            debug("Signal not provided, creating Signal with exist=False")
             signal = Signal(exist=False)
         if not mem_manager:
+            debug("mem_manager not provided, using Enviroment.mem_manager")
             mem_manager = Enviroment.mem_manager
         if type(indices) is not dict:
+            debug(f"Indices is not a dict, checking if it's a subclass of Message: {indices}")
             if issubclass(indices, Message):
                 indices = {1: indices}
+                debug(f"Converted indices to dict: {indices}")
             else:
+                debug("Error: indices is neither a dict nor a subclass of Message")
                 raise Exception
 
+        debug("Updating indices with key 0: bytes")
         indices.update({0: bytes})
+        debug(f"Updated indices: {indices}")
+
         if type(partitions_message_mode) is bool:
+            debug(f"partitions_message_mode is bool, creating dict for all indices: {indices.keys()}")
             partitions_message_mode = {i: partitions_message_mode for i in indices}
         elif type(partitions_message_mode) is dict:
+            debug("partitions_message_mode is dict, updating missing keys")
             partitions_message_mode.update(
                 {i: [False] for i in indices if i not in partitions_message_mode})  # Check that it've all indices.
         else:
+            debug(f"Error: partitions_message_mode has incorrect type: {type(partitions_message_mode)}")
             raise Exception("Incorrect partitions message mode type on parse_from_buffer.")
 
+        debug("Validating partitions_message_mode and indices keys")
         if partitions_message_mode.keys() != indices.keys():
+            debug(f"Error: partitions_message_mode keys {partitions_message_mode.keys()} != indices keys {indices.keys()}")
             raise Exception("Partitions message mode keys != indices keys on parse_from_buffer")
 
+        debug("Initial configuration validated successfully")
+
     except Exception as e:
+        debug(f"Exception during initial setup: {str(e)}")
         raise Exception(f'Parse from buffer error: Partitions or Indices are not correct. '
                         f'{partitions_message_mode} - {indices} - {str(e)}')
 
@@ -377,38 +395,53 @@ def parse_from_buffer(
             signal_obj: Signal = None,
             blocks: List[str] = None
     ) -> Generator[buffer_pb2.Buffer, None, None]:
-        if not signal_obj: signal_obj = Signal(exist=False)
+        debug("Starting parser_iterator")
+        if not signal_obj:
+            debug("signal_obj not provided, creating new Signal")
+            signal_obj = Signal(exist=False)
         _break: bool = True
         while _break:
             try:
+                debug("Fetching next buffer_obj")
                 buffer_obj = next(request_iterator_obj)
+                debug(f"Buffer_obj fetched: {buffer_obj}")
             except StopIteration:
+                debug("StopIteration in parser_iterator")
                 raise Exception('AbortedIteration')
 
             if buffer_obj.HasField('signal') and buffer_obj.signal:
+                debug("Field 'signal' detected, changing signal_obj state")
                 signal_obj.change()
 
             if not blocks and buffer_obj.HasField('block') or \
                     blocks and buffer_obj.HasField('block') and len(blocks) < Enviroment.block_depth:
-
+                debug("Block handling detected")
                 block_hash: str = get_hash_from_block(buffer_obj.block)
+                debug(f"Block hash calculated: {block_hash}")
+
                 if block_hash:
                     if blocks and block_hash in blocks:
+                        debug(f"Block {block_hash} already exists in blocks")
                         if blocks.pop() == block_hash:
+                            debug(f"Block {block_hash} removed from blocks")
                             break
                         else:
+                            debug("Error: Block intersections are not allowed")
                             raise Exception('gRPCbb: IntersectionError: Intersections between blocks are not allowed.')
-
                     else:
+                        debug(f"Adding block {block_hash} to blocks")
                         if not blocks:
                             blocks = [block_hash]
                         else:
                             blocks.append(block_hash)
 
                         if block_exists(block_hash):
+                            debug(f"Block {block_hash} exists, signaling stop")
                             signal_block_buffer_stream(block_hash)  # Send the sub-buffer stop signal
 
+                        debug(f"Yielding buffer_obj for block {block_hash}")
                         yield buffer_obj
+                        debug("Recursively iterating into sub-block")
                         for block_chunk in parser_iterator(
                                 request_iterator_obj=request_iterator_obj,
                                 signal_obj=signal_obj,
@@ -417,63 +450,76 @@ def parse_from_buffer(
                             yield block_chunk
 
             if buffer_obj.HasField('chunk'):
+                debug("Yielding normal chunk")
                 yield buffer_obj
             elif not buffer_obj.HasField('head'):
+                debug("Buffer has no 'head', ending iteration")
                 break
             if buffer_obj.HasField('separator') and buffer_obj.separator:
+                debug("Separator detected, ending iteration")
                 break
 
     def parse_message(message_field, _request_iterator, _signal: Signal):
+        debug(f"Starting parse_message for message_field: {message_field}")
         all_buffer: bytes = b''
         in_block: typing.Optional[str] = None
         for b in parser_iterator(
                 request_iterator_obj=_request_iterator,
                 signal_obj=_signal,
         ):
+            debug(f"Processing element in parse_message: {b}")
             if b.HasField('block'):
-                id: str = get_hash_from_block(block=b.block)
-                if id == in_block:
+                block_id: str = get_hash_from_block(block=b.block)
+                debug(f"Block detected: {block_id}")
+                if block_id == in_block:
+                    debug(f"Exiting block {block_id}")
                     in_block = None
-
-                elif not in_block and block_exists(block_id=id):
-                    # TODO performance  could be on Thread or asnyc. with the read_block task.
-                    #    for b in parse_iterator: if b.HasField('block') and get_hash..(b) == id: break
-                    in_block: str = id
-                    all_buffer += b''.join([c for c in read_block(block_id=id) if type(c) is bytes])
+                elif not in_block and block_exists(block_id=block_id):
+                    debug(f"Entering existing block {block_id}")
+                    in_block = block_id
+                    debug("Reading existing blocks")
+                    all_buffer += b''.join([c for c in read_block(block_id=block_id) if type(c) is bytes])
                     continue
 
             if not in_block:
+                debug(f"Adding chunk of size {len(b.chunk)}")
                 all_buffer += b.chunk
+                debug(f"Total buffer size: {len(all_buffer)}")
 
+        debug(f"Finished accumulating buffer. Total size: {len(all_buffer)}")
         if len(all_buffer) == 0:
+            debug("Empty buffer, raising EmptyBufferException")
             raise EmptyBufferException()
         if message_field is str:
+            debug("Converting buffer to string")
             return all_buffer.decode('utf-8')
         elif inspect.isclass(message_field) and issubclass(message_field, Message):
+            debug(f"Parsing protobuf message: {message_field}")
             message = message_field()
-            message.ParseFromString(
-                all_buffer
-            )
+            message.ParseFromString(all_buffer)
             return message
         else:
+            debug(f"Attempting to convert to primitive type: {message_field}")
             try:
                 return message_field(all_buffer)
             except Exception as e:
+                debug(f"Error converting buffer: {str(e)}")
                 raise Exception(
-                    'gRPCbb error -> Parse message error: some primitive type message not suported for contain '
+                    'gRPCbb error -> Parse message error: some primitive type message not supported for contain '
                     'partition ' + str(
                         message_field) + str(e))
 
     def save_to_dir(_request_iterator, _signal) -> str:
+        debug("Starting save_to_dir")
         dirname = generate_random_dir()
+        debug(f"Temporary directory created: {dirname}")
         _i: int = 1
-        _json: List[Union[
-            int,
-            typing.Tuple[str, List[int]]
-        ]] = []
+        _json: List[Union[int, typing.Tuple[str, List[int]]]] = []
         try:
             while True:
+                debug(f"Saving part {_i}")
                 _json.append(_i)
+                debug(f"Calling save_chunks_to_file for part {_i}")
                 if save_chunks_to_file(
                         filename=dirname + '/' + str(_i),
                         buffer_iterator=parser_iterator(
@@ -483,42 +529,51 @@ def parse_from_buffer(
                         signal=_signal,
                         _json=_json
                 ):
+                    debug(f"save_chunks_to_file signaled completion for part {_i}")
                     break
                 _i += 1
 
         except StopIteration:
+            debug("StopIteration in save_to_dir")
             pass
 
         except Exception as e:
+            debug(f"Exception in save_to_dir: {str(e)}, removing directory {dirname}")
             remove_dir(dir=dirname)
             raise e
 
         if len(_json) < 2:
+            debug("Single file detected, converting to standalone file")
             filename: str = generate_random_file()
             try:
+                debug(f"Moving {dirname}/1 to {filename}")
                 shutil.move(dirname + '/1', filename)
                 return filename
-
             except FileNotFoundError:
+                debug(f"Error: File {dirname}/1 not found")
                 remove_file(file=filename)
                 raise Exception('gRPCbb error: on save_to_dir function, the only file had no name 1')
-
         else:
+            debug(f"Writing metadata to {dirname}/{METADATA_FILE_NAME}")
             with open(dirname + '/' + METADATA_FILE_NAME, 'w') as f:
                 json.dump(_json, f)
 
+            debug("Generating WBP file")
             generate_wbp_file(dirname)
 
             return dirname  # separator break.
 
     def iterate_message(message_field, mode: bool, _signal: Signal, _request_iterator):
+        debug(f"Iterate_message: mode={'parse' if mode else 'save'}, message_field={message_field}")
         if mode:
+            debug("Parse mode: parsing message in memory")
             return parse_message(
                 message_field=message_field,
                 _request_iterator=_request_iterator,
                 _signal=_signal,
             )
         else:
+            debug("Save mode: saving to directory")
             return Dir(
                 dir=save_to_dir(
                     _request_iterator=_request_iterator,
@@ -527,56 +582,73 @@ def parse_from_buffer(
                 _type=message_field
             )
 
+    debug("Starting main iteration over request_iterator")
     for buffer in request_iterator:
-        # The order of conditions is important.
+        debug(f"Processing buffer: {buffer}")
         if buffer.HasField('head'):
+            debug(f"Field 'head' detected with index {buffer.head.index}")
             if buffer.head.index not in indices:
+                debug(f"Error: index {buffer.head.index} not found in indices {indices.keys()}")
                 raise Exception(
                     'Parse from buffer error: buffer head index is not correct ' + str(buffer.head.index) + str(
                         indices.keys()))
             try:
-                yield iterate_message(
+                debug(f"Processing index {buffer.head.index}")
+                result = iterate_message(
                     message_field=indices[buffer.head.index],
                     mode=partitions_message_mode[buffer.head.index],
                     _signal=signal,
                     _request_iterator=itertools.chain([buffer], request_iterator),
                 )
-
+                debug(f"Yielding result for index {buffer.head.index}")
+                yield result
             except EmptyBufferException:
+                debug("EmptyBufferException caught")
                 if indices[1] == buffer_pb2.Empty:
+                    debug("Yielding buffer_pb2.Empty()")
                     yield buffer_pb2.Empty()
                 else:
+                    debug("Continuing without yield")
                     continue
 
         elif 1 in indices:  # Does not've more than one index and more than one partition too.
+            debug("Processing default index 1")
             try:
-                yield iterate_message(
+                result = iterate_message(
                     message_field=indices[1],
                     mode=partitions_message_mode[1],
                     _signal=signal,
                     _request_iterator=itertools.chain([buffer], request_iterator),
                 )
+                debug("Yielding result for index 1")
+                yield result
             except EmptyBufferException:
+                debug("EmptyBufferException for index 1")
                 if indices[1] == buffer_pb2.Empty:
                     yield buffer_pb2.Empty()
                 else:
                     continue
 
         elif 0 in indices:  # always true
+            debug("Processing default index 0")
             try:
-                yield iterate_message(
+                result = iterate_message(
                     message_field=indices[0],
                     mode=partitions_message_mode[0],
                     _signal=signal,
                     _request_iterator=itertools.chain([buffer], request_iterator),
                 )
+                debug("Yielding result for index 0")
+                yield result
             except EmptyBufferException:
+                debug("EmptyBufferException for index 0")
                 if indices[0] == buffer_pb2.Empty:
                     yield buffer_pb2.Empty()
                 else:
                     continue
 
         else:
+            debug(f"Error: Invalid indices: {indices}")
             raise Exception('Parse from buffer error: index are not correct ' + str(indices))
 
 
@@ -585,40 +657,62 @@ def serialize_to_buffer(
         signal=None,
         indices: Union[Message, Dict[int, Union[Type[bytes], Message]]] = None,
         mem_manager=None,
-        debug: Optional[Callable[[str], None]]=None,
+        debug: Callable[[str], None] = lambda s: None  # Debug function
 ) -> Generator[buffer_pb2.Buffer, None, None]:  # method: indice
     try:
+        debug("Entering serialize_to_buffer")  # Log entry
+
         if not message_iterator:
             message_iterator = buffer_pb2.Empty()
+            debug("message_iterator is None, initialized to Empty")
         if not indices:
             indices = {}
+            debug("indices is None, initialized to {}")
         if not signal:
             signal = Signal(exist=False)
+            debug("signal is None, initialized to Signal(exist=False)")
         if not mem_manager:
             mem_manager = Enviroment.mem_manager
+            debug("mem_manager is None, initialized to Enviroment.mem_manager")
+
+        debug(f"Initial indices: {indices}")
+
         if type(indices) is not dict:
             if issubclass(indices, Message):
                 indices = {1: indices}
+                debug(f"indices is a Message subclass, updated to: {indices}")
             else:
-                raise Exception
+                raise Exception("Indices must be a dict or a Message subclass") 
 
         indices.update({0: bytes})
+        debug(f"indices updated with 0: bytes: {indices}")
+
         if not hasattr(message_iterator, '__iter__'):
             message_iterator = itertools.chain([message_iterator])
+            debug("message_iterator is not iterable, converted to itertools.chain")
 
-        if len(indices) == 1: # Only 've {0: bytes}
-            first_message = next(message_iterator) # Extract the first message to send.
+        if len(indices) == 1:  # Only 've {0: bytes}
+            first_message = next(message_iterator)  # Extract the first message to send.
+            debug(f"First message: {first_message}")
             if type(first_message) is Dir and first_message.type != bytes:  # If the message is Dir and it's not bytes
                 indices.update({1: first_message.type})
+                debug(f"first_message is a Dir, indices updated: {indices}")
             elif issubclass(type(first_message), Message):  # If the message is a proto Message type
                 indices.update({1: type(first_message)})
+                debug(f"first_message is a Message subclass, indices updated: {indices}")
             message_iterator = itertools.chain([first_message], message_iterator)
+            debug("message_iterator updated with first_message")
 
         indices = {e[1]: e[0] for e in indices.items()}
+        debug(f"Final indices: {indices}")
+
     except Exception as e:
-        raise Exception(f'Serialzie to buffer error: Indices are not correct {str(indices)} - {str(e)}')
+        error_message = f'Serialzie to buffer error: Indices are not correct {str(indices)} - {str(e)}'
+        debug(error_message)  # Log the exception
+        raise  # Re-raise the exception after logging
 
     def send_file(_head: buffer_pb2.Buffer.Head, filedir: str, _signal: Signal) -> Generator[buffer_pb2.Buffer, None, None]:
+        debug(f"Sending file: {filedir}")
         yield buffer_pb2.Buffer(
             head=_head
         )
@@ -641,7 +735,7 @@ def serialize_to_buffer(
             _head: buffer_pb2.Buffer.Head = None,
             _mem_manager=Enviroment.mem_manager,
     ) -> Generator[buffer_pb2.Buffer, None, None]:
-
+        debug(f"Sending message: {_message}")
         message_bytes = message_to_bytes(message=_message)
         if len(message_bytes) < CHUNK_SIZE and (
                 not isinstance(_message, Message) or
@@ -689,7 +783,9 @@ def serialize_to_buffer(
                 _signal.wait()
 
     for message in message_iterator:
+        debug(f"Processing message: {message}") # Log each message being processed
         if type(message) is Dir:
+            debug(f"Message is a Dir, sending file: {message.dir}")
             yield from send_file(
                 _head=buffer_pb2.Buffer.Head(
                     index=indices[message.type]
@@ -698,6 +794,7 @@ def serialize_to_buffer(
                 _signal=signal
             )
         else:
+            debug(f"Message is not a Dir, sending message: {message}")
             yield from send_message(
                 _signal=signal,
                 _message=message,
@@ -706,6 +803,7 @@ def serialize_to_buffer(
                 ),
                 _mem_manager=mem_manager,
             )
+    debug("Exiting serialize_to_buffer") # Log exit
 
 
 def client_grpc(
@@ -716,7 +814,7 @@ def client_grpc(
         partitions_message_mode_parser: Union[bool, list, dict] = None,
         indices_serializer: Union[Message, Dict[int, Union[Type[bytes], Message]]] = None,
         mem_manager=None,
-        debug: Optional[Callable[[str], None]]=None,
+        debug: Callable[[str], None]=lambda s: None
 ):  # indice: method
     if not indices_parser:
         indices_parser = buffer_pb2.Empty
