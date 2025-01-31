@@ -180,56 +180,69 @@ def save_chunks_to_block(
         _json: List[Union[
             int,
             typing.Tuple[str, List[int]]
-        ]] = None
+        ]] = None,
+        debug: Callable[[str], None] = lambda s: None,
 ):
-    block_id: str = get_hash_from_block(block_buffer.block)
-    if _json:
-        _json.append(
-            (block_id, list(block_buffer.block.previous_lengths_position))
-        )
-    if not block_exists(block_id):  # Second com probation of that.
-        save_chunks_to_file(
-            prev=block_buffer.chunk if block_buffer.HasField('chunk') else None,
-            buffer_iterator=stop_generator(buffer_iterator, block_id),
-            filename=Enviroment.block_dir + block_id,
-            signal=signal
-        )
-    else:
-        for buffer in buffer_iterator:
-            if buffer.HasField('block') and \
-                    get_hash_from_block(buffer.block) == block_id:
-                break
+    try:
+        block_id: str = get_hash_from_block(block_buffer.block)
+        if _json:
+            _json.append(
+                (block_id, list(block_buffer.block.previous_lengths_position))
+            )
+        if not block_exists(block_id):  # Second com probation of that.
+            save_chunks_to_file(
+                prev=block_buffer.chunk if block_buffer.HasField('chunk') else None,
+                buffer_iterator=stop_generator(buffer_iterator, block_id),
+                filename=Enviroment.block_dir + block_id,
+                signal=signal
+            )
+        else:
+            for buffer in buffer_iterator:
+                if buffer.HasField('block') and \
+                        get_hash_from_block(buffer.block) == block_id:
+                    break
+    except Exception as e:
+        debug(f"Exception saving chunks to block {_json}: {e}")
+        raise e
 
 
 def save_chunks_to_file(
-        buffer_iterator,
-        filename: str,
-        signal: Signal = None,
-        _json: List[Union[
-            int,
-            typing.Tuple[str, List[int]]
-        ]] = None,
-        prev: typing.Optional[bytes] = None
+    buffer_iterator,
+    filename: str,
+    signal: Signal = None,
+    _json: List[Union[
+        int,
+        typing.Tuple[str, List[int]]
+    ]] = None,
+    prev: typing.Optional[bytes] = None,
+    debug: Callable[[str], None] = lambda s: None,
 ) -> bool:
     if not signal: signal = Signal(exist=False)
     signal.wait()
-    with open(filename, 'wb') as f:
-        signal.wait()
-        if prev:
-            f.write(prev)
-            del prev
+    debug(f"Save chunks to the file {filename} start")
+    try:
+        with open(filename, 'wb') as f:
+            signal.wait()
+            if prev:
+                f.write(prev)
+                del prev
 
-        for buffer in buffer_iterator:
-            if buffer.HasField('block'):
-                save_chunks_to_block(
-                    block_buffer=buffer,
-                    buffer_iterator=buffer_iterator,
-                    signal=signal,
-                    _json=_json
-                )
-                return False
-            f.write(buffer.chunk)
-        return True
+            for buffer in buffer_iterator:
+                if buffer.HasField('block'):
+                    save_chunks_to_block(
+                        block_buffer=buffer,
+                        buffer_iterator=buffer_iterator,
+                        signal=signal,
+                        _json=_json,
+                        debug=debug
+                    )
+                    return False
+                f.write(buffer.chunk)
+            debug(f"Save chunks to the file {filename} ends")
+            return True
+    except Exception as e:
+        debug(f"Exception saving chunks to file {filename}: {e}")
+        raise e  # TODO Should be return False ??
 
 
 def get_subclass(partition, object_cls):
@@ -404,7 +417,7 @@ def parse_from_buffer(
             try:
                 debug("Fetching next buffer_obj")
                 buffer_obj = next(request_iterator_obj)
-                debug(f"Buffer_obj fetched: {buffer_obj}")
+                debug(f"Buffer_obj fetched with len: {len(buffer_obj)}")
             except StopIteration:
                 debug("StopIteration in parser_iterator")
                 raise Exception('AbortedIteration')
@@ -527,7 +540,8 @@ def parse_from_buffer(
                             signal_obj=_signal
                         ),
                         signal=_signal,
-                        _json=_json
+                        _json=_json,
+                        debug=debug
                 ):
                     debug(f"save_chunks_to_file signaled completion for part {_i}")
                     break
